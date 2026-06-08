@@ -129,6 +129,7 @@ export class UsersService {
   async updatePassword(id: string, passwordHash: string) {
     const user = await this.findById(id);
     user.passwordHash = passwordHash;
+    user.mustChangePassword = false;
     return this.repo.save(user);
   }
 
@@ -247,6 +248,7 @@ export class UsersService {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      mustChangePassword: user.mustChangePassword,
       province: user.province,
       municipality: user.municipality,
       vehicleType: user.vehicleType,
@@ -333,6 +335,7 @@ export class UsersService {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      mustChangePassword: user.mustChangePassword,
       isActive: user.isActive,
       province: user.province,
       municipality: user.municipality,

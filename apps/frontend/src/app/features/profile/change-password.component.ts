@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,7 +26,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
         <div>
           <!-- <span class="rs-eyebrow">Seguridad</span> -->
           <h1>Cambiar contrasena</h1>
-          <p>Actualiza tu contrasena usando tu clave actual.</p>
+          <p>{{ auth.user()?.mustChangePassword ? 'Debes cambiar la clave temporal antes de continuar.' : 'Actualiza tu contrasena usando tu clave actual.' }}</p>
         </div>
       </header>
 
@@ -60,7 +60,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
           </mat-form-field>
 
           <div class="actions">
-            <a mat-button routerLink="/perfil">Volver al perfil</a>
+            <a mat-button routerLink="/perfil" *ngIf="!auth.user()?.mustChangePassword">Volver al perfil</a>
             <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || loading()">Guardar cambio</button>
           </div>
         </form>
@@ -82,8 +82,9 @@ export class ChangePasswordComponent {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly auth: AuthService,
+    readonly auth: AuthService,
     private readonly toastr: ToastrService,
+    private readonly router: Router,
   ) {}
 
   submit() {
@@ -94,7 +95,10 @@ export class ChangePasswordComponent {
       next: () => {
         this.toastr.success('Contrasena actualizada correctamente.', 'Seguridad');
         this.form.reset();
-        this.loading.set(false);
+        this.auth.refreshUser().subscribe(() => {
+          this.loading.set(false);
+          this.router.navigateByUrl(this.auth.canViewExecutivePanel() ? '/dashboard' : '/reportes');
+        });
       },
       error: () => {
         this.toastr.error('Verifica tu contrasena actual.', 'No se pudo actualizar');

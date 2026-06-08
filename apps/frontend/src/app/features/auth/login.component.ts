@@ -257,7 +257,13 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
   private afterLogin(message: string) {
     this.toastr.success(message, 'Bienvenido');
-    this.router.navigateByUrl(this.auth.canViewExecutivePanel() ? '/dashboard' : '/reportes');
+    this.router.navigateByUrl(
+      this.auth.user()?.mustChangePassword
+        ? '/perfil/cambiar-contrasena'
+        : this.auth.canViewExecutivePanel()
+          ? '/dashboard'
+          : '/reportes',
+    );
   }
 
   private loadScript(id: string, src: string): Promise<void> {

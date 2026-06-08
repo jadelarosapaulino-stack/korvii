@@ -8,6 +8,7 @@ export interface AuthUser {
   fullName: string;
   email: string;
   role: string;
+  mustChangePassword?: boolean;
   province?: string;
   municipality?: string;
   vehicleType?: string;

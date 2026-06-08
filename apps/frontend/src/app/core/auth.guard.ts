@@ -5,11 +5,16 @@ import { AuthService } from './auth.service';
 import { FeatureFlagsService } from './feature-flags.service';
 import { RolePermissionsService } from './role-permissions.service';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  if (auth.isAuthenticated()) return true;
+  if (auth.isAuthenticated()) {
+    if (auth.user()?.mustChangePassword && state.url !== '/perfil/cambiar-contrasena') {
+      return router.createUrlTree(['/perfil/cambiar-contrasena']);
+    }
+    return true;
+  }
   return router.createUrlTree(['/login']);
 };
 
@@ -18,6 +23,7 @@ export const guestGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (!auth.isAuthenticated()) return true;
+  if (auth.user()?.mustChangePassword) return router.createUrlTree(['/perfil/cambiar-contrasena']);
   return router.createUrlTree([auth.canViewExecutivePanel() ? '/dashboard' : '/reportes']);
 };
 

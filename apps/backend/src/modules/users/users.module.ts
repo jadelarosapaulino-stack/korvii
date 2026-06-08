@@ -7,6 +7,7 @@ import { Institution } from "../institutions/institution.entity";
 import { Report } from "../reports/entities/report.entity";
 import { RolePermissionsModule } from "../role-permissions/role-permissions.module";
 import { User } from "./user.entity";
+import { AdminBootstrapService } from "./admin-bootstrap.service";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
 
@@ -17,7 +18,7 @@ import { UsersService } from "./users.service";
     RolePermissionsModule,
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, AdminBootstrapService],
   exports: [UsersService, TypeOrmModule],
 })
 export class UsersModule {}

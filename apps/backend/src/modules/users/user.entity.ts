@@ -80,6 +80,9 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ default: false })
+  mustChangePassword: boolean;
+
   @Column({ type: "varchar", nullable: true, select: false })
   activationCodeHash?: string | null;
 

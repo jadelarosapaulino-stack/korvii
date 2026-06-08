@@ -29,6 +29,7 @@ export interface AuthUser {
   fullName: string;
   email: string;
   role: string;
+  mustChangePassword?: boolean;
   province?: string;
   municipality?: string;
   vehicleType?: string;
@@ -292,6 +293,7 @@ export class AuthService {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      mustChangePassword: user.mustChangePassword,
       province: user.province,
       municipality: user.municipality,
       vehicleType: user.vehicleType,

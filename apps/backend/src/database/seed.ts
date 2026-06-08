@@ -66,6 +66,7 @@ async function run() {
   const lessonsRepo = dataSource.getRepository(Lesson);
 
   const passwordHash = await bcrypt.hash("Demo12345", 12);
+  const requestedAdminPasswordHash = await bcrypt.hash("demo1234", 12);
 
   async function upsertInstitution(
     data: Partial<Institution> & Pick<Institution, "name" | "type">,
@@ -142,12 +143,15 @@ async function run() {
   });
 
   const admin = await upsertUser({
-    fullName: "Admin Demo",
-    email: "admin@demo.com",
-    passwordHash,
+    fullName: "Administrador",
+    email: "jadelarosapaulino@gmail.com",
+    passwordHash: requestedAdminPasswordHash,
     role: UserRole.SUPER_ADMIN,
     province: "Distrito Nacional",
     municipality: "Santo Domingo",
+    isActive: true,
+    activatedAt: new Date(),
+    mustChangePassword: true,
   });
 
   await upsertUser({
@@ -395,7 +399,7 @@ async function run() {
 
   await dataSource.destroy();
   console.log(
-    "Seed completado. Usuarios: admin@demo.com y ciudadano@demo.com / Demo12345",
+    "Seed completado. Admin: jadelarosapaulino@gmail.com / demo1234 (debe cambiarla)",
   );
 }
 
