@@ -1,0 +1,5 @@
+.risk-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 .65rem; border: 1px solid transparent; border-radius: var(--rs-radius); font-size: .74rem; font-weight: 800; }
+.low { border-color: rgba(79, 143, 100, .18); background: var(--rs-success-pastel); color: var(--rs-success); }
+.medium { border-color: rgba(185, 133, 44, .2); background: var(--rs-warning-pastel); color: var(--rs-warning); }
+.high { border-color: rgba(169, 76, 76, .2); background: var(--rs-danger-pastel); color: var(--rs-danger); }
+.critical { border-color: rgba(169, 76, 76, .24); background: var(--rs-danger-pastel); color: var(--rs-danger); }

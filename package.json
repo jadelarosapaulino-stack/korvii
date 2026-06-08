@@ -1,0 +1,32 @@
+{
+  "name": "ruta-segura-rd-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Base MVP real para Korvi con Angular 21 y NestJS 11",
+  "scripts": {
+    "start:backend": "pnpm --filter @ruta-segura/backend start:dev",
+    "start:realtime": "pnpm --filter @ruta-segura/realtime start:dev",
+    "start:frontend": "pnpm --filter @ruta-segura/frontend start",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "dev": "pnpm -r --parallel start:dev",
+    "install:check": "node -e \"console.log(process.version)\" && pnpm -v",
+    "build": "pnpm -r build",
+    "db:migrate": "pnpm --filter @ruta-segura/backend migration:run",
+    "db:migrate:revert": "pnpm --filter @ruta-segura/backend migration:revert",
+    "db:migrate:show": "pnpm --filter @ruta-segura/backend migration:show",
+    "approve-builds:safe": "pnpm approve-builds @nestjs/core @parcel/watcher bcrypt esbuild lmdb msgpackr-extract unrs-resolver !@scarf/scarf",
+    "install:clean": "pnpm store prune && pnpm install"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
+    "typescript": "5.9.3"
+  },
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=24.0.0 <27",
+    "pnpm": ">=11.0.0 <12"
+  }
+}

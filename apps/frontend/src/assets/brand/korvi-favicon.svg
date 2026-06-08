@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">KV</title>
+  <desc id="desc">KORVI text-only favicon.</desc>
+  <rect width="64" height="64" rx="0" fill="#0B1F3A"/>
+  <text x="9" y="42" fill="#FFFFFF" font-family="Sora, Inter, system-ui, sans-serif" font-size="28" font-weight="900" letter-spacing="0.5">KV</text>
+</svg>

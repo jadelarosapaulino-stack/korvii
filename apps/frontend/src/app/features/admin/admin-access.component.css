@@ -1,0 +1,70 @@
+:host {
+  display: block;
+  min-width: 0;
+  padding-bottom: 1rem;
+}
+
+.access-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.access-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.access-header h1 {
+  margin: 0.6rem 0 0.3rem;
+  color: var(--rs-text);
+  font-size: 2rem;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.access-header p {
+  max-width: 820px;
+  margin: 0;
+  color: var(--rs-text-muted);
+  line-height: 1.5;
+}
+
+.access-header a mat-icon {
+  margin-right: 0.35rem;
+}
+
+.access-tabs {
+  min-width: 0;
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius);
+  background: var(--rs-surface);
+}
+
+:host ::ng-deep .access-tabs .mat-mdc-tab-header {
+  border-bottom: 1px solid var(--rs-border);
+}
+
+:host ::ng-deep .access-tabs .mdc-tab__content {
+  gap: 0.45rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+:host ::ng-deep .access-tabs .mat-mdc-tab-body-content {
+  padding: 1rem;
+}
+
+:host ::ng-deep app-admin-users .users-header,
+:host ::ng-deep app-admin-role-permissions .permissions-header {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .access-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

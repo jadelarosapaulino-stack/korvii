@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgis/postgis:18-3.6
+    container_name: ruta-segura-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ruta_segura_rd
+      POSTGRES_USER: ruta_segura
+      POSTGRES_PASSWORD: ruta_segura_pwd
+    ports:
+      - "5434:5432"
+    volumes:
+      - ruta_segura_pgdata:/var/lib/postgresql
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ruta_segura -d ruta_segura_rd"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: ruta-segura-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ruta_segura_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ruta_segura_pgdata:
+  ruta_segura_redisdata:

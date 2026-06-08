@@ -1,0 +1,96 @@
+<svg width="920" height="720" viewBox="0 0 920 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Korvi smart mobility city</title>
+  <desc id="desc">Minimal city mobility illustration with roads, dashboards and risk signals.</desc>
+  <rect width="920" height="720" fill="#F8FAFC"/>
+  <path d="M0 520C150 486 237 531 370 488C500 446 558 332 706 342C811 349 875 411 920 468V720H0V520Z" fill="#E8FFF9"/>
+  <path d="M0 0H920V720H0V0Z" fill="url(#softGlow)"/>
+
+  <g opacity="0.24" stroke="#0B1F3A" stroke-width="2">
+    <path d="M46 122C150 82 255 88 359 128C470 171 590 176 721 126C790 100 854 93 918 109"/>
+    <path d="M36 618C159 573 273 566 380 598C513 638 635 657 798 611C846 597 886 595 920 601"/>
+  </g>
+
+  <g transform="translate(52 94)" opacity="0.42">
+    <circle cx="54" cy="54" r="37" fill="#D8E1FF"/>
+    <path d="M54 18V90M26 35C42 44 65 45 82 35M25 73C43 62 66 62 83 73" stroke="#8396F8" stroke-width="7" stroke-linecap="round"/>
+    <rect x="45" y="88" width="18" height="28" rx="5" fill="#8396F8"/>
+  </g>
+  <g transform="translate(745 57)" opacity="0.46">
+    <circle cx="50" cy="50" r="34" fill="#D8E1FF"/>
+    <path d="M50 16V82M25 32C39 40 62 40 76 32M26 67C40 58 61 58 75 67" stroke="#8396F8" stroke-width="7" stroke-linecap="round"/>
+    <rect x="42" y="82" width="16" height="25" rx="5" fill="#8396F8"/>
+  </g>
+
+  <g transform="translate(110 204)">
+    <rect x="0" y="214" width="690" height="54" rx="27" fill="#FFFFFF"/>
+    <path d="M22 241H668" stroke="#C8D5E6" stroke-width="7" stroke-linecap="round" stroke-dasharray="42 38"/>
+    <path d="M12 268H676" stroke="#0B1F3A" stroke-opacity="0.1" stroke-width="2"/>
+  </g>
+
+  <g transform="translate(96 153)">
+    <rect x="0" y="165" width="86" height="210" rx="10" fill="#DDE7F6"/>
+    <rect x="22" y="103" width="42" height="62" fill="#8396F8"/>
+    <path d="M43 0L70 103H16L43 0Z" fill="#0B1F3A" opacity="0.82"/>
+    <path d="M21 190H65M21 220H65M21 250H65M21 280H65M21 310H65" stroke="#8396F8" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="43" cy="368" r="47" fill="#FFFFFF" stroke="#00C2A8" stroke-width="10"/>
+    <path d="M43 342V370H64" stroke="#0B1F3A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g transform="translate(238 137)">
+    <path d="M78 0L154 122L123 356H33L0 122L78 0Z" fill="#B9C7FF"/>
+    <path d="M77 39L124 127L101 332H54L32 127L77 39Z" fill="#FFFFFF" opacity="0.68"/>
+    <path d="M78 0V355" stroke="#8396F8" stroke-width="12" stroke-linecap="round"/>
+    <path d="M19 145L139 255M139 145L20 255" stroke="#8396F8" stroke-width="14" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(381 226)">
+    <rect x="0" y="54" width="140" height="275" rx="14" fill="#DDE7F6"/>
+    <path d="M18 92H122M18 132H122M18 172H122M18 212H122M18 252H122" stroke="#8396F8" stroke-width="17" stroke-linecap="round"/>
+    <rect x="31" y="0" width="78" height="58" rx="16" fill="#0B1F3A"/>
+    <path d="M49 30H91" stroke="#00C2A8" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(555 179)">
+    <path d="M0 331V153C0 68 69 0 154 0C239 0 308 68 308 153V331" stroke="#8396F8" stroke-opacity="0.82" stroke-width="16"/>
+    <path d="M29 331V159C29 91 84 37 154 37C224 37 279 91 279 159V331" stroke="#C5CFFF" stroke-width="12"/>
+    <path d="M154 4V331M60 61L249 251M249 61L60 251M0 154H307" stroke="#8396F8" stroke-opacity="0.46" stroke-width="7"/>
+    <circle cx="154" cy="154" r="42" fill="#FFFFFF" stroke="#00C2A8" stroke-width="12"/>
+  </g>
+
+  <g transform="translate(179 482)">
+    <circle cx="44" cy="50" r="30" fill="#FFFFFF" stroke="#0B1F3A" stroke-width="7"/>
+    <circle cx="142" cy="50" r="30" fill="#FFFFFF" stroke="#0B1F3A" stroke-width="7"/>
+    <path d="M44 50L78 12H112L142 50H96L78 12" stroke="#FF6B35" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M87 12L96 50" stroke="#0B1F3A" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="98" cy="0" r="13" fill="#00C2A8"/>
+  </g>
+
+  <g transform="translate(583 463)">
+    <circle cx="50" cy="62" r="39" fill="#FFFFFF" stroke="#0B1F3A" stroke-width="8"/>
+    <circle cx="174" cy="62" r="39" fill="#FFFFFF" stroke="#0B1F3A" stroke-width="8"/>
+    <path d="M50 62L91 13H135L174 62H116L91 13" stroke="#00C2A8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M107 13L116 62" stroke="#FF6B35" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="122" cy="0" r="15" fill="#FF6B35"/>
+  </g>
+
+  <g transform="translate(336 402)">
+    <path d="M0 95C54 49 95 37 152 47C207 56 236 19 289 0" stroke="#00C2A8" stroke-width="10" stroke-linecap="round" stroke-dasharray="3 24"/>
+    <circle cx="0" cy="95" r="16" fill="#FF6B35" stroke="#FFFFFF" stroke-width="6"/>
+    <circle cx="152" cy="47" r="16" fill="#00C2A8" stroke="#FFFFFF" stroke-width="6"/>
+    <circle cx="289" cy="0" r="16" fill="#0B1F3A" stroke="#FFFFFF" stroke-width="6"/>
+  </g>
+
+  <g transform="translate(650 402)">
+    <rect x="0" y="0" width="122" height="82" rx="18" fill="#FFFFFF" opacity="0.92"/>
+    <path d="M27 55V34M61 55V20M95 55V43" stroke="#00C2A8" stroke-width="12" stroke-linecap="round"/>
+    <path d="M23 20H101" stroke="#0B1F3A" stroke-opacity="0.18" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <defs>
+    <linearGradient id="softGlow" x1="90" y1="28" x2="791" y2="699" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.96"/>
+      <stop offset="0.48" stop-color="#F3F6FF" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#DFFCF7" stop-opacity="0.7"/>
+    </linearGradient>
+  </defs>
+</svg>

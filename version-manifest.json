@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-05-10",
+  "project": "Ruta Segura RD MVP Base Real",
+  "versions": {
+    "node": "24.15.0 LTS",
+    "pnpm": "11.0.9",
+    "typescript": "5.9.3",
+    "angular": "21.2.12",
+    "angularCli": "21.2.10",
+    "nestjs": "11.1.19",
+    "typeorm": "0.3.29",
+    "nestjsTypeorm": "11.0.1",
+    "postgresPostgisImage": "postgis/postgis:18-3.6"
+  },
+  "notes": [
+    "TypeScript 6 is not used because Angular 21 requires >=5.9.0 <6.0.0",
+    "Angular 22 next is not used because it is prerelease"
+  ]
+}

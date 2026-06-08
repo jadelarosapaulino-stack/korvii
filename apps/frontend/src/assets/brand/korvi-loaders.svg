@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" viewBox="0 0 720 360" role="img" aria-labelledby="title desc">
+  <title id="title">KORVI loader examples</title>
+  <desc id="desc">Text-first KORVI loading system examples.</desc>
+  <style>
+    .brand { font-family: Sora, Inter, system-ui, sans-serif; font-weight: 800; letter-spacing: 1px; }
+    .label { font-family: Inter, system-ui, sans-serif; font-weight: 700; letter-spacing: 1.6px; }
+  </style>
+  <rect width="720" height="360" fill="#F8FAFC"/>
+  <text x="60" y="90" class="brand" fill="#0B1F3A" font-size="44">KORVI</text>
+  <text x="62" y="122" class="label" fill="#00C2A8" font-size="12">SMART MOBILITY PLATFORM</text>
+  <rect x="62" y="146" width="128" height="5" rx="2.5" fill="#D8F8F3"/>
+  <rect x="62" y="146" width="58" height="5" rx="2.5" fill="#FF6B35"/>
+  <text x="300" y="90" class="brand" fill="#0B1F3A" font-size="38">KORVI</text>
+  <text x="460" y="90" class="brand" fill="#00C2A8" font-size="30" font-weight="650">Insight</text>
+  <text x="302" y="122" class="label" fill="#64748B" font-size="12">ANALYSING RISK SIGNALS</text>
+  <circle cx="312" cy="150" r="5" fill="#00C2A8"/>
+  <circle cx="342" cy="150" r="5" fill="#FF6B35"/>
+  <circle cx="372" cy="150" r="5" fill="#00C2A8"/>
+  <text x="60" y="250" class="brand" fill="#0B1F3A" font-size="38">KORVI</text>
+  <text x="220" y="250" class="brand" fill="#FF6B35" font-size="30" font-weight="650">Drive</text>
+  <text x="62" y="282" class="label" fill="#64748B" font-size="12">SYNCING MOBILITY INTELLIGENCE</text>
+  <rect x="62" y="306" width="240" height="4" rx="2" fill="#D8F8F3"/>
+  <rect x="162" y="306" width="76" height="4" rx="2" fill="#00C2A8"/>
+</svg>

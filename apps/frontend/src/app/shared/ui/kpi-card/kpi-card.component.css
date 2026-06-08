@@ -1,0 +1,9 @@
+.kpi-card { min-height: 112px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border-top: 3px solid currentColor; }
+span { display: block; color: var(--rs-text-muted); font-size: .82rem; font-weight: 800; }
+strong { display: block; margin-top: .25rem; color: var(--rs-text); font-size: 2rem; line-height: 1; letter-spacing: 0; }
+mat-icon { color: currentColor; opacity: .72; }
+.primary { color: var(--rs-primary); }
+.secondary { color: var(--rs-secondary); }
+.success { color: var(--rs-success); }
+.warning { color: var(--rs-warning); }
+.danger { color: var(--rs-danger); }

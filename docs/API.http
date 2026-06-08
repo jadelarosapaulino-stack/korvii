@@ -1,0 +1,60 @@
+### Registro ciudadano
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Usuario Demo",
+  "email": "ciudadano@demo.com",
+  "password": "Demo12345",
+  "province": "Distrito Nacional",
+  "municipality": "Santo Domingo",
+  "role": "CITIZEN"
+}
+
+### Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "ciudadano@demo.com",
+  "password": "Demo12345"
+}
+
+### Crear reporte
+POST http://localhost:3000/api/reports
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Semáforo dañado en intersección principal",
+  "category": "TRAFFIC_LIGHT_DAMAGED",
+  "description": "El semáforo no funciona y genera riesgo en hora pico.",
+  "latitude": 18.4861,
+  "longitude": -69.9312,
+  "province": "Distrito Nacional",
+  "municipality": "Santo Domingo",
+  "riskLevel": 4,
+  "photoUrls": ["https://example.com/foto.jpg"]
+}
+
+### Listar reportes
+GET http://localhost:3000/api/reports?status=PENDING&category=TRAFFIC_LIGHT_DAMAGED
+Authorization: Bearer {{token}}
+
+### Cambiar estado
+PATCH http://localhost:3000/api/reports/{{reportId}}/status
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "toStatus": "VALIDATED",
+  "comment": "Reporte validado para intervención institucional."
+}
+
+### Dashboard
+GET http://localhost:3000/api/analytics/summary
+Authorization: Bearer {{token}}
+
+### Lecciones
+GET http://localhost:3000/api/education/lessons
+Authorization: Bearer {{token}}

@@ -1,0 +1,647 @@
+@use './theme/tokens';
+@use './theme/material-overrides';
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import '@angular/material/prebuilt-themes/azure-blue.css';
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--rs-bg);
+  color: var(--rs-text);
+  font-family: var(--rs-font-family);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+
+html,
+body,
+.mat-typography,
+.mat-app-background,
+.mat-mdc-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-icon-button,
+.mat-mdc-card,
+.mat-mdc-form-field,
+.mat-mdc-select,
+.mat-mdc-option,
+.mat-mdc-chip,
+.mat-mdc-menu-panel,
+.mat-mdc-dialog-container,
+.mat-mdc-tooltip,
+.mdc-button,
+.mdc-list-item,
+.mdc-form-field,
+.mdc-floating-label,
+.mdc-text-field,
+.mdc-evolution-chip,
+.cdk-overlay-container,
+.cdk-overlay-pane {
+  font-family: var(--rs-font-family) !important;
+}
+
+.rs-grid { display: grid; gap: var(--rs-space-4); }
+.rs-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rs-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rs-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.rs-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--rs-space-4);
+  margin-bottom: var(--rs-space-4);
+}
+
+.rs-page-header h1 {
+  margin: var(--rs-space-2) 0 var(--rs-space-1);
+  color: var(--rs-text);
+  font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.rs-page-header p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--rs-text-muted);
+  font-size: .95rem;
+  line-height: 1.55;
+}
+
+.rs-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 var(--rs-space-3);
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius);
+  background: var(--rs-primary-soft);
+  color: var(--rs-primary);
+  font-size: .74rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.rs-panel {
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius);
+  background: var(--rs-surface);
+  box-shadow: none;
+}
+
+.rs-muted { color: var(--rs-text-muted); }
+.rs-error { color: var(--rs-danger); font-weight: 700; }
+.rs-actions { display: flex; justify-content: flex-end; gap: var(--rs-space-3); flex-wrap: wrap; }
+
+.toast-container {
+  width: min(420px, calc(100vw - 2rem));
+}
+
+.toast-container.toast-top-right {
+  top: 76px;
+  right: var(--rs-space-4);
+}
+
+.toast-container .ngx-toastr {
+  position: relative;
+  width: 100%;
+  min-height: 64px;
+  margin: 0 0 var(--rs-space-3);
+  padding: .9rem 2.65rem .9rem 3.6rem;
+  border: 1px solid var(--rs-border);
+  border-left-width: 4px;
+  border-radius: var(--rs-radius);
+  background-color: var(--rs-surface) !important;
+  background-image: none !important;
+  color: var(--rs-text);
+  box-shadow: none;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.toast-container .ngx-toastr::before {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--rs-radius);
+  color: #fff;
+  font-family: 'Material Icons';
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.toast-container .toast-title {
+  margin-bottom: .15rem;
+  color: var(--rs-text);
+  font-size: .92rem;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.toast-container .toast-message {
+  color: var(--rs-text-muted);
+  font-size: .82rem;
+  line-height: 1.35;
+}
+
+.toast-container .toast-close-button {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--rs-radius);
+  color: var(--rs-text-muted);
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 1;
+  text-shadow: none;
+}
+
+.toast-container .toast-close-button:hover {
+  background: var(--rs-surface-soft);
+  color: var(--rs-text);
+}
+
+.toast-container .toast-progress {
+  height: 3px;
+  opacity: 1;
+}
+
+.toast-success {
+  border-left-color: var(--rs-success) !important;
+}
+
+.toast-success::before {
+  content: 'check_circle';
+  background: var(--rs-success);
+}
+
+.toast-success .toast-progress {
+  background: var(--rs-success);
+}
+
+.toast-error {
+  border-left-color: var(--rs-danger) !important;
+}
+
+.toast-error::before {
+  content: 'error';
+  background: var(--rs-danger);
+}
+
+.toast-error .toast-progress {
+  background: var(--rs-danger);
+}
+
+.toast-warning {
+  border-left-color: var(--rs-warning) !important;
+}
+
+.toast-warning::before {
+  content: 'warning';
+  background: var(--rs-warning);
+}
+
+.toast-warning .toast-progress {
+  background: var(--rs-warning);
+}
+
+.toast-info {
+  border-left-color: var(--rs-primary) !important;
+}
+
+.toast-info::before {
+  content: 'info';
+  background: var(--rs-primary);
+}
+
+.toast-info .toast-progress {
+  background: var(--rs-primary);
+}
+.rs-form-grid { display: grid; gap: var(--rs-space-3); }
+
+body.rs-dark-theme {
+  background:
+    linear-gradient(90deg, rgba(159, 184, 204, .045) 1px, transparent 1px),
+    linear-gradient(rgba(159, 184, 204, .04) 1px, transparent 1px),
+    var(--rs-bg);
+  color-scheme: dark;
+}
+
+body.rs-dark-theme .mat-mdc-card,
+body.rs-dark-theme .mat-mdc-menu-panel,
+body.rs-dark-theme .mat-mdc-select-panel,
+body.rs-dark-theme .mat-mdc-autocomplete-panel,
+body.rs-dark-theme .mat-mdc-dialog-surface {
+  background: var(--rs-surface) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-mdc-option,
+body.rs-dark-theme .mat-mdc-menu-item,
+body.rs-dark-theme .mat-mdc-list-item,
+body.rs-dark-theme .mdc-list-item__primary-text {
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-mdc-option:hover,
+body.rs-dark-theme .mat-mdc-menu-item:hover,
+body.rs-dark-theme .mat-mdc-option.mdc-list-item--selected {
+  background: var(--rs-primary-soft) !important;
+}
+
+body.rs-dark-theme .mat-mdc-text-field-wrapper,
+body.rs-dark-theme .mdc-text-field,
+body.rs-dark-theme input,
+body.rs-dark-theme textarea,
+body.rs-dark-theme select {
+  background: var(--rs-surface) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-mdc-form-field {
+  --mdc-outlined-text-field-label-text-color: var(--rs-text-muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--rs-text);
+  --mdc-outlined-text-field-focus-label-text-color: var(--rs-secondary);
+  --mdc-outlined-text-field-input-text-color: var(--rs-text);
+  --mdc-outlined-text-field-disabled-label-text-color: var(--rs-text-muted);
+  --mdc-filled-text-field-label-text-color: var(--rs-text-muted);
+  --mdc-filled-text-field-hover-label-text-color: var(--rs-text);
+  --mdc-filled-text-field-focus-label-text-color: var(--rs-secondary);
+  --mdc-filled-text-field-input-text-color: var(--rs-text);
+  --mat-form-field-container-text-color: var(--rs-text);
+  --mat-form-field-subscript-text-color: var(--rs-text-muted);
+}
+
+body.rs-dark-theme .mat-mdc-form-field,
+body.rs-dark-theme .mat-mdc-select-value,
+body.rs-dark-theme .mat-mdc-select-placeholder,
+body.rs-dark-theme .mat-mdc-select-arrow,
+body.rs-dark-theme .mat-mdc-input-element,
+body.rs-dark-theme .mdc-text-field__input,
+body.rs-dark-theme .mdc-floating-label,
+body.rs-dark-theme .mat-mdc-floating-label,
+body.rs-dark-theme .mat-mdc-form-field-hint,
+body.rs-dark-theme .mat-mdc-form-field-error {
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-mdc-form-field label,
+body.rs-dark-theme .mat-mdc-form-field mat-label,
+body.rs-dark-theme .mat-mdc-form-field .mdc-floating-label,
+body.rs-dark-theme .mat-mdc-form-field .mat-mdc-floating-label,
+body.rs-dark-theme .mat-mdc-form-field .mdc-notched-outline__notch label,
+body.rs-dark-theme .mat-mdc-form-field .mdc-floating-label mat-label,
+body.rs-dark-theme .mat-mdc-form-field .mat-mdc-form-field-label,
+body.rs-dark-theme .mat-mdc-form-field .mat-mdc-form-field-label-wrapper,
+body.rs-dark-theme .mat-mdc-form-field .mdc-text-field__input::placeholder,
+body.rs-dark-theme .mat-mdc-form-field input::placeholder,
+body.rs-dark-theme .mat-mdc-form-field textarea::placeholder {
+  color: var(--rs-text-muted) !important;
+  -webkit-text-fill-color: var(--rs-text-muted) !important;
+  opacity: 1 !important;
+}
+
+body.rs-dark-theme .mat-mdc-form-field.mat-focused label,
+body.rs-dark-theme .mat-mdc-form-field.mat-focused mat-label,
+body.rs-dark-theme .mat-mdc-form-field.mat-focused .mdc-floating-label,
+body.rs-dark-theme .mat-mdc-form-field.mat-focused .mat-mdc-floating-label,
+body.rs-dark-theme .mat-mdc-form-field.mat-focused .mdc-floating-label mat-label {
+  color: var(--rs-secondary) !important;
+  -webkit-text-fill-color: var(--rs-secondary) !important;
+}
+
+body.rs-dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-floating-label,
+body.rs-dark-theme .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-floating-label--float-above,
+body.rs-dark-theme .mdc-text-field--filled:not(.mdc-text-field--disabled) .mdc-floating-label,
+body.rs-dark-theme .mdc-text-field--filled:not(.mdc-text-field--disabled) .mdc-floating-label--float-above {
+  color: var(--rs-text-muted) !important;
+  -webkit-text-fill-color: var(--rs-text-muted) !important;
+}
+
+body.rs-dark-theme .mat-focused .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-floating-label,
+body.rs-dark-theme .mat-focused .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-floating-label--float-above,
+body.rs-dark-theme .mat-focused .mdc-text-field--filled:not(.mdc-text-field--disabled) .mdc-floating-label,
+body.rs-dark-theme .mat-focused .mdc-text-field--filled:not(.mdc-text-field--disabled) .mdc-floating-label--float-above {
+  color: var(--rs-secondary) !important;
+  -webkit-text-fill-color: var(--rs-secondary) !important;
+}
+
+body.rs-dark-theme .mdc-notched-outline__leading,
+body.rs-dark-theme .mdc-notched-outline__notch,
+body.rs-dark-theme .mdc-notched-outline__trailing {
+  border-color: var(--rs-border) !important;
+}
+
+body.rs-dark-theme .mat-mdc-form-field:hover .mdc-notched-outline__leading,
+body.rs-dark-theme .mat-mdc-form-field:hover .mdc-notched-outline__notch,
+body.rs-dark-theme .mat-mdc-form-field:hover .mdc-notched-outline__trailing,
+body.rs-dark-theme .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+body.rs-dark-theme .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+body.rs-dark-theme .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--rs-secondary) !important;
+}
+
+body.rs-dark-theme .mat-mdc-form-field-subscript-wrapper,
+body.rs-dark-theme .mat-mdc-card-subtitle,
+body.rs-dark-theme .mat-mdc-paginator,
+body.rs-dark-theme .mat-mdc-paginator-container,
+body.rs-dark-theme .mat-mdc-paginator-page-size-label,
+body.rs-dark-theme .mat-mdc-paginator-range-label {
+  color: var(--rs-text-muted) !important;
+}
+
+body.rs-dark-theme .mat-mdc-slide-toggle,
+body.rs-dark-theme .mat-mdc-checkbox,
+body.rs-dark-theme .mat-mdc-radio-button {
+  --mdc-form-field-label-text-color: var(--rs-text);
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-mdc-slide-toggle .mdc-label,
+body.rs-dark-theme .mat-mdc-checkbox .mdc-label,
+body.rs-dark-theme .mat-mdc-radio-button .mdc-label {
+  color: var(--rs-text) !important;
+  -webkit-text-fill-color: var(--rs-text) !important;
+  opacity: 1 !important;
+}
+
+body.rs-dark-theme .mat-mdc-slide-toggle.mat-mdc-slide-toggle-disabled .mdc-label,
+body.rs-dark-theme .mat-mdc-checkbox.mat-mdc-checkbox-disabled .mdc-label,
+body.rs-dark-theme .mat-mdc-radio-button.mat-mdc-radio-disabled .mdc-label {
+  color: var(--rs-text-muted) !important;
+  -webkit-text-fill-color: var(--rs-text-muted) !important;
+}
+
+body.rs-dark-theme .mat-mdc-paginator {
+  background: var(--rs-surface) !important;
+}
+
+body.rs-dark-theme .mat-datepicker-content,
+body.rs-dark-theme .mat-datepicker-content .mat-calendar {
+  background: var(--rs-surface) !important;
+  border: 1px solid var(--rs-border);
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-datepicker-content {
+  box-shadow: var(--rs-shadow-lg) !important;
+}
+
+body.rs-dark-theme .mat-calendar-header,
+body.rs-dark-theme .mat-calendar-content {
+  background: var(--rs-surface) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-calendar-period-button,
+body.rs-dark-theme .mat-calendar-previous-button,
+body.rs-dark-theme .mat-calendar-next-button {
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-calendar-arrow {
+  color: var(--rs-text) !important;
+  fill: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-calendar-table-header,
+body.rs-dark-theme .mat-calendar-body-label {
+  color: var(--rs-text-muted) !important;
+}
+
+body.rs-dark-theme .mat-calendar-body-cell-content {
+  border-color: transparent !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover .mat-calendar-body-cell-content,
+body.rs-dark-theme .mat-calendar-body-active .mat-calendar-body-cell-content {
+  background: var(--rs-primary-soft) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-calendar-body-selected {
+  background: var(--rs-secondary) !important;
+  color: #062421 !important;
+}
+
+body.rs-dark-theme .mat-calendar-body-today:not(.mat-calendar-body-selected) {
+  border-color: var(--rs-secondary) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-calendar-body-in-range::before,
+body.rs-dark-theme .mat-calendar-body-comparison-identical {
+  background: color-mix(in srgb, var(--rs-secondary) 24%, transparent) !important;
+}
+
+body.rs-dark-theme .mat-calendar-body-disabled .mat-calendar-body-cell-content {
+  color: color-mix(in srgb, var(--rs-text-muted) 45%, transparent) !important;
+}
+
+body.rs-dark-theme .mat-date-range-input-separator {
+  color: var(--rs-text-muted) !important;
+}
+
+body.rs-dark-theme .mat-mdc-paginator .mat-mdc-select-value,
+body.rs-dark-theme .mat-mdc-paginator .mat-mdc-icon-button {
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .mat-icon,
+body.rs-dark-theme .material-icons {
+  color: inherit;
+}
+
+body.rs-dark-theme .mat-mdc-card mat-icon,
+body.rs-dark-theme .rs-panel mat-icon,
+body.rs-dark-theme .panel-heading mat-icon,
+body.rs-dark-theme .section-title mat-icon {
+  color: var(--rs-secondary);
+}
+
+body.rs-dark-theme .mat-mdc-icon-button mat-icon,
+body.rs-dark-theme .mat-mdc-button mat-icon,
+body.rs-dark-theme .mat-mdc-outlined-button mat-icon,
+body.rs-dark-theme .mat-mdc-unelevated-button mat-icon {
+  color: currentColor;
+}
+
+body.rs-dark-theme .rail-nav a mat-icon,
+body.rs-dark-theme .settings-nav-item mat-icon,
+body.rs-dark-theme .provider-option mat-icon {
+  color: var(--rs-text-muted);
+}
+
+body.rs-dark-theme .mat-mdc-outlined-button,
+body.rs-dark-theme .mat-mdc-button,
+body.rs-dark-theme .mat-mdc-icon-button {
+  color: var(--rs-primary) !important;
+}
+
+body.rs-dark-theme .map-workspace,
+body.rs-dark-theme .detail-panel,
+body.rs-dark-theme .settings-sidebar,
+body.rs-dark-theme .category-list article,
+body.rs-dark-theme .insight-list article,
+body.rs-dark-theme .lesson-header,
+body.rs-dark-theme .lesson-list article,
+body.rs-dark-theme .thumbnail-preview,
+body.rs-dark-theme .wysiwyg-editor,
+body.rs-dark-theme .nearby-reports button,
+body.rs-dark-theme .control-tile,
+body.rs-dark-theme .upload-button,
+body.rs-dark-theme .avatar-choice,
+body.rs-dark-theme .toggle-grid article,
+body.rs-dark-theme .activity-list article,
+body.rs-dark-theme .options-button,
+body.rs-dark-theme .location-modal,
+body.rs-dark-theme .location-modal footer,
+body.rs-dark-theme .emergency-modal,
+body.rs-dark-theme .emergency-modal footer {
+  background: var(--rs-surface) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .map-toolbar,
+body.rs-dark-theme .map-state,
+body.rs-dark-theme .heat-legend,
+body.rs-dark-theme .zoom-controls button,
+body.rs-dark-theme .expand-map-button,
+body.rs-dark-theme .map-hint,
+body.rs-dark-theme .hero-user {
+  background: color-mix(in srgb, var(--rs-surface) 92%, transparent) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .risk-tile,
+body.rs-dark-theme .detail-visual img,
+body.rs-dark-theme .account-hero,
+body.rs-dark-theme .edit-hero,
+body.rs-dark-theme .learning-hero {
+  background: var(--rs-surface-soft) !important;
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .map-canvas,
+body.rs-dark-theme .heat-map,
+body.rs-dark-theme .summary-map,
+body.rs-dark-theme .mini-map {
+  background: var(--rs-surface-soft) !important;
+}
+
+body.rs-dark-theme .report-row:hover {
+  background: var(--rs-primary-soft) !important;
+}
+
+body.rs-dark-theme .submit-bar {
+  background: var(--rs-bg) !important;
+}
+
+body.rs-dark-theme .status-grid.education div,
+body.rs-dark-theme .status-grid div,
+body.rs-dark-theme .empty-text {
+  background: var(--rs-surface-soft) !important;
+}
+
+body.rs-dark-theme .maplibregl-popup-content {
+  background: var(--rs-surface) !important;
+  border: 1px solid var(--rs-border);
+  color: var(--rs-text) !important;
+}
+
+body.rs-dark-theme .maplibregl-popup-tip {
+  border-top-color: var(--rs-surface) !important;
+  border-bottom-color: var(--rs-surface) !important;
+}
+
+body.rs-dark-theme .avatar.has-photo,
+body.rs-dark-theme .avatar-preview.has-photo,
+body.rs-dark-theme .navbar-avatar.has-photo {
+  background: var(--rs-surface) !important;
+}
+
+body.rs-dark-theme .avatar,
+body.rs-dark-theme .avatar-preview,
+body.rs-dark-theme .avatar-choice-preview,
+body.rs-dark-theme .risk-marker,
+body.rs-dark-theme .risk-marker-level,
+body.rs-dark-theme .summary-risk-marker,
+body.rs-dark-theme .user-location-marker,
+body.rs-dark-theme .dashboard-heat-point,
+body.rs-dark-theme .mini-marker {
+  border-color: var(--rs-surface) !important;
+}
+
+body.rs-dark-theme .control-tile.success > mat-icon:first-child { background: var(--rs-success-soft) !important; color: var(--rs-success) !important; }
+body.rs-dark-theme .control-tile.warning > mat-icon:first-child { background: var(--rs-warning-soft) !important; color: var(--rs-warning) !important; }
+body.rs-dark-theme .control-tile.blue > mat-icon:first-child { background: var(--rs-primary-soft) !important; color: var(--rs-primary) !important; }
+body.rs-dark-theme .control-tile.purple > mat-icon:first-child { background: var(--rs-purple-soft) !important; color: var(--rs-purple) !important; }
+
+@media (max-width: 900px) {
+  .rs-grid.two, .rs-grid.three, .rs-grid.four { grid-template-columns: 1fr; }
+  .rs-page-header { align-items: stretch; flex-direction: column; }
+}
+
+/* Flat pastel visual system: no gradients or shadows. */
+*,
+*::before,
+*::after {
+  background-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Pastel Material color enforcement after the prebuilt Angular Material theme. */
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-fab.mat-primary,
+.mat-mdc-mini-fab.mat-primary {
+  --mdc-filled-button-container-color: var(--rs-primary-pastel) !important;
+  --mdc-filled-button-label-text-color: var(--rs-primary) !important;
+  --mdc-protected-button-container-color: var(--rs-primary-pastel) !important;
+  --mdc-protected-button-label-text-color: var(--rs-primary) !important;
+  --mdc-fab-container-color: var(--rs-primary-pastel) !important;
+  --mat-filled-button-state-layer-color: var(--rs-primary) !important;
+  --mat-protected-button-state-layer-color: var(--rs-primary) !important;
+  --mat-fab-state-layer-color: var(--rs-primary) !important;
+  background-color: var(--rs-primary-pastel) !important;
+  color: var(--rs-primary) !important;
+}
+
+.mat-mdc-unelevated-button.mat-primary:hover,
+.mat-mdc-raised-button.mat-primary:hover,
+.mat-mdc-fab.mat-primary:hover,
+.mat-mdc-mini-fab.mat-primary:hover {
+  --mdc-filled-button-container-color: var(--rs-primary-pastel-hover) !important;
+  --mdc-protected-button-container-color: var(--rs-primary-pastel-hover) !important;
+  --mdc-fab-container-color: var(--rs-primary-pastel-hover) !important;
+  background-color: var(--rs-primary-pastel-hover) !important;
+}
+
+.mat-mdc-outlined-button.mat-primary,
+.mat-mdc-button.mat-primary {
+  --mdc-outlined-button-label-text-color: var(--rs-primary) !important;
+  --mdc-text-button-label-text-color: var(--rs-primary) !important;
+  --mat-outlined-button-state-layer-color: var(--rs-primary) !important;
+  --mat-text-button-state-layer-color: var(--rs-primary) !important;
+  color: var(--rs-primary) !important;
+}

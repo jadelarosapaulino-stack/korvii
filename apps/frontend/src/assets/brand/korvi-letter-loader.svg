@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="96" viewBox="0 0 240 96" role="img" aria-labelledby="title desc">
+  <title id="title">KORVI letter loader</title>
+  <desc id="desc">KORVI text loader with sequentially illuminated letters.</desc>
+  <style>
+    text {
+      font-family: Sora, Inter, system-ui, sans-serif;
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 2px;
+    }
+    .label {
+      font-family: Inter, system-ui, sans-serif;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.4px;
+    }
+  </style>
+  <rect width="240" height="96" fill="#F8FAFC"/>
+  <text x="26" y="50" fill="#0B1F3A" opacity=".42">K
+    <animate attributeName="fill" values="#0B1F3A;#00C2A8;#FF6B35;#0B1F3A" dur="1.25s" begin="0s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values=".42;1;.9;.42" dur="1.25s" begin="0s" repeatCount="indefinite"/>
+  </text>
+  <text x="66" y="50" fill="#0B1F3A" opacity=".42">O
+    <animate attributeName="fill" values="#0B1F3A;#00C2A8;#FF6B35;#0B1F3A" dur="1.25s" begin=".12s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values=".42;1;.9;.42" dur="1.25s" begin=".12s" repeatCount="indefinite"/>
+  </text>
+  <text x="110" y="50" fill="#0B1F3A" opacity=".42">R
+    <animate attributeName="fill" values="#0B1F3A;#00C2A8;#FF6B35;#0B1F3A" dur="1.25s" begin=".24s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values=".42;1;.9;.42" dur="1.25s" begin=".24s" repeatCount="indefinite"/>
+  </text>
+  <text x="150" y="50" fill="#0B1F3A" opacity=".42">V
+    <animate attributeName="fill" values="#0B1F3A;#00C2A8;#FF6B35;#0B1F3A" dur="1.25s" begin=".36s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values=".42;1;.9;.42" dur="1.25s" begin=".36s" repeatCount="indefinite"/>
+  </text>
+  <text x="190" y="50" fill="#0B1F3A" opacity=".42">I
+    <animate attributeName="fill" values="#0B1F3A;#00C2A8;#FF6B35;#0B1F3A" dur="1.25s" begin=".48s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values=".42;1;.9;.42" dur="1.25s" begin=".48s" repeatCount="indefinite"/>
+  </text>
+  <text x="42" y="73" class="label" fill="#64748B">MOBILITY INTELLIGENCE</text>
+</svg>

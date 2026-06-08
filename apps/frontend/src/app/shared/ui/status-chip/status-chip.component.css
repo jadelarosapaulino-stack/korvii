@@ -1,0 +1,7 @@
+.status-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 .65rem; border: 1px solid transparent; border-radius: var(--rs-radius); font-size: .74rem; font-weight: 800; }
+.warning { border-color: rgba(185, 133, 44, .2); background: var(--rs-warning-pastel); color: var(--rs-warning); }
+.secondary { border-color: rgba(59, 138, 138, .18); background: var(--rs-secondary-pastel); color: var(--rs-secondary); }
+.primary { border-color: rgba(36, 70, 95, .16); background: var(--rs-primary-pastel); color: var(--rs-primary); }
+.primary-dark { border-color: rgba(36, 70, 95, .18); background: var(--rs-primary-pastel-hover); color: var(--rs-primary); }
+.success { border-color: rgba(79, 143, 100, .18); background: var(--rs-success-pastel); color: var(--rs-success); }
+.muted { border-color: rgba(107, 119, 133, .14); background: var(--rs-muted-pastel); color: var(--rs-text-muted); }

@@ -1,0 +1,328 @@
+:host {
+  display: block;
+  min-width: 0;
+  padding-bottom: 1rem;
+}
+
+.users-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.users-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.users-header h1 {
+  margin: 0.6rem 0 0.3rem;
+  color: var(--rs-text);
+  font-size: 2rem;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.users-header p {
+  margin: 0;
+  color: var(--rs-text-muted);
+  line-height: 1.5;
+}
+
+.users-header button mat-icon,
+.filters button mat-icon {
+  margin-right: 0.35rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.summary-grid mat-card,
+.filter-card,
+.user-row,
+.empty-state {
+  border: 1px solid var(--rs-border);
+  box-shadow: none !important;
+}
+
+.summary-grid mat-card {
+  padding: 1rem;
+}
+
+.summary-grid span {
+  color: var(--rs-text-muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.summary-grid strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--rs-text);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.summary-grid small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--rs-text-muted);
+  font-weight: 700;
+}
+
+.filter-card {
+  padding: 1rem;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 200px 180px auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.filters button {
+  min-height: 48px;
+}
+
+.users-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.user-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 240px 156px;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--rs-primary) 5%, transparent), transparent 28%),
+    var(--rs-surface);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.user-row:hover {
+  border-color: color-mix(in srgb, var(--rs-primary) 28%, var(--rs-border));
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06) !important;
+  transform: translateY(-1px);
+}
+
+.user-row.inactive {
+  background: var(--rs-surface);
+  opacity: 0.76;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--rs-radius);
+  background: color-mix(in srgb, var(--rs-primary) 13%, var(--rs-surface));
+  color: var(--rs-primary);
+}
+
+.user-main {
+  min-width: 0;
+}
+
+.user-main strong {
+  display: block;
+  color: var(--rs-text);
+  overflow-wrap: anywhere;
+}
+
+.user-main > span {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--rs-text-muted);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.85rem;
+  margin-top: 0.45rem;
+  color: var(--rs-text-muted);
+  font-size: 0.76rem;
+}
+
+.role-control {
+  min-width: 0;
+}
+
+.role-picker {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 0.65rem;
+  justify-content: initial;
+  padding: 0.35rem 0.55rem 0.35rem 0.7rem;
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius);
+  background: color-mix(in srgb, var(--rs-surface) 92%, var(--rs-primary-soft));
+  color: var(--rs-text);
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.role-picker:hover {
+  border-color: var(--rs-primary-pastel-hover);
+  background: var(--rs-primary-soft);
+}
+
+.role-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--rs-secondary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rs-secondary) 14%, transparent);
+}
+
+.role-picker > span:not(.role-dot) {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+}
+
+.role-picker small {
+  color: var(--rs-text-muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.role-picker strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--rs-text);
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-picker mat-icon {
+  flex: 0 0 auto;
+  margin-left: 0.45rem;
+  color: var(--rs-text-muted);
+}
+
+:host ::ng-deep .role-menu {
+  min-width: 230px;
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius) !important;
+  box-shadow: var(--rs-shadow-md);
+}
+
+:host ::ng-deep .role-menu .mat-mdc-menu-content {
+  padding: 0.35rem !important;
+}
+
+:host ::ng-deep .role-menu .mat-mdc-menu-item {
+  min-height: 42px;
+  border-radius: var(--rs-radius);
+}
+
+:host ::ng-deep .role-menu .mat-mdc-menu-item mat-icon {
+  margin-right: 0.65rem;
+  color: var(--rs-primary);
+}
+
+.status-control {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: end;
+}
+
+.status-badge {
+  justify-self: end;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--rs-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rs-text-muted) 10%, transparent);
+  color: var(--rs-text-muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  border-color: color-mix(in srgb, var(--rs-success) 26%, var(--rs-border));
+  background: var(--rs-success-pastel);
+  color: var(--rs-success);
+}
+
+:host ::ng-deep .status-control .mdc-switch {
+  transform: scale(0.84);
+  transform-origin: right center;
+}
+
+.empty-state {
+  min-height: 260px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.5rem;
+  color: var(--rs-text-muted);
+}
+
+.empty-state mat-icon {
+  font-size: 42px;
+  width: 42px;
+  height: 42px;
+  color: var(--rs-secondary);
+}
+
+.empty-state strong {
+  color: var(--rs-text);
+}
+
+mat-paginator {
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius);
+  background: var(--rs-surface);
+}
+
+@media (max-width: 1100px) {
+  .summary-grid,
+  .filters,
+  .user-row {
+    grid-template-columns: 1fr;
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@media (max-width: 720px) {
+  .users-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .users-header button,
+  .filters button {
+    width: 100%;
+    justify-content: center;
+  }
+}

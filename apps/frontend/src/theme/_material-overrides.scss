@@ -1,0 +1,149 @@
+.mat-mdc-card {
+  font-family: var(--rs-font-family) !important;
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius) !important;
+  background: var(--rs-surface);
+  box-shadow: none !important;
+}
+
+.mat-mdc-card-title {
+  color: var(--rs-text);
+  letter-spacing: 0;
+}
+
+.mat-mdc-card-subtitle {
+  color: var(--rs-text-muted);
+}
+
+.mat-mdc-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-icon-button,
+.mat-mdc-fab,
+.mat-mdc-mini-fab {
+  font-family: var(--rs-font-family) !important;
+  border-radius: var(--rs-radius) !important;
+  --mdc-filled-button-container-shape: var(--rs-radius);
+  --mdc-protected-button-container-shape: var(--rs-radius);
+  --mdc-outlined-button-container-shape: var(--rs-radius);
+  --mdc-text-button-container-shape: var(--rs-radius);
+  --mdc-icon-button-container-shape: var(--rs-radius);
+  --mdc-fab-container-shape: var(--rs-radius);
+}
+
+.mat-mdc-unelevated-button.mat-primary {
+  --mdc-filled-button-container-color: var(--rs-primary-pastel);
+  --mdc-filled-button-label-text-color: var(--rs-primary);
+  --mat-filled-button-state-layer-color: var(--rs-primary);
+  --mat-filled-button-hover-state-layer-opacity: .08;
+  --mat-filled-button-focus-state-layer-opacity: .12;
+  box-shadow: none !important;
+}
+
+.mat-mdc-unelevated-button.mat-primary:hover {
+  --mdc-filled-button-container-color: var(--rs-primary-pastel-hover);
+}
+
+.mat-mdc-unelevated-button.mat-warn {
+  --mdc-filled-button-container-color: var(--rs-danger-pastel);
+  --mdc-filled-button-label-text-color: var(--rs-danger);
+  --mat-filled-button-state-layer-color: var(--rs-danger);
+  box-shadow: none !important;
+}
+
+.mat-mdc-outlined-button {
+  --mdc-outlined-button-outline-color: var(--rs-border);
+  --mdc-outlined-button-label-text-color: var(--rs-primary);
+  --mat-outlined-button-state-layer-color: var(--rs-primary);
+  background: color-mix(in srgb, var(--rs-surface) 84%, transparent);
+}
+
+.mat-mdc-outlined-button:hover {
+  background: var(--rs-primary-soft);
+}
+
+.mat-mdc-outlined-button.mat-warn {
+  --mdc-outlined-button-label-text-color: var(--rs-danger);
+  --mat-outlined-button-state-layer-color: var(--rs-danger);
+}
+
+.mat-mdc-outlined-button.mat-warn:hover {
+  background: var(--rs-danger-soft);
+}
+
+.mat-mdc-button.mat-primary {
+  --mdc-text-button-label-text-color: var(--rs-secondary);
+  --mat-text-button-state-layer-color: var(--rs-secondary);
+}
+
+.mat-mdc-button.mat-warn {
+  --mdc-text-button-label-text-color: var(--rs-danger);
+  --mat-text-button-state-layer-color: var(--rs-danger);
+}
+
+.mat-mdc-standard-chip,
+.mat-mdc-chip,
+.mdc-evolution-chip {
+  border-radius: var(--rs-radius) !important;
+  --mdc-chip-container-shape-radius: var(--rs-radius);
+  --mdc-chip-label-text-color: var(--rs-primary);
+  --mdc-chip-elevated-container-color: var(--rs-primary-pastel);
+  --mdc-chip-flat-selected-container-color: var(--rs-secondary-pastel);
+  --mdc-chip-with-icon-icon-color: var(--rs-primary);
+  --mdc-chip-with-trailing-icon-trailing-icon-color: var(--rs-primary);
+}
+
+.mat-mdc-chip .mdc-evolution-chip__text-label,
+.mat-mdc-standard-chip .mdc-evolution-chip__text-label {
+  color: var(--rs-primary) !important;
+  font-weight: 800;
+}
+
+.mat-badge-content {
+  background: var(--rs-primary-pastel) !important;
+  color: var(--rs-primary) !important;
+  box-shadow: none;
+  font-weight: 900;
+}
+
+.mat-badge-accent .mat-badge-content {
+  background: var(--rs-secondary-pastel) !important;
+  color: var(--rs-secondary) !important;
+}
+
+.mat-badge-warn .mat-badge-content {
+  background: var(--rs-danger-pastel) !important;
+  color: var(--rs-danger) !important;
+}
+
+.mat-mdc-form-field {
+  font-family: var(--rs-font-family) !important;
+  --mdc-outlined-text-field-container-shape: var(--rs-radius);
+  --mdc-outlined-text-field-outline-color: var(--rs-border);
+  --mdc-outlined-text-field-hover-outline-color: var(--rs-primary);
+  --mdc-outlined-text-field-focus-outline-color: var(--rs-secondary);
+  --mdc-outlined-text-field-label-text-color: var(--rs-text-muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--rs-text);
+  --mdc-outlined-text-field-focus-label-text-color: var(--rs-secondary);
+  --mdc-outlined-text-field-input-text-color: var(--rs-text);
+  --mdc-outlined-text-field-caret-color: var(--rs-secondary);
+  --mdc-outlined-text-field-supporting-text-color: var(--rs-text-muted);
+  --mat-select-enabled-trigger-text-color: var(--rs-text);
+  --mat-select-enabled-arrow-color: var(--rs-text-muted);
+  --mat-select-focused-arrow-color: var(--rs-secondary);
+  --mat-form-field-container-text-size: .92rem;
+}
+
+.mat-drawer,
+.mat-drawer-container,
+.mat-drawer-content {
+  border-radius: 0 !important;
+}
+
+.mat-mdc-select-panel,
+.mat-mdc-menu-panel,
+.mat-mdc-dialog-container .mdc-dialog__surface,
+.mat-mdc-snack-bar-container .mdc-snackbar__surface {
+  border-radius: var(--rs-radius) !important;
+}
