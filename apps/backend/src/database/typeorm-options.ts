@@ -58,13 +58,21 @@ export function loadBackendEnv() {
 export function buildTypeOrmOptions(): TypeOrmModuleOptions &
   DataSourceOptions &
   PostgresConnectionOptions {
+  const databaseUrl = process.env.DATABASE_URL;
+  const ssl =
+    process.env.DB_SSL === "true"
+      ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" }
+      : undefined;
+
   return {
     type: "postgres",
+    ...(databaseUrl ? { url: databaseUrl } : {}),
     host: process.env.DB_HOST ?? "localhost",
     port: Number(process.env.DB_PORT ?? 5432),
     username: process.env.DB_USER ?? "ruta_segura",
     password: process.env.DB_PASSWORD ?? "ruta_segura_pwd",
     database: process.env.DB_NAME ?? "ruta_segura_rd",
+    ...(ssl ? { ssl } : {}),
     entities: databaseEntities,
     migrations: [join(__dirname, "migrations/*{.ts,.js}")],
     synchronize: process.env.DB_SYNC === "true",

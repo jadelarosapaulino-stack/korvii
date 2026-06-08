@@ -782,8 +782,14 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                     <mat-slide-toggle [checked]="config.config().weather.useOpenMeteoForecast" (change)="config.updateWeather({ useOpenMeteoForecast: $event.checked })">
                       Open-Meteo Forecast
                     </mat-slide-toggle>
+                    <mat-slide-toggle [checked]="googleForecastEnabled()" (change)="toggleGoogleForecast($event.checked)">
+                      Google Forecast
+                    </mat-slide-toggle>
                     <mat-slide-toggle [checked]="config.config().weather.useOpenMeteoFlood" (change)="config.updateWeather({ useOpenMeteoFlood: $event.checked })">
                       Open-Meteo Flood / GloFAS
+                    </mat-slide-toggle>
+                    <mat-slide-toggle [checked]="googleFloodEnabled()" (change)="toggleGoogleFlood($event.checked)">
+                      Google Flood Forecasting
                     </mat-slide-toggle>
                     <mat-slide-toggle [checked]="config.config().weather.usePremiumNowcasting" (change)="config.updateWeather({ usePremiumNowcasting: $event.checked })">
                       Nowcasting premium
@@ -799,13 +805,16 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
 
                 <mat-card class="library-section">
                   <h3>Reglas de activacion</h3>
-                  <div class="field-grid three">
-                    <mat-form-field appearance="outline">
+                  <div class="weather-rules-grid">
+                    <mat-form-field appearance="outline" class="countries-field">
                       <mat-label>Paises monitoreados</mat-label>
                       <mat-select
                         multiple
                         [ngModel]="selectedFloodMonitorCountries()"
                         (ngModelChange)="updateFloodMonitorCountries($event)">
+                        <mat-select-trigger>
+                          {{ selectedFloodMonitorCountriesLabel() }}
+                        </mat-select-trigger>
                         @for (country of floodMonitorCountries; track country.code) {
                           <mat-option [value]="country.code">
                             <span class="country-option">
@@ -816,10 +825,12 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                         }
                       </mat-select>
                     </mat-form-field>
-                    <mat-form-field appearance="outline" class="wide-field">
+                    <mat-form-field appearance="outline" class="points-field">
                       <mat-label>Puntos monitoreados JSON</mat-label>
-                      <textarea matInput rows="3" [ngModel]="config.config().weather.floodMonitorPoints" (ngModelChange)="config.updateWeather({ floodMonitorPoints: $event })"></textarea>
+                      <textarea matInput rows="4" [ngModel]="config.config().weather.floodMonitorPoints" (ngModelChange)="config.updateWeather({ floodMonitorPoints: $event })"></textarea>
                     </mat-form-field>
+                  </div>
+                  <div class="weather-threshold-grid">
                     <mat-form-field appearance="outline">
                       <mat-label>Intervalo monitoreo min</mat-label>
                       <input matInput type="number" min="5" [ngModel]="config.config().weather.monitorIntervalMinutes" (ngModelChange)="config.updateWeather({ monitorIntervalMinutes: numberValue($event, 30) })" />
@@ -1126,9 +1137,74 @@ export class SystemAdminComponent implements OnInit {
     this.config.updateWeather({ premiumApiKey: value });
   }
 
+  googleForecastEnabled(): boolean {
+    const weather = this.config.config().weather;
+    return weather.weatherProvider === 'Google Weather Forecast API' || weather.premiumProvider === 'Google Forecast';
+  }
+
+  toggleGoogleForecast(enabled: boolean) {
+    if (enabled) {
+      const apiKey =
+        this.config.config().apiKeys.googleForecast ||
+        this.config.config().apiKeys.googleMaps ||
+        this.config.config().weather.premiumApiKey;
+      this.config.updateIntegrations({ weatherProvider: 'Google Weather Forecast API' });
+      this.config.updateWeather({
+        weatherProvider: 'Google Weather Forecast API',
+        premiumProvider: 'Google Forecast',
+        premiumApiKey: apiKey,
+      });
+      this.toastr.success('Google Forecast activado.', 'Clima');
+      return;
+    }
+
+    this.config.updateIntegrations({ weatherProvider: 'Open-Meteo Forecast' });
+    this.config.updateWeather({
+      weatherProvider: 'Open-Meteo Forecast',
+      premiumProvider: 'Ninguno',
+      premiumApiKey: '',
+    });
+    this.toastr.info('Google Forecast desactivado.', 'Clima');
+  }
+
+  googleFloodEnabled(): boolean {
+    return this.config.config().weather.floodProvider === 'Google Flood Forecasting API';
+  }
+
+  toggleGoogleFlood(enabled: boolean) {
+    if (enabled) {
+      const apiKey =
+        this.config.config().apiKeys.googleFloodForecasting ||
+        this.config.config().apiKeys.googleForecast ||
+        this.config.config().apiKeys.googleMaps ||
+        this.config.config().weather.premiumApiKey;
+      this.config.updateIntegrations({ floodProvider: 'Google Flood Forecasting API' });
+      this.config.updateWeather({
+        floodProvider: 'Google Flood Forecasting API',
+        premiumApiKey: apiKey,
+      });
+      this.toastr.success('Google Flood Forecasting activado.', 'Clima');
+      return;
+    }
+
+    this.config.updateIntegrations({ floodProvider: 'Open-Meteo Flood / GloFAS' });
+    this.config.updateWeather({ floodProvider: 'Open-Meteo Flood / GloFAS' });
+    this.toastr.info('Google Flood Forecasting desactivado.', 'Clima');
+  }
+
   selectedFloodMonitorCountries(): string[] {
     const weather = this.config.config().weather;
     return weather.floodMonitorCountries?.length ? weather.floodMonitorCountries : [weather.floodMonitorCountry || 'DO'];
+  }
+
+  selectedFloodMonitorCountriesLabel(): string {
+    const selected = this.selectedFloodMonitorCountries();
+    const names = selected
+      .map((code) => this.floodMonitorCountries.find((country) => country.code === code)?.name ?? code)
+      .filter(Boolean);
+    if (!names.length) return 'Selecciona paises';
+    if (names.length <= 2) return names.join(', ');
+    return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
   }
 
   updateFloodMonitorCountries(countries: string[]) {

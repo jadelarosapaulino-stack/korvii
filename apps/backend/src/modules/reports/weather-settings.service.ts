@@ -76,11 +76,25 @@ export class WeatherSettingsService {
   }
 
   private defaultConfig(): WeatherAutomationConfig {
+    const googleForecastApiKey = this.config
+      .get<string>(
+        "GOOGLE_FORECAST_API_KEY",
+        this.config.get<string>("GOOGLE_MAPS_API_KEY", ""),
+      )
+      .trim();
+    const googleFloodApiKey = this.config
+      .get<string>("GOOGLE_FLOOD_FORECASTING_API_KEY", googleForecastApiKey)
+      .trim();
+
     return {
-      weatherProvider: "Open-Meteo Forecast",
-      floodProvider: "Open-Meteo Flood / GloFAS",
-      premiumProvider: "Ninguno",
-      premiumApiKey: "",
+      weatherProvider: googleForecastApiKey
+        ? "Google Weather Forecast API"
+        : "Open-Meteo Forecast",
+      floodProvider: googleFloodApiKey
+        ? "Google Flood Forecasting API"
+        : "Open-Meteo Flood / GloFAS",
+      premiumProvider: googleForecastApiKey ? "Google Forecast" : "Ninguno",
+      premiumApiKey: googleForecastApiKey || googleFloodApiKey,
       useOpenMeteoForecast: true,
       useOpenMeteoFlood: true,
       usePremiumNowcasting: false,

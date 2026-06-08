@@ -48,6 +48,27 @@ interface GoogleWeatherResponse {
   isDaytime?: boolean;
 }
 
+interface GoogleFloodStatusResponse {
+  floodStatuses?: GoogleFloodStatus[];
+}
+
+interface GoogleFloodStatus {
+  gaugeId?: string;
+  qualityVerified?: boolean;
+  gaugeLocation?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  issuedTime?: string;
+  forecastTimeRange?: {
+    start?: string;
+    end?: string;
+  };
+  forecastTrend?: string;
+  severity?: string;
+  source?: string;
+}
+
 export interface WeatherFloodRisk {
   enabled: boolean;
   shouldActivateFloodZone: boolean;
@@ -88,6 +109,8 @@ export class AccuWeatherService {
   private readonly floodBaseUrl = "https://flood-api.open-meteo.com/v1/flood";
   private readonly googleWeatherBaseUrl =
     "https://weather.googleapis.com/v1/currentConditions:lookup";
+  private readonly googleFloodBaseUrl =
+    "https://floodforecasting.googleapis.com/v1";
   private readonly requestTimeoutMs = 8000;
   private readonly warningCooldownMs = 5 * 60 * 1000;
   private readonly lastWarningAt = new Map<string, number>();
@@ -125,13 +148,11 @@ export class AccuWeatherService {
       const now = Date.now();
       const leadMilliseconds = settings.activationLeadMinutes * 60 * 1000;
       const intenseRainEvent = this.findIntenseRainEvent(next24Hours);
-      const riverSignal = settings.useOpenMeteoFlood
-        ? await this.fetchFloodSignal(
-            latitude,
-            longitude,
-            settings.riverDischargeMultiplier,
-          )
-        : { available: false, risk: false, maxDischarge: 0 };
+      const riverSignal = await this.fetchFloodSignal(
+        latitude,
+        longitude,
+        settings,
+      );
       const currentIntenseRain =
         currentRainMm >= settings.intenseRainHourlyThresholdMm ||
         this.isSevereRainCode(current.weather_code);
@@ -167,11 +188,13 @@ export class AccuWeatherService {
         intenseRainEvent && !isInsideActivationWindow
           ? `La zona se activara desde ${new Date(intenseRainEvent.timestamp - leadMilliseconds).toLocaleString("es-DO")}, ${settings.activationLeadMinutes} minutos antes del evento intenso.`
           : "",
-        !settings.useOpenMeteoFlood
-          ? "Open-Meteo Flood/GloFAS esta desactivado en la configuracion climatica."
+        !this.floodProviderEnabled(settings)
+          ? "Los proveedores de inundacion estan desactivados en la configuracion climatica."
           : riverSignal.available
-            ? `Caudal fluvial GloFAS: ${riverSignal.maxDischarge.toFixed(1)} m3/s${riverSignal.p75Discharge ? `; p75: ${riverSignal.p75Discharge.toFixed(1)} m3/s` : ""}.`
-            : "Caudal fluvial GloFAS no disponible para el punto; no se activa reporte automatico solo por pronostico.",
+            ? riverSignal.provider === "google-flood"
+              ? `Google Flood Forecasting: ${riverSignal.statusText}.`
+              : `Caudal fluvial GloFAS: ${riverSignal.maxDischarge.toFixed(1)} m3/s${riverSignal.p75Discharge ? `; p75: ${riverSignal.p75Discharge.toFixed(1)} m3/s` : ""}.`
+            : "Senal fluvial no disponible para el punto; no se activa reporte automatico solo por pronostico.",
       ].filter(Boolean);
 
       return {
@@ -344,13 +367,37 @@ export class AccuWeatherService {
   private async fetchFloodSignal(
     latitude: number,
     longitude: number,
-    riskMultiplier: number,
+    settings: {
+      floodProvider: string;
+      premiumApiKey: string;
+      useOpenMeteoFlood: boolean;
+      riverDischargeMultiplier: number;
+      floodMonitorCountry: string;
+      floodMonitorCountries: string[];
+    },
   ): Promise<{
     available: boolean;
     risk: boolean;
     maxDischarge: number;
     p75Discharge?: number;
+    provider?: "google-flood" | "open-meteo-flood";
+    statusText?: string;
   }> {
+    if (this.isGoogleFloodActive(settings)) {
+      const googleSignal = await this.fetchGoogleFloodSignal(
+        latitude,
+        longitude,
+        settings,
+      );
+      if (googleSignal.available || !settings.useOpenMeteoFlood) {
+        return googleSignal;
+      }
+    }
+
+    if (!settings.useOpenMeteoFlood) {
+      return { available: false, risk: false, maxDischarge: 0 };
+    }
+
     try {
       const query = new URLSearchParams({
         latitude: String(latitude),
@@ -381,10 +428,11 @@ export class AccuWeatherService {
         available: maxDischarge > 0,
         risk:
           p75Discharge !== undefined
-            ? maxDischarge >= p75Discharge * riskMultiplier
+            ? maxDischarge >= p75Discharge * settings.riverDischargeMultiplier
             : false,
         maxDischarge,
         p75Discharge,
+        provider: "open-meteo-flood",
       };
     } catch (error) {
       this.warnThrottled(
@@ -395,12 +443,119 @@ export class AccuWeatherService {
     }
   }
 
-  private async fetchWithTimeout(url: string): Promise<Response> {
+  private async fetchGoogleFloodSignal(
+    latitude: number,
+    longitude: number,
+    settings: {
+      premiumApiKey: string;
+      floodMonitorCountry: string;
+      floodMonitorCountries: string[];
+    },
+  ): Promise<{
+    available: boolean;
+    risk: boolean;
+    maxDischarge: number;
+    provider: "google-flood";
+    statusText: string;
+  }> {
+    const apiKey = settings.premiumApiKey.trim();
+    if (!apiKey) {
+      return {
+        available: false,
+        risk: false,
+        maxDischarge: 0,
+        provider: "google-flood",
+        statusText: "API key de Google Flood no configurada",
+      };
+    }
+
+    try {
+      const countries = settings.floodMonitorCountries?.length
+        ? settings.floodMonitorCountries
+        : [settings.floodMonitorCountry || "DO"];
+      const statuses = (
+        await Promise.all(
+          countries.map((country) =>
+            this.fetchGoogleFloodStatuses(country, apiKey),
+          ),
+        )
+      ).flat();
+      const nearbyStatuses = statuses
+        .map((status) => ({
+          status,
+          distanceKm: this.distanceKm(
+            latitude,
+            longitude,
+            status.gaugeLocation?.latitude,
+            status.gaugeLocation?.longitude,
+          ),
+        }))
+        .filter((item) => item.distanceKm <= 75);
+      const risky = nearbyStatuses.find((item) =>
+        ["EXTREME", "SEVERE", "ABOVE_NORMAL"].includes(
+          item.status.severity ?? "",
+        ),
+      );
+      const highestSeverity = this.highestGoogleFloodSeverity(
+        nearbyStatuses.map((item) => item.status.severity),
+      );
+
+      return {
+        available: nearbyStatuses.length > 0,
+        risk: Boolean(risky),
+        maxDischarge: 0,
+        provider: "google-flood",
+        statusText: nearbyStatuses.length
+          ? `${nearbyStatuses.length} medidores cercanos; severidad maxima ${highestSeverity}.`
+          : "Sin medidores cercanos reportados por Google Flood.",
+      };
+    } catch (error) {
+      this.warnThrottled(
+        "google-flood",
+        `No se pudo consultar Google Flood Forecasting: ${this.errorMessage(error)}`,
+      );
+      return {
+        available: false,
+        risk: false,
+        maxDischarge: 0,
+        provider: "google-flood",
+        statusText: "Google Flood Forecasting no disponible",
+      };
+    }
+  }
+
+  private async fetchGoogleFloodStatuses(
+    countryCode: string,
+    apiKey: string,
+  ): Promise<GoogleFloodStatus[]> {
+    const response = await this.fetchWithTimeout(
+      `${this.googleFloodBaseUrl}/floodStatus:searchLatestFloodStatusByArea?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          regionCode: countryCode,
+          pageSize: 200,
+          includeNonQualityVerified: false,
+        }),
+      },
+    );
+    if (!response.ok)
+      throw new Error(`Google Flood HTTP ${response.status}`);
+
+    const data = (await response.json()) as GoogleFloodStatusResponse;
+    return data.floodStatuses ?? [];
+  }
+
+  private async fetchWithTimeout(
+    url: string,
+    init?: RequestInit,
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
     try {
-      return await fetch(url, { signal: controller.signal });
+      return await fetch(url, { ...init, signal: controller.signal });
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         const timeoutError = new Error(
@@ -435,6 +590,57 @@ export class AccuWeatherService {
       (settings.weatherProvider === "Google Weather Forecast API" ||
         settings.premiumProvider === "Google Forecast")
     );
+  }
+
+  private isGoogleFloodActive(settings: {
+    floodProvider: string;
+    premiumProvider?: string;
+    premiumApiKey: string;
+  }) {
+    return (
+      Boolean(settings.premiumApiKey.trim()) &&
+      (settings.floodProvider === "Google Flood Forecasting API" ||
+        settings.premiumProvider === "Google Flood Forecasting API")
+    );
+  }
+
+  private floodProviderEnabled(settings: {
+    floodProvider: string;
+    premiumApiKey: string;
+    useOpenMeteoFlood: boolean;
+  }) {
+    return this.isGoogleFloodActive(settings) || settings.useOpenMeteoFlood;
+  }
+
+  private highestGoogleFloodSeverity(values: Array<string | undefined>) {
+    const order = ["EXTREME", "SEVERE", "ABOVE_NORMAL", "NO_FLOODING"];
+    return (
+      order.find((severity) => values.includes(severity)) ??
+      values.find(Boolean) ??
+      "UNKNOWN"
+    );
+  }
+
+  private distanceKm(
+    fromLatitude: number,
+    fromLongitude: number,
+    toLatitude?: number,
+    toLongitude?: number,
+  ) {
+    if (toLatitude === undefined || toLongitude === undefined)
+      return Number.POSITIVE_INFINITY;
+
+    const earthRadiusKm = 6371;
+    const toRadians = (value: number) => (value * Math.PI) / 180;
+    const deltaLatitude = toRadians(toLatitude - fromLatitude);
+    const deltaLongitude = toRadians(toLongitude - fromLongitude);
+    const a =
+      Math.sin(deltaLatitude / 2) ** 2 +
+      Math.cos(toRadians(fromLatitude)) *
+        Math.cos(toRadians(toLatitude)) *
+        Math.sin(deltaLongitude / 2) ** 2;
+
+    return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   private googleWeatherIconUrl(iconBaseUri?: string): string | undefined {

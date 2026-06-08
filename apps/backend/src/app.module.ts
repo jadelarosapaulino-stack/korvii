@@ -26,18 +26,37 @@ import { UsersModule } from "./modules/users/users.module";
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        ...buildTypeOrmOptions(),
-        host: config.get<string>("DB_HOST", "localhost"),
-        port: config.get<number>("DB_PORT", 5432),
-        username: config.get<string>("DB_USER", "ruta_segura"),
-        password: config.get<string>("DB_PASSWORD", "ruta_segura_pwd"),
-        database: config.get<string>("DB_NAME", "ruta_segura_rd"),
-        synchronize: config.get<string>("DB_SYNC", "false") === "true",
-        migrationsRun:
-          config.get<string>("DB_MIGRATIONS_RUN", "false") === "true",
-        logging: config.get<string>("DB_LOGGING", "false") === "true",
-      }),
+      useFactory: (config: ConfigService) => {
+        const base = buildTypeOrmOptions();
+        const databaseUrl = config.get<string>("DATABASE_URL");
+
+        return {
+          ...base,
+          ...(databaseUrl
+            ? { url: databaseUrl }
+            : {
+                host: config.get<string>("DB_HOST", "localhost"),
+                port: config.get<number>("DB_PORT", 5432),
+                username: config.get<string>("DB_USER", "ruta_segura"),
+                password: config.get<string>("DB_PASSWORD", "ruta_segura_pwd"),
+                database: config.get<string>("DB_NAME", "ruta_segura_rd"),
+              }),
+          ssl:
+            config.get<string>("DB_SSL", "false") === "true"
+              ? {
+                  rejectUnauthorized:
+                    config.get<string>(
+                      "DB_SSL_REJECT_UNAUTHORIZED",
+                      "true",
+                    ) !== "false",
+                }
+              : base.ssl,
+          synchronize: config.get<string>("DB_SYNC", "false") === "true",
+          migrationsRun:
+            config.get<string>("DB_MIGRATIONS_RUN", "false") === "true",
+          logging: config.get<string>("DB_LOGGING", "false") === "true",
+        };
+      },
     }),
     UsersModule,
     AuthModule,

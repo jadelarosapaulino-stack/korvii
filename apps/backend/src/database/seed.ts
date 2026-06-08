@@ -39,11 +39,20 @@ loadLocalEnv();
 
 const dataSource = new DataSource({
   type: "postgres",
+  ...(process.env.DATABASE_URL ? { url: process.env.DATABASE_URL } : {}),
   host: process.env.DB_HOST ?? "localhost",
   port: Number(process.env.DB_PORT ?? 5432),
   username: process.env.DB_USER ?? "ruta_segura",
   password: process.env.DB_PASSWORD ?? "ruta_segura_pwd",
   database: process.env.DB_NAME ?? "ruta_segura_rd",
+  ...(process.env.DB_SSL === "true"
+    ? {
+        ssl: {
+          rejectUnauthorized:
+            process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false",
+        },
+      }
+    : {}),
   synchronize: true,
   entities: [
     User,

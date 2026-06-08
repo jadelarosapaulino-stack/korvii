@@ -105,15 +105,23 @@
 .recommendation-list article { padding: .85rem; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-surface-soft); }
 .recommendation-list strong { display: block; color: var(--rs-text); letter-spacing: 0; }
 .recommendation-list span { display: block; margin-top: .25rem; color: var(--rs-text-muted); font-size: .82rem; line-height: 1.35; }
+.weather-rules-grid { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: .85rem; margin-top: 1rem; align-items: stretch; }
+.weather-threshold-grid { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: .75rem; margin-top: .85rem; }
+.weather-rules-grid mat-form-field, .weather-threshold-grid mat-form-field { width: 100%; }
+.countries-field { align-self: start; }
+.points-field textarea { min-height: 92px; resize: vertical; line-height: 1.45; }
+.weather-threshold-grid .mat-mdc-form-field { min-width: 0; }
 .country-option { display: grid; gap: .12rem; min-width: 0; line-height: 1.2; }
-.country-option strong { overflow: hidden; color: var(--rs-text); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
-.country-option small { overflow: hidden; color: var(--rs-text-muted); font-size: .72rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.country-option strong { display: block; overflow: hidden; color: var(--rs-text); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.country-option small { display: block; overflow: hidden; color: var(--rs-text-muted); font-size: .72rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 1180px) {
   .settings-layout { grid-template-columns: 240px minmax(0, 1fr); }
   .storage-layout { grid-template-columns: 1fr; }
   .category-list article { grid-template-columns: 1fr 128px; }
   .instructions-field { grid-column: 1 / -1; }
   .field-grid, .field-grid.two, .toggle-grid, .recommendation-list, .feature-list, .integration-grid, .active-provider-grid, .social-auth-grid { grid-template-columns: 1fr; }
+  .weather-rules-grid, .weather-threshold-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .points-field { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {
   .system-header { align-items: stretch; flex-direction: column; }
@@ -127,4 +135,6 @@
   .feature-flag-state { grid-column: 2; width: fit-content; }
   .section-row { align-items: stretch; flex-direction: column; }
   .section-row button { width: 100%; }
+  .weather-rules-grid, .weather-threshold-grid { grid-template-columns: 1fr; }
+  .points-field { grid-column: auto; }
 }
