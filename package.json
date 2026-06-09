@@ -11,6 +11,8 @@
     "test": "pnpm -r test",
     "dev": "pnpm -r --parallel start:dev",
     "install:check": "node -e \"console.log(process.version)\" && pnpm -v",
+    "check:structure": "node scripts/check-structure.js",
+    "prebuild": "pnpm check:structure",
     "build": "pnpm -r build",
     "db:migrate": "pnpm --filter @ruta-segura/backend migration:run",
     "db:migrate:revert": "pnpm --filter @ruta-segura/backend migration:revert",

@@ -25,9 +25,9 @@
 .filter-heading strong { display: block; color: var(--rs-text); letter-spacing: 0; }
 .filter-heading span { display: block; margin-top: .15rem; color: var(--rs-text-muted); font-size: .82rem; line-height: 1.35; }
 .filter-heading button mat-icon, .filter-grid > button mat-icon { margin-right: .35rem; }
-.filter-grid { display: grid; grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr)); gap: .75rem; align-items: center; }
+.filter-grid { display: grid; grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr)); gap: .75rem; align-items: end; }
 .filter-grid mat-form-field { width: 100%; }
-.filter-grid > button { min-height: 48px; height: 48px; align-self: center; }
+.filter-grid > button { min-height: 48px; height: 48px; align-self: end; margin-bottom: 0; }
 :host ::ng-deep .filter-grid .mat-mdc-text-field-wrapper { height: 48px; align-items: center; }
 :host ::ng-deep .filter-grid .mat-mdc-form-field-flex { height: 48px; align-items: center; }
 :host ::ng-deep .filter-grid .mat-mdc-form-field-infix { min-height: 48px; padding-top: 12px; padding-bottom: 8px; }
@@ -90,18 +90,6 @@ mat-paginator { border: 1px solid var(--rs-border); border-radius: var(--rs-radi
 .report-map-modal header strong { display: block; margin-top: .12rem; overflow: hidden; color: var(--rs-text); font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
 .report-map-modal header button { color: var(--rs-primary); }
 .report-modal-map { min-height: 0; background: var(--rs-secondary-soft); }
-.map-mode-button { position: absolute; right: 1rem; top: 4.6rem; z-index: 5; width: 40px !important; min-width: 40px !important; max-width: 40px !important; height: 40px !important; min-height: 40px !important; max-height: 40px !important; display: grid !important; place-items: center !important; padding: 0 !important; border: 1px solid var(--rs-border) !important; border-radius: var(--rs-radius) !important; background: color-mix(in srgb, var(--rs-surface) 94%, transparent) !important; color: var(--rs-primary) !important; box-shadow: none !important; overflow: hidden; }
-.map-mode-button mat-icon { width: 21px !important; height: 21px !important; margin: 0 !important; color: currentColor !important; font-size: 21px !important; line-height: 21px !important; }
-:host ::ng-deep .map-mode-button .mat-mdc-button-touch-target,
-:host ::ng-deep .map-mode-button .mat-mdc-button-persistent-ripple,
-:host ::ng-deep .map-mode-button .mat-mdc-button-ripple,
-:host ::ng-deep .map-mode-button .mat-mdc-focus-indicator { inset: 0 !important; width: 40px !important; height: 40px !important; border-radius: var(--rs-radius) !important; }
-:host ::ng-deep .map-mode-button .mat-mdc-button-persistent-ripple::before { border-radius: var(--rs-radius) !important; }
-.map-mode-button:hover { background: var(--rs-primary-soft) !important; }
-.map-mode-button.active { border-color: color-mix(in srgb, var(--rs-secondary) 60%, var(--rs-border)) !important; background: var(--rs-secondary) !important; color: #fff !important; }
-:host-context(.rs-dark-theme) .map-mode-button { border-color: var(--rs-border) !important; background: color-mix(in srgb, var(--rs-surface) 94%, transparent) !important; color: var(--rs-text) !important; }
-:host-context(.rs-dark-theme) .map-mode-button:hover { background: var(--rs-primary-soft) !important; }
-:host-context(.rs-dark-theme) .map-mode-button.active { border-color: color-mix(in srgb, var(--rs-secondary) 70%, var(--rs-border)) !important; background: var(--rs-secondary) !important; color: #062421 !important; }
 .report-map-modal footer { padding: 1rem; border-top: 1px solid var(--rs-border); background: var(--rs-surface); }
 .report-modal-details { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem 1rem; min-width: 0; }
 .report-modal-details div { min-width: 0; }

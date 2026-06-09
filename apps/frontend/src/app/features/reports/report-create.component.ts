@@ -284,16 +284,23 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
           <mat-card class="summary-card">
             <div class="summary-map">
               <div #previewMapContainer class="summary-maptiler" aria-label="Ubicación marcada del incidente"></div>
-              <button
-                class="map-mode-button"
-                mat-icon-button
-                type="button"
-                [class.active]="previewHybridMode()"
-                [title]="previewHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-                [attr.aria-label]="previewHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-                (click)="togglePreviewHybridMode()">
-                <mat-icon>{{ previewHybridMode() ? 'map' : 'satellite' }}</mat-icon>
-              </button>
+              <div class="korvi-map-controls preview-map-controls" aria-label="Controles de zoom del mapa">
+                <button
+                  mat-icon-button
+                  type="button"
+                  [class.active]="previewHybridMode()"
+                  [title]="previewHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                  [attr.aria-label]="previewHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                  (click)="togglePreviewHybridMode()">
+                  <mat-icon>{{ previewHybridMode() ? 'map' : 'satellite' }}</mat-icon>
+                </button>
+                <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomPreviewMapIn()">
+                  <mat-icon>add</mat-icon>
+                </button>
+                <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomPreviewMapOut()">
+                  <mat-icon>remove</mat-icon>
+                </button>
+              </div>
               <button class="expand-map-button" mat-stroked-button type="button" (click)="openLocationMapModal()">
                 <mat-icon>open_in_full</mat-icon>
                 Ampliar mapa
@@ -401,10 +408,8 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
             </header>
 
             <div #modalMapContainer class="location-modal-map" aria-label="Mapa ampliado para seleccionar ubicación"></div>
-
-            <footer>
+            <div class="korvi-map-controls" aria-label="Controles de zoom del mapa">
               <button
-                class="map-mode-button modal-mode-button"
                 mat-icon-button
                 type="button"
                 [class.active]="modalHybridMode()"
@@ -413,6 +418,15 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
                 (click)="toggleModalHybridMode()">
                 <mat-icon>{{ modalHybridMode() ? 'map' : 'satellite' }}</mat-icon>
               </button>
+              <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomModalMapIn()">
+                <mat-icon>add</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomModalMapOut()">
+                <mat-icon>remove</mat-icon>
+              </button>
+            </div>
+
+            <footer>
               <div class="location-modal-details">
                 <div>
                   <span>Coordenadas</span>
@@ -652,6 +666,22 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
       this.resizeMap(this.modalMap);
     });
     this.modalHybridMode.set(mode === 'hybrid');
+  }
+
+  zoomPreviewMapIn() {
+    this.previewMap?.zoomIn();
+  }
+
+  zoomPreviewMapOut() {
+    this.previewMap?.zoomOut();
+  }
+
+  zoomModalMapIn() {
+    this.modalMap?.zoomIn();
+  }
+
+  zoomModalMapOut() {
+    this.modalMap?.zoomOut();
   }
 
   submit() {

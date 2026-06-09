@@ -35,9 +35,9 @@
 .panel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--rs-border); }
 .panel-toolbar strong { display: block; color: var(--rs-text); font-size: 1rem; letter-spacing: 0; }
 .panel-toolbar span { display: block; margin-top: .15rem; color: var(--rs-text-muted); font-size: .8rem; }
-.date-filter-bar { display: grid; grid-template-columns: minmax(190px, 1fr) minmax(280px, 1.4fr) auto auto; gap: .75rem; align-items: center; padding: .85rem 1rem; border-bottom: 1px solid var(--rs-border); background: var(--rs-surface); }
+.date-filter-bar { display: grid; grid-template-columns: minmax(170px, .85fr) minmax(170px, .85fr) minmax(280px, 1.4fr) auto auto; gap: .75rem; align-items: end; padding: .9rem 1rem 1rem; border-bottom: 1px solid var(--rs-border); background: var(--rs-surface); }
 .date-filter-bar mat-form-field { width: 100%; }
-.date-filter-bar > button { min-height: 48px; height: 48px; align-self: center; }
+.date-filter-bar > button { min-height: 48px; height: 48px; align-self: end; margin-bottom: 0; }
 .date-filter-bar > button mat-icon { margin-right: .35rem; }
 :host ::ng-deep .date-filter-bar .mat-mdc-text-field-wrapper { height: 48px; align-items: center; }
 :host ::ng-deep .date-filter-bar .mat-mdc-form-field-flex { height: 48px; align-items: center; }
@@ -82,18 +82,6 @@ mat-paginator { border-top: 1px solid var(--rs-border); background: var(--rs-sur
 .report-map-modal header strong { display: block; margin-top: .12rem; overflow: hidden; color: var(--rs-text); font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
 .report-map-modal header button { color: var(--rs-primary); }
 .report-modal-map { min-height: 0; background: var(--rs-secondary-soft); }
-.map-mode-button { position: absolute; right: 1rem; top: 4.6rem; z-index: 5; width: 40px !important; min-width: 40px !important; max-width: 40px !important; height: 40px !important; min-height: 40px !important; max-height: 40px !important; display: grid !important; place-items: center !important; padding: 0 !important; border: 1px solid var(--rs-border) !important; border-radius: var(--rs-radius) !important; background: color-mix(in srgb, var(--rs-surface) 94%, transparent) !important; color: var(--rs-primary) !important; box-shadow: none !important; overflow: hidden; }
-.map-mode-button mat-icon { width: 21px !important; height: 21px !important; margin: 0 !important; color: currentColor !important; font-size: 21px !important; line-height: 21px !important; }
-:host ::ng-deep .map-mode-button .mat-mdc-button-touch-target,
-:host ::ng-deep .map-mode-button .mat-mdc-button-persistent-ripple,
-:host ::ng-deep .map-mode-button .mat-mdc-button-ripple,
-:host ::ng-deep .map-mode-button .mat-mdc-focus-indicator { inset: 0 !important; width: 40px !important; height: 40px !important; border-radius: var(--rs-radius) !important; }
-:host ::ng-deep .map-mode-button .mat-mdc-button-persistent-ripple::before { border-radius: var(--rs-radius) !important; }
-.map-mode-button:hover { background: var(--rs-primary-soft) !important; }
-.map-mode-button.active { border-color: color-mix(in srgb, var(--rs-secondary) 60%, var(--rs-border)) !important; background: var(--rs-secondary) !important; color: #fff !important; }
-:host-context(.rs-dark-theme) .map-mode-button { border-color: var(--rs-border) !important; background: color-mix(in srgb, var(--rs-surface) 94%, transparent) !important; color: var(--rs-text) !important; }
-:host-context(.rs-dark-theme) .map-mode-button:hover { background: var(--rs-primary-soft) !important; }
-:host-context(.rs-dark-theme) .map-mode-button.active { border-color: color-mix(in srgb, var(--rs-secondary) 70%, var(--rs-border)) !important; background: var(--rs-secondary) !important; color: #062421 !important; }
 .report-map-modal footer { padding: 1rem; border-top: 1px solid var(--rs-border); background: var(--rs-surface); }
 .report-modal-details { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem 1rem; min-width: 0; }
 .report-modal-details div { min-width: 0; }
@@ -111,12 +99,15 @@ mat-paginator { border-top: 1px solid var(--rs-border); background: var(--rs-sur
   .table-head { display: none; }
   .report-row { grid-template-columns: 1fr; align-items: start; }
   .status-cell, .risk-cell { justify-content: flex-start; }
+  .date-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .date-range-field { grid-column: 1 / -1; }
 }
 @media (max-width: 640px) {
   .kpi-strip { grid-template-columns: 1fr; }
   .hero-actions a { width: 100%; justify-content: center; }
   .panel-toolbar { align-items: flex-start; flex-direction: column; }
   .date-filter-bar { grid-template-columns: 1fr; }
+  .date-range-field { grid-column: auto; }
   .date-filter-bar button { width: 100%; justify-content: center; }
   .report-map-modal { height: calc(100dvh - 1.5rem); }
   .report-modal-details { grid-template-columns: 1fr; }

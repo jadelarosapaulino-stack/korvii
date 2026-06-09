@@ -23,8 +23,6 @@
 
 .heat-map { position: relative; height: 390px; min-height: 390px; overflow: hidden; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: #eef5f6; }
 .heat-maptiler { position: absolute; inset: 0; width: 100%; height: 100%; }
-.map-mode-button { position: absolute; right: .75rem; top: .75rem; z-index: 5; width: 40px; height: 40px; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: rgba(255,255,255,.96); color: var(--rs-primary); box-shadow: var(--rs-shadow-sm); }
-.map-mode-button.active { border-color: rgba(47,125,115,.34); background: var(--rs-secondary); color: #fff; }
 :host ::ng-deep .dashboard-heat-point { border: 2px solid #fff; box-shadow: 0 12px 28px rgba(15,47,69,.22); }
 .heat-legend { display: flex; justify-content: flex-end; gap: 1rem; margin-top: .75rem; color: var(--rs-text-muted); font-size: .8rem; font-weight: 800; }
 .heat-legend span { display: inline-flex; align-items: center; gap: .35rem; }

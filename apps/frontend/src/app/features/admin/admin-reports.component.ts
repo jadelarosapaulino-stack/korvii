@@ -293,16 +293,23 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
             </header>
 
             <div #reportMapContainer class="report-modal-map" aria-label="Mapa con ubicacion del reporte"></div>
-            <button
-              class="map-mode-button"
-              mat-icon-button
-              type="button"
-              [class.active]="reportMapHybridMode()"
-              [title]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              [attr.aria-label]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              (click)="toggleReportMapHybridMode()">
-              <mat-icon>{{ reportMapHybridMode() ? 'map' : 'satellite' }}</mat-icon>
-            </button>
+            <div class="korvi-map-controls" aria-label="Controles de zoom del mapa">
+              <button
+                mat-icon-button
+                type="button"
+                [class.active]="reportMapHybridMode()"
+                [title]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                [attr.aria-label]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                (click)="toggleReportMapHybridMode()">
+                <mat-icon>{{ reportMapHybridMode() ? 'map' : 'satellite' }}</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomReportMapIn()">
+                <mat-icon>add</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomReportMapOut()">
+                <mat-icon>remove</mat-icon>
+              </button>
+            </div>
 
             <footer>
               <div class="report-modal-details">
@@ -609,7 +616,7 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.reportMap = createKorviMap(container, {
       center,
       zoom: 16,
-      navigationControl: true,
+      navigationControl: false,
       scrollZoom: true,
     });
 
@@ -629,6 +636,14 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
     this.reportMapHybridMode.set(mode === 'hybrid');
+  }
+
+  zoomReportMapIn(): void {
+    this.reportMap?.zoomIn();
+  }
+
+  zoomReportMapOut(): void {
+    this.reportMap?.zoomOut();
   }
 
   private destroyReportMap(): void {

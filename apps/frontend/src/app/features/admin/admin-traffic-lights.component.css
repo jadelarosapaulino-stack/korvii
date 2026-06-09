@@ -39,7 +39,7 @@
 :host ::ng-deep .config-actions .mat-mdc-slide-toggle .mdc-label { font-size: .82rem; }
 .list-card { display: grid; gap: .8rem; }
 .list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.filters { display: grid; grid-template-columns: 240px 170px; gap: .75rem; align-items: center; }
+.filters { display: grid; grid-template-columns: 240px 170px; gap: .75rem; align-items: end; }
 .traffic-table-head, .traffic-row { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) 140px 118px 108px; gap: .6rem; align-items: center; }
 .traffic-table-head { padding: .7rem .8rem; border-bottom: 1px solid var(--rs-border); color: var(--rs-text-muted); font-size: .72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0; }
 .province-group { display: grid; gap: .45rem; }
@@ -94,8 +94,6 @@ mat-paginator { border-top: 1px solid var(--rs-border); background: var(--rs-sur
 .traffic-map-modal header strong { display: block; margin-top: .12rem; overflow: hidden; color: var(--rs-text); font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
 .traffic-map-modal header button { color: var(--rs-primary); }
 .traffic-modal-map { min-height: 0; background: var(--rs-secondary-soft); }
-.map-mode-button { position: absolute; right: 1rem; top: 4.6rem; z-index: 5; width: 40px; height: 40px; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: rgba(255,255,255,.96); color: var(--rs-primary); box-shadow: var(--rs-shadow-sm); }
-.map-mode-button.active { border-color: rgba(47,125,115,.34); background: var(--rs-secondary); color: #fff; }
 .traffic-map-modal footer { padding: 1rem; border-top: 1px solid var(--rs-border); background: var(--rs-surface); }
 .traffic-modal-details { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem 1rem; min-width: 0; }
 .traffic-modal-details div { min-width: 0; }

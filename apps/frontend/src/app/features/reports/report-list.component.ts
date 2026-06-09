@@ -14,7 +14,8 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { createKorviMap, observeMapResize, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
-import { ReportCategory, ReportItem, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
+import { ReportCategory, ReportItem, ReportStatus, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
+import { reportStatusStyle } from '../../shared/utils/report-status-style';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 
 @Component({
@@ -108,6 +109,15 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
                 }
               </mat-select>
             </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Estado</mat-label>
+              <mat-select [value]="statusFilter()" (selectionChange)="statusFilter.set($event.value)">
+                <mat-option value="ALL">Todos</mat-option>
+                @for (status of statusOptions; track status) {
+                  <mat-option [value]="status">{{ statusLabel(status) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="date-range-field">
               <mat-label>Rango de fecha</mat-label>
               <mat-date-range-input [rangePicker]="reportRangePicker">
@@ -117,11 +127,11 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
               <mat-datepicker-toggle matIconSuffix [for]="reportRangePicker"></mat-datepicker-toggle>
               <mat-date-range-picker #reportRangePicker></mat-date-range-picker>
             </mat-form-field>
-            <button mat-flat-button color="primary" type="button" (click)="applyDateFilters()">
+            <button mat-flat-button color="primary" type="button" (click)="applyFilters()">
               <mat-icon>filter_alt</mat-icon>
               Filtrar
             </button>
-            <button mat-stroked-button type="button" (click)="clearDateFilters()" [disabled]="!dateFrom() && !dateTo()">
+            <button mat-stroked-button type="button" (click)="clearFilters()" [disabled]="!hasActiveFilters()">
               <mat-icon>filter_alt_off</mat-icon>
               Limpiar
             </button>
@@ -218,16 +228,23 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
             </header>
 
             <div #reportMapContainer class="report-modal-map" aria-label="Mapa con ubicacion del reporte"></div>
-            <button
-              class="map-mode-button"
-              mat-icon-button
-              type="button"
-              [class.active]="reportMapHybridMode()"
-              [title]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              [attr.aria-label]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              (click)="toggleReportMapHybridMode()">
-              <mat-icon>{{ reportMapHybridMode() ? 'map' : 'satellite' }}</mat-icon>
-            </button>
+            <div class="korvi-map-controls" aria-label="Controles de zoom del mapa">
+              <button
+                mat-icon-button
+                type="button"
+                [class.active]="reportMapHybridMode()"
+                [title]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                [attr.aria-label]="reportMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                (click)="toggleReportMapHybridMode()">
+                <mat-icon>{{ reportMapHybridMode() ? 'map' : 'satellite' }}</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomReportMapIn()">
+                <mat-icon>add</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomReportMapOut()">
+                <mat-icon>remove</mat-icon>
+              </button>
+            </div>
 
             <footer>
               <div class="report-modal-details">
@@ -283,6 +300,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
   pageIndex = signal(0);
   pageSize = signal(10);
   categoryFilter = signal<ReportCategory | 'ALL'>('ALL');
+  statusFilter = signal<ReportStatus | 'ALL'>('ALL');
   dateFrom = signal<Date | null>(null);
   dateTo = signal<Date | null>(null);
   readonly categoryOptions: ReportCategory[] = [
@@ -297,6 +315,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
     'FLOOD_ZONE',
     'OTHER',
   ];
+  readonly statusOptions: ReportStatus[] = ['PENDING', 'VALIDATED', 'IN_PROGRESS', 'RESOLVED', 'REJECTED', 'DUPLICATE'];
   totalReports = computed(() => this.totalReportCount());
   highRiskReports = computed(() => this.reports().filter((report) => report.riskLevel >= 4).length);
   pendingReports = computed(() => this.reports().filter((report) => report.status === 'PENDING').length);
@@ -319,6 +338,10 @@ export class ReportListComponent implements OnInit, OnDestroy {
     return reportCategoryIcon(category);
   }
 
+  statusLabel(status: string): string {
+    return reportStatusStyle(status).label;
+  }
+
   confirmersLabel(report: ReportItem): string {
     return report.confirmers?.map((user) => user.fullName).filter(Boolean).join(', ') || 'Sin confirmar';
   }
@@ -337,17 +360,22 @@ export class ReportListComponent implements OnInit, OnDestroy {
     this.loadPage();
   }
 
-  applyDateFilters() {
+  applyFilters() {
     this.pageIndex.set(0);
     this.loadPage();
   }
 
-  clearDateFilters() {
+  clearFilters() {
     this.categoryFilter.set('ALL');
+    this.statusFilter.set('ALL');
     this.dateFrom.set(null);
     this.dateTo.set(null);
     this.pageIndex.set(0);
     this.loadPage();
+  }
+
+  hasActiveFilters(): boolean {
+    return this.categoryFilter() !== 'ALL' || this.statusFilter() !== 'ALL' || Boolean(this.dateFrom() || this.dateTo());
   }
 
   openReportMap(report: ReportItem): void {
@@ -365,6 +393,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
       page: this.pageIndex() + 1,
       limit: this.pageSize(),
       category: this.categoryFilter() === 'ALL' ? undefined : this.categoryFilter(),
+      status: this.statusFilter() === 'ALL' ? undefined : this.statusFilter(),
       from: this.dateStartToIso(this.dateFrom()),
       to: this.dateEndToIso(this.dateTo()),
     }).subscribe({
@@ -416,7 +445,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
     this.reportMap = createKorviMap(container, {
       center,
       zoom: 16,
-      navigationControl: true,
+      navigationControl: false,
       scrollZoom: true,
     });
 
@@ -436,6 +465,14 @@ export class ReportListComponent implements OnInit, OnDestroy {
       }
     });
     this.reportMapHybridMode.set(mode === 'hybrid');
+  }
+
+  zoomReportMapIn(): void {
+    this.reportMap?.zoomIn();
+  }
+
+  zoomReportMapOut(): void {
+    this.reportMap?.zoomOut();
   }
 
   private destroyReportMap(): void {

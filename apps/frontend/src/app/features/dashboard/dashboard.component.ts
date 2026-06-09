@@ -73,16 +73,23 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
 
           <div class="heat-map">
             <div #heatMapContainer class="heat-maptiler" aria-label="Mapa real de calor de reportes"></div>
-            <button
-              class="map-mode-button"
-              mat-icon-button
-              type="button"
-              [class.active]="heatHybridMode()"
-              [title]="heatHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              [attr.aria-label]="heatHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              (click)="toggleHeatHybridMode()">
-              <mat-icon>{{ heatHybridMode() ? 'map' : 'satellite' }}</mat-icon>
-            </button>
+            <div class="korvi-map-controls" aria-label="Controles de zoom del mapa">
+              <button
+                mat-icon-button
+                type="button"
+                [class.active]="heatHybridMode()"
+                [title]="heatHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                [attr.aria-label]="heatHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                (click)="toggleHeatHybridMode()">
+                <mat-icon>{{ heatHybridMode() ? 'map' : 'satellite' }}</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomHeatIn()">
+                <mat-icon>add</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomHeatOut()">
+                <mat-icon>remove</mat-icon>
+              </button>
+            </div>
           </div>
 
           <div class="heat-legend">
@@ -358,6 +365,14 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.resizeHeatMap();
     });
     this.heatHybridMode.set(mode === 'hybrid');
+  }
+
+  zoomHeatIn() {
+    this.heatMap?.zoomIn();
+  }
+
+  zoomHeatOut() {
+    this.heatMap?.zoomOut();
   }
 
   private initHeatMap() {

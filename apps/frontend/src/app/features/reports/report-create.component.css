@@ -48,18 +48,6 @@ mat-form-field { width: 100%; }
 .summary-maptiler { position: absolute; inset: 0; }
 .expand-map-button { position: absolute; right: .75rem; top: .75rem; z-index: 500; background: rgba(255,255,255,.96); }
 .expand-map-button mat-icon { margin-right: .35rem; }
-.map-mode-button { position: absolute; right: .75rem; top: 3.9rem; z-index: 501; width: 40px !important; min-width: 40px !important; max-width: 40px !important; height: 40px !important; min-height: 40px !important; max-height: 40px !important; display: grid !important; place-items: center !important; padding: 0 !important; border: 1px solid var(--rs-border) !important; border-radius: var(--rs-radius) !important; background: color-mix(in srgb, var(--rs-surface) 94%, transparent) !important; color: var(--rs-primary) !important; box-shadow: none !important; overflow: hidden; }
-.map-mode-button mat-icon { width: 21px !important; height: 21px !important; margin: 0 !important; color: currentColor !important; font-size: 21px !important; line-height: 21px !important; }
-:host ::ng-deep .map-mode-button .mat-mdc-button-touch-target,
-:host ::ng-deep .map-mode-button .mat-mdc-button-persistent-ripple,
-:host ::ng-deep .map-mode-button .mat-mdc-button-ripple,
-:host ::ng-deep .map-mode-button .mat-mdc-focus-indicator { inset: 0 !important; width: 40px !important; height: 40px !important; border-radius: var(--rs-radius) !important; }
-:host ::ng-deep .map-mode-button .mat-mdc-button-persistent-ripple::before { border-radius: var(--rs-radius) !important; }
-.map-mode-button:hover { background: var(--rs-primary-soft) !important; }
-.map-mode-button.active { border-color: color-mix(in srgb, var(--rs-secondary) 60%, var(--rs-border)) !important; background: var(--rs-secondary) !important; color: #fff !important; }
-:host-context(.rs-dark-theme) .map-mode-button { border-color: var(--rs-border) !important; background: color-mix(in srgb, var(--rs-surface) 94%, transparent) !important; color: var(--rs-text) !important; }
-:host-context(.rs-dark-theme) .map-mode-button:hover { background: var(--rs-primary-soft) !important; }
-:host-context(.rs-dark-theme) .map-mode-button.active { border-color: color-mix(in srgb, var(--rs-secondary) 70%, var(--rs-border)) !important; background: var(--rs-secondary) !important; color: #062421 !important; }
 .location-modal { position: relative; }
 .modal-mode-button { top: 4.6rem; right: 1rem; }
 .map-hint { position: absolute; left: .75rem; right: .75rem; bottom: .75rem; z-index: 500; display: flex; align-items: center; gap: .45rem; padding: .55rem .65rem; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: rgba(255,255,255,.94); color: var(--rs-text-muted); font-size: .78rem; font-weight: 800; box-shadow: var(--rs-shadow-sm); pointer-events: none; }

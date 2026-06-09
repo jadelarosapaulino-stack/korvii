@@ -400,16 +400,23 @@ interface TrafficLightLocationDetails {
             </header>
 
             <div #trafficLightMapContainer class="traffic-modal-map" aria-label="Mapa con ubicacion del semaforo"></div>
-            <button
-              class="map-mode-button"
-              mat-icon-button
-              type="button"
-              [class.active]="trafficLightMapHybridMode()"
-              [title]="trafficLightMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              [attr.aria-label]="trafficLightMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-              (click)="toggleTrafficLightMapHybridMode()">
-              <mat-icon>{{ trafficLightMapHybridMode() ? 'map' : 'satellite' }}</mat-icon>
-            </button>
+            <div class="korvi-map-controls" aria-label="Controles de zoom del mapa">
+              <button
+                mat-icon-button
+                type="button"
+                [class.active]="trafficLightMapHybridMode()"
+                [title]="trafficLightMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                [attr.aria-label]="trafficLightMapHybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+                (click)="toggleTrafficLightMapHybridMode()">
+                <mat-icon>{{ trafficLightMapHybridMode() ? 'map' : 'satellite' }}</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomTrafficLightMapIn()">
+                <mat-icon>add</mat-icon>
+              </button>
+              <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomTrafficLightMapOut()">
+                <mat-icon>remove</mat-icon>
+              </button>
+            </div>
 
             <footer>
               <div class="traffic-modal-details">
@@ -950,7 +957,7 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
     this.trafficLightMap = createKorviMap(container, {
       center,
       zoom: 17,
-      navigationControl: true,
+      navigationControl: false,
       scrollZoom: true,
     });
 
@@ -970,6 +977,14 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
       }
     });
     this.trafficLightMapHybridMode.set(mode === 'hybrid');
+  }
+
+  zoomTrafficLightMapIn(): void {
+    this.trafficLightMap?.zoomIn();
+  }
+
+  zoomTrafficLightMapOut(): void {
+    this.trafficLightMap?.zoomOut();
   }
 
   private destroyTrafficLightMap(): void {
