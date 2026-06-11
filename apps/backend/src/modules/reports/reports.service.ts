@@ -3,9 +3,9 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  OnApplicationBootstrap,
   NotFoundException,
   OnModuleDestroy,
-  OnModuleInit,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -16,6 +16,7 @@ import { ReportStatus } from "../../common/enums/report-status.enum";
 import { UserRole } from "../../common/enums/user-role.enum";
 import { AiService } from "../ai/ai.service";
 import { RealtimeEventPublisherService } from "../realtime-events/realtime-event-publisher.service";
+import { SystemConfigService } from "../system-config/system-config.service";
 import { User } from "../users/user.entity";
 import { Institution } from "../institutions/institution.entity";
 import { AccuWeatherService } from "./accuweather.service";
@@ -25,6 +26,7 @@ import { CreateEmergencyCallLogDto } from "./dto/create-emergency-call-log.dto";
 import { CreateReportDto } from "./dto/create-report.dto";
 import {
   GoogleMapsTileSessionDto,
+  HighFlowTrafficDto,
   OptimizeRiskRouteDto,
 } from "./dto/optimize-risk-route.dto";
 import { QueryReportsDto } from "./dto/query-reports.dto";
@@ -61,6 +63,15 @@ interface RouteCandidate {
   coordinates: Array<[number, number]>;
   distance: number;
   duration: number;
+  traffic?: {
+    congestedSegments: number;
+    slowSegments: number;
+    jamSegments: number;
+    segments: Array<{
+      speed: "NORMAL" | "SLOW" | "TRAFFIC_JAM" | string;
+      coordinates: Array<[number, number]>;
+    }>;
+  };
   via?: { latitude: number; longitude: number };
   risk: {
     floodZones: number;
@@ -95,6 +106,13 @@ interface GoogleRoutesResponse {
         coordinates?: Array<[number, number]>;
       };
     };
+    travelAdvisory?: {
+      speedReadingIntervals?: Array<{
+        startPolylinePointIndex?: number;
+        endPolylinePointIndex?: number;
+        speed?: "NORMAL" | "SLOW" | "TRAFFIC_JAM" | string;
+      }>;
+    };
   }>;
 }
 
@@ -104,6 +122,17 @@ interface GoogleMapsTileSessionResponse {
   tileWidth?: number;
   tileHeight?: number;
   imageFormat?: string;
+}
+
+export interface GoogleMapsTileResponse {
+  body: Buffer;
+  contentType: string;
+  cacheControl: string;
+}
+
+export interface HighFlowTrafficSegment {
+  speed: "SLOW" | "TRAFFIC_JAM" | string;
+  coordinates: Array<[number, number]>;
 }
 
 type RoutingProvider = "google-routes" | "openrouteservice" | "osrm";
@@ -118,7 +147,7 @@ interface FloodMonitorPoint {
 }
 
 @Injectable()
-export class ReportsService implements OnModuleInit, OnModuleDestroy {
+export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(ReportsService.name);
   private readonly duplicateReportRadiusMeters = 500;
   private floodMonitorTimer?: NodeJS.Timeout;
@@ -148,12 +177,13 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
     private readonly institutionsRepo: Repository<Institution>,
     private readonly accuWeatherService: AccuWeatherService,
     private readonly weatherSettings: WeatherSettingsService,
+    private readonly systemConfig: SystemConfigService,
     private readonly config: ConfigService,
     private readonly aiService: AiService,
     private readonly realtimeEvents: RealtimeEventPublisherService,
   ) {}
 
-  onModuleInit() {
+  onApplicationBootstrap() {
     this.configureFloodMonitorTimer(true);
   }
 
@@ -302,8 +332,9 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
     const qb = this.reportsRepo.createQueryBuilder("report");
     this.applyReportListFilters(qb, query);
 
-    const [total, statusRows] = await Promise.all([
+    const [total, highRisk, statusRows] = await Promise.all([
       qb.clone().getCount(),
+      qb.clone().andWhere("report.riskLevel >= :highRisk", { highRisk: 4 }).getCount(),
       qb
         .clone()
         .select("report.status", "status")
@@ -327,6 +358,7 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
 
     return {
       total,
+      highRisk,
       pending: byStatus[ReportStatus.PENDING],
       validated: byStatus[ReportStatus.VALIDATED],
       inProgress: byStatus[ReportStatus.IN_PROGRESS],
@@ -514,10 +546,10 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
     return this.weatherSettings.get();
   }
 
-  updateWeatherConfig(patch: Partial<WeatherAutomationConfig>) {
+  async updateWeatherConfig(patch: Partial<WeatherAutomationConfig>) {
     const previousInterval = this.weatherSettings.get().monitorIntervalMinutes;
     const previousEnabled = this.weatherSettings.get().floodMonitorEnabled;
-    const next = this.weatherSettings.update(patch);
+    const next = await this.weatherSettings.update(patch);
 
     if (
       next.floodMonitorEnabled !== previousEnabled ||
@@ -558,15 +590,23 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
       title:
         dto.eventType === "impact"
           ? "Posible bache o desnivel detectado"
-          : "Patron de frenadas bruscas detectado",
-      category: ReportCategory.ROAD_DAMAGE,
+          : dto.eventType === "high_flow"
+            ? "Zona de alto flujo vehicular marcada"
+            : "Patron de frenadas bruscas detectado",
+      category:
+        dto.eventType === "high_flow"
+          ? ReportCategory.ROAD_OBSTRUCTION
+          : ReportCategory.ROAD_DAMAGE,
       description: `Deteccion automatica desde app movil. ${severity.reason}`,
       latitude: dto.latitude,
       longitude: dto.longitude,
       riskLevel: severity.riskLevel,
       source: "mobile",
     };
-    const existing = await this.findDuplicateCandidate(reportDto, 180);
+    const existing = await this.findDuplicateCandidate(
+      reportDto,
+      dto.eventType === "high_flow" ? 240 : 180,
+    );
 
     if (existing) {
       const confirmation = await this.confirmExistingReport(
@@ -609,7 +649,7 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
 
     const report = this.reportsRepo.create({
       title: reportDto.title,
-      category: ReportCategory.ROAD_DAMAGE,
+      category: reportDto.category,
       description: reportDto.description,
       latitude: reportDto.latitude,
       longitude: reportDto.longitude,
@@ -763,14 +803,62 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
         coordinates: best.coordinates,
       },
       risk: best.risk,
+      traffic: best.traffic ?? {
+        congestedSegments: 0,
+        slowSegments: 0,
+        jamSegments: 0,
+        segments: [],
+      },
       alternativesEvaluated: candidates.length,
       via: best.via ?? null,
+    };
+  }
+
+  async highFlowTraffic(dto: HighFlowTrafficDto) {
+    const bounds = this.normalizedTrafficBounds(dto.bounds);
+    const apiKey = (
+      dto.googleMapsApiKey ||
+      this.systemConfig.getSecretApiKey("googleMaps") ||
+      this.config.get<string>("GOOGLE_MAPS_API_KEY") ||
+      ""
+    ).trim();
+    this.assertGoogleMapsApiKey(apiKey);
+
+    const sampleRoutes = this.highFlowSampleRoutes(bounds);
+    const results = await Promise.allSettled(
+      sampleRoutes.map((points) => this.fetchGoogleRoutesRoute(points, apiKey)),
+    );
+    const segments = results.flatMap((result) => {
+      if (result.status !== "fulfilled") return [];
+      const route = result.value;
+      return route?.traffic?.segments.filter(
+        (segment) =>
+          segment.coordinates.length >= 2 && segment.speed !== "NORMAL",
+      ) ?? [];
+    });
+
+    const dedupedSegments = this.dedupeTrafficSegments(segments);
+    const slowSegments = dedupedSegments.filter(
+      (segment) => segment.speed === "SLOW",
+    ).length;
+    const jamSegments = dedupedSegments.filter(
+      (segment) => segment.speed === "TRAFFIC_JAM",
+    ).length;
+
+    return {
+      provider: "google-routes",
+      bounds,
+      congestedSegments: dedupedSegments.length,
+      slowSegments,
+      jamSegments,
+      segments: dedupedSegments,
     };
   }
 
   async createGoogleMapsTileSession(dto: GoogleMapsTileSessionDto) {
     const apiKey = (
       dto.apiKey ||
+      this.systemConfig.getSecretApiKey("googleMaps") ||
       this.config.get<string>("GOOGLE_MAPS_API_KEY") ||
       ""
     ).trim();
@@ -809,7 +897,51 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
         "Google Map Tiles no devolvio session token.",
       );
 
-    return { ...payload, apiKey };
+    return payload;
+  }
+
+  async fetchGoogleMapsTile(
+    session: string,
+    z: number,
+    x: number,
+    y: number,
+  ): Promise<GoogleMapsTileResponse> {
+    const apiKey = (
+      this.systemConfig.getSecretApiKey("googleMaps") ||
+      this.config.get<string>("GOOGLE_MAPS_API_KEY") ||
+      ""
+    ).trim();
+    this.assertGoogleMapsApiKey(apiKey);
+
+    const safeSession = String(session || "").trim();
+    if (!safeSession) {
+      throw new BadRequestException("Session token de Google Maps requerido.");
+    }
+    if (![z, x, y].every((value) => Number.isInteger(value) && value >= 0)) {
+      throw new BadRequestException("Coordenadas de tile invalidas.");
+    }
+
+    const response = await fetch(
+      `https://tile.googleapis.com/v1/2dtiles/${z}/${x}/${y}?session=${encodeURIComponent(safeSession)}&key=${encodeURIComponent(apiKey)}`,
+    );
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      this.logger.warn(
+        `Google Map Tiles tile fallo: ${response.status} ${detail.slice(0, 300)}`,
+      );
+      throw new ServiceUnavailableException(
+        "No se pudo cargar una tesela de Google Maps.",
+      );
+    }
+
+    return {
+      body: Buffer.from(await response.arrayBuffer()),
+      contentType: response.headers.get("content-type") || "image/png",
+      cacheControl:
+        response.headers.get("cache-control") ||
+        "public, max-age=86400, stale-while-revalidate=86400",
+    };
   }
 
   private applyReportDateFilters(
@@ -872,6 +1004,86 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private normalizedTrafficBounds(bounds: HighFlowTrafficDto["bounds"]) {
+    const minLatitude = Math.max(
+      this.dominicanRepublicBounds.minLatitude,
+      Math.min(Number(bounds.minLatitude), Number(bounds.maxLatitude)),
+    );
+    const maxLatitude = Math.min(
+      this.dominicanRepublicBounds.maxLatitude,
+      Math.max(Number(bounds.minLatitude), Number(bounds.maxLatitude)),
+    );
+    const minLongitude = Math.max(
+      this.dominicanRepublicBounds.minLongitude,
+      Math.min(Number(bounds.minLongitude), Number(bounds.maxLongitude)),
+    );
+    const maxLongitude = Math.min(
+      this.dominicanRepublicBounds.maxLongitude,
+      Math.max(Number(bounds.minLongitude), Number(bounds.maxLongitude)),
+    );
+
+    if (
+      ![minLatitude, maxLatitude, minLongitude, maxLongitude].every(
+        Number.isFinite,
+      ) ||
+      minLatitude >= maxLatitude ||
+      minLongitude >= maxLongitude
+    ) {
+      throw new BadRequestException(
+        "El area visible del mapa no esta dentro de Republica Dominicana o no es valida.",
+      );
+    }
+
+    return { minLatitude, maxLatitude, minLongitude, maxLongitude };
+  }
+
+  private highFlowSampleRoutes(bounds: {
+    minLatitude: number;
+    maxLatitude: number;
+    minLongitude: number;
+    maxLongitude: number;
+  }): Array<Array<{ latitude: number; longitude: number }>> {
+    const latitudeSpan = bounds.maxLatitude - bounds.minLatitude;
+    const longitudeSpan = bounds.maxLongitude - bounds.minLongitude;
+    const horizontalLatitudes = [0.25, 0.5, 0.75].map(
+      (ratio) => bounds.minLatitude + latitudeSpan * ratio,
+    );
+    const verticalLongitudes = [0.25, 0.5, 0.75].map(
+      (ratio) => bounds.minLongitude + longitudeSpan * ratio,
+    );
+
+    return [
+      ...horizontalLatitudes.map((latitude) => [
+        { latitude, longitude: bounds.minLongitude },
+        { latitude, longitude: bounds.maxLongitude },
+      ]),
+      ...verticalLongitudes.map((longitude) => [
+        { latitude: bounds.minLatitude, longitude },
+        { latitude: bounds.maxLatitude, longitude },
+      ]),
+    ];
+  }
+
+  private dedupeTrafficSegments(
+    segments: HighFlowTrafficSegment[],
+  ): HighFlowTrafficSegment[] {
+    const seen = new Set<string>();
+    return segments.filter((segment) => {
+      const first = segment.coordinates[0];
+      const last = segment.coordinates[segment.coordinates.length - 1];
+      const key = [
+        segment.speed,
+        first?.[0]?.toFixed(4),
+        first?.[1]?.toFixed(4),
+        last?.[0]?.toFixed(4),
+        last?.[1]?.toFixed(4),
+      ].join(":");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   private isInsideDominicanRepublicBounds(point: {
     latitude: number;
     longitude: number;
@@ -896,6 +1108,7 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
     if (provider === "google-routes") {
       const googleKey = (
         options?.googleMapsApiKey ||
+        this.systemConfig.getSecretApiKey("googleMaps") ||
         this.config.get<string>("GOOGLE_MAPS_API_KEY") ||
         ""
       ).trim();
@@ -976,7 +1189,7 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
           "X-Goog-FieldMask":
-            "routes.distanceMeters,routes.duration,routes.staticDuration,routes.polyline.geoJsonLinestring",
+            "routes.distanceMeters,routes.duration,routes.staticDuration,routes.polyline.geoJsonLinestring,routes.travelAdvisory.speedReadingIntervals",
         },
         body: JSON.stringify({
           origin: this.googleRoutesWaypoint(origin),
@@ -985,7 +1198,8 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
             this.googleRoutesWaypoint(point),
           ),
           travelMode: "DRIVE",
-          routingPreference: "TRAFFIC_UNAWARE",
+          routingPreference: "TRAFFIC_AWARE_OPTIMAL",
+          extraComputations: ["TRAFFIC_ON_POLYLINE"],
           computeAlternativeRoutes: false,
           polylineEncoding: "GEO_JSON_LINESTRING",
           languageCode: "es",
@@ -1008,6 +1222,46 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
       duration: this.googleDurationSeconds(
         route.duration ?? route.staticDuration,
       ),
+      traffic: this.googleTrafficSegments(
+        coordinates,
+        route.travelAdvisory?.speedReadingIntervals ?? [],
+      ),
+    };
+  }
+
+  private googleTrafficSegments(
+    coordinates: Array<[number, number]>,
+    intervals: NonNullable<
+      NonNullable<GoogleRoutesResponse["routes"]>[number]["travelAdvisory"]
+    >["speedReadingIntervals"],
+  ): NonNullable<RouteCandidate["traffic"]> {
+    const segments = (intervals ?? [])
+      .map((interval) => {
+        const start = Math.max(0, interval.startPolylinePointIndex ?? 0);
+        const end = Math.min(
+          coordinates.length,
+          interval.endPolylinePointIndex ?? coordinates.length,
+        );
+        const segmentCoordinates = coordinates.slice(start, end + 1);
+        return {
+          speed: interval.speed ?? "NORMAL",
+          coordinates: segmentCoordinates,
+        };
+      })
+      .filter((segment) => segment.coordinates.length >= 2);
+
+    const slowSegments = segments.filter(
+      (segment) => segment.speed === "SLOW",
+    ).length;
+    const jamSegments = segments.filter(
+      (segment) => segment.speed === "TRAFFIC_JAM",
+    ).length;
+
+    return {
+      congestedSegments: slowSegments + jamSegments,
+      slowSegments,
+      jamSegments,
+      segments,
     };
   }
 
@@ -1423,6 +1677,13 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
       };
     }
 
+    if (dto.eventType === "high_flow") {
+      return {
+        riskLevel: 3,
+        reason: "Zona marcada manualmente como punto de alto flujo vehicular.",
+      };
+    }
+
     const before = dto.speedBeforeKmh ?? 0;
     const after = dto.speedAfterKmh ?? before;
     const drop = before - after;
@@ -1669,6 +1930,14 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
             type: report.assignedInstitution.type,
             province: report.assignedInstitution.province,
             municipality: report.assignedInstitution.municipality,
+            coverageArea: report.assignedInstitution.coverageArea,
+            phone: report.assignedInstitution.phone,
+            emergencyPhone: report.assignedInstitution.emergencyPhone,
+            whatsapp: report.assignedInstitution.whatsapp,
+            email: report.assignedInstitution.email,
+            websiteUrl: report.assignedInstitution.websiteUrl,
+            sourceUrl: report.assignedInstitution.sourceUrl,
+            address: report.assignedInstitution.address,
           }
         : null,
       assignmentNote: report.assignmentNote,

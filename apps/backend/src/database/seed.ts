@@ -141,6 +141,12 @@ async function run() {
     province: "Distrito Nacional",
     municipality: "Santo Domingo",
     coverageArea: "Control y seguridad vial nacional.",
+    phone: "809-686-6520",
+    whatsapp: "829-715-3432",
+    email: "atencionalciudadano@digesett.gob.do",
+    websiteUrl: "https://digesett.gob.do/",
+    sourceUrl:
+      "https://presidencia.gob.do/noticias/digesett-habilita-numero-de-whatsapp-para-que-ciudadanos-reporten-denuncias-y-hagan",
   });
 
   const ayuntamiento = await upsertInstitution({
@@ -149,7 +155,158 @@ async function run() {
     province: "Santo Domingo",
     municipality: "Santo Domingo Este",
     coverageArea: "Gestion municipal de Santo Domingo Este.",
+    phone: "809-788-7676",
+    email: "info@asde.gov.do",
+    websiteUrl: "https://ayuntamientosde.gob.do/",
+    sourceUrl: "https://ayuntamientosde.gob.do/contacto/",
+    address:
+      "Carretera Mella #49, Esq. San Vicente de Paul, Santo Domingo Este",
   });
+
+  await Promise.all([
+    upsertInstitution({
+      name: "Sistema Nacional de Atencion a Emergencias y Seguridad 9-1-1",
+      type: InstitutionType.EMERGENCY,
+      coverageArea:
+        "Coordinacion nacional de emergencias y seguridad ciudadana.",
+      phone: "809-688-9911",
+      emergencyPhone: "911",
+      email: "info@911.gob.do",
+      websiteUrl: "https://911.gob.do/",
+      sourceUrl: "https://911.gob.do/tags/cuerpo-de-bomberos-del-distrito-nacional/",
+    }),
+    upsertInstitution({
+      name: "Centro de Operaciones de Emergencias (COE)",
+      type: InstitutionType.EMERGENCY,
+      province: "Distrito Nacional",
+      municipality: "Santo Domingo",
+      coverageArea:
+        "Alertas y coordinacion de respuesta ante eventos hidrometeorologicos y emergencias.",
+      phone: "809-472-0909",
+      email: "info@coe.gob.do",
+      websiteUrl: "https://www.coe.gob.do/",
+      sourceUrl: "https://www.coe.gob.do/index.php/contacto",
+      address:
+        "Calle Pepillo Salcedo #419, Plaza de la Salud, Ensanche La Fe",
+    }),
+    upsertInstitution({
+      name: "Defensa Civil Dominicana",
+      type: InstitutionType.EMERGENCY,
+      province: "Distrito Nacional",
+      municipality: "Santo Domingo",
+      coverageArea:
+        "Proteccion civil, prevencion y respuesta ante emergencias.",
+      phone: "809-472-8614",
+      websiteUrl: "https://www.defensacivil.gob.do/",
+      sourceUrl: "https://map.gob.do/COEDOM/Home/Details/59?Ruta=1",
+      address:
+        "Av. Ortega y Gasset Esq. Pepillo Salcedo, Plaza de la Salud",
+    }),
+    upsertInstitution({
+      name: "INTRANT",
+      type: InstitutionType.TRANSIT_AUTHORITY,
+      province: "Distrito Nacional",
+      municipality: "Santo Domingo",
+      coverageArea:
+        "Regulacion de movilidad, transito, transporte terrestre y seguridad vial.",
+      phone: "809-338-6134",
+      whatsapp: "809-780-2326",
+      websiteUrl: "https://intrant.gob.do/",
+      sourceUrl: "https://intrant.gob.do/contacto",
+      address: "Av. Tiradentes #7, Ensanche La Fe",
+    }),
+    upsertInstitution({
+      name: "Ministerio de Obras Publicas y Comunicaciones (MOPC)",
+      type: InstitutionType.GOVERNMENT,
+      province: "Distrito Nacional",
+      municipality: "Santo Domingo",
+      coverageArea:
+        "Infraestructura vial, mantenimiento de carreteras y obras publicas.",
+      phone: "809-565-2811",
+      websiteUrl: "https://www.mopc.gob.do/",
+      sourceUrl: "https://map.gob.do/COEDOM/Home/Details/119?Ruta=2",
+      address: "Av. Hector Homero Hernandez esquina Av. Tiradentes",
+    }),
+    upsertInstitution({
+      name: "Ayuntamiento del Distrito Nacional",
+      type: InstitutionType.MUNICIPALITY,
+      province: "Distrito Nacional",
+      municipality: "Santo Domingo",
+      coverageArea:
+        "Gestion municipal del Distrito Nacional, espacio publico y servicios urbanos.",
+      phone: "809-535-1181",
+      email: "info@adn.gob.do",
+      websiteUrl: "https://adn.gob.do/",
+      sourceUrl: "https://adn.gob.do/",
+      address: "Avenida Jimenez Moya, Santo Domingo",
+    }),
+    upsertInstitution({
+      name: "Ayuntamiento Santo Domingo Norte",
+      type: InstitutionType.MUNICIPALITY,
+      province: "Santo Domingo",
+      municipality: "Santo Domingo Norte",
+      coverageArea:
+        "Gestion municipal de Santo Domingo Norte y servicios urbanos.",
+      phone: "809-331-7171",
+      email: "info@asdn.gob.do",
+      websiteUrl: "https://alcaldiasdn.gob.do/",
+      sourceUrl: "https://alcaldiasdn.gob.do/contacto/",
+      address:
+        "Ave. Hermanas Mirabal Esq. General Modesto Diaz, Villa Mella",
+    }),
+    upsertInstitution({
+      name: "Ayuntamiento Santo Domingo Oeste",
+      type: InstitutionType.MUNICIPALITY,
+      province: "Santo Domingo",
+      municipality: "Santo Domingo Oeste",
+      coverageArea:
+        "Gestion municipal de Santo Domingo Oeste y servicios urbanos.",
+      phone: "829-956-2020",
+      email: "alcaldiasdo@asdo.gob.do",
+      websiteUrl: "https://ayuntamientosdo.gob.do/",
+      sourceUrl: "https://ayuntamientosdo.gob.do/contacto/",
+      address: "C/ Los Coquitos #19, Manzana 19, Las Caobas",
+    }),
+    upsertInstitution({
+      name: "Cuerpo de Bomberos del Distrito Nacional",
+      type: InstitutionType.EMERGENCY,
+      province: "Distrito Nacional",
+      municipality: "Santo Domingo",
+      coverageArea:
+        "Prevencion y respuesta contra incendios en el Distrito Nacional.",
+      phone: "809-682-2000",
+      emergencyPhone: "911",
+      websiteUrl: "https://cbdn.gob.do/",
+      sourceUrl: "https://cbdn.gob.do/",
+      address: "Av. Mella #651, San Carlos",
+    }),
+    upsertInstitution({
+      name: "Cuerpo de Bomberos Santo Domingo Este",
+      type: InstitutionType.EMERGENCY,
+      province: "Santo Domingo",
+      municipality: "Santo Domingo Este",
+      coverageArea:
+        "Prevencion y respuesta contra incendios en Santo Domingo Este.",
+      phone: "809-695-9555",
+      emergencyPhone: "911",
+      email: "info@bomberossde.gob.do",
+      websiteUrl: "https://www.bomberossde.gob.do/",
+      sourceUrl:
+        "https://www.facebook.com/bomberossantodomingoeste/?locale=es_LA",
+    }),
+    upsertInstitution({
+      name: "CAASD",
+      type: InstitutionType.GOVERNMENT,
+      province: "Santo Domingo",
+      coverageArea:
+        "Acueducto, alcantarillado y averias hidrosanitarias del Gran Santo Domingo.",
+      phone: "809-562-3500",
+      websiteUrl: "https://portal.caasd.gob.do/",
+      sourceUrl:
+        "https://presidencia.gob.do/noticias/caasd-estrena-numero-unico-para-atencion-usuarios-y-pagos",
+      address: "C/ Euclides Morillo 65",
+    }),
+  ]);
 
   const admin = await upsertUser({
     fullName: "Administrador",

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import type { JwtModuleOptions } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { SystemConfigModule } from "../system-config/system-config.module";
 import { UsersModule } from "../users/users.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
@@ -14,6 +15,7 @@ type JwtExpiresIn = NonNullable<JwtModuleOptions["signOptions"]>["expiresIn"];
 @Module({
   imports: [
     ConfigModule,
+    SystemConfigModule,
     UsersModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

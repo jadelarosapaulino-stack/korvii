@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { SystemConfigService } from "../system-config/system-config.service";
 
 export interface TrafficLightsSettings {
   overpassEndpoint: string;
@@ -12,55 +12,56 @@ export interface TrafficLightsSettings {
   defaultProvince: string;
   defaultMunicipality: string;
   importProvinces: string[];
+  automaticReportsEnabled: boolean;
+  automaticReportTtlHours: number;
+  automaticReportRadiusMeters: number;
+  automaticReportMonitorIntervalMinutes: number;
 }
 
 @Injectable()
-export class TrafficLightsSettingsService {
-  private readonly logger = new Logger(TrafficLightsSettingsService.name);
+export class TrafficLightsSettingsService implements OnModuleInit {
+  private static readonly CONFIG_KEY = "traffic_lights_settings";
   private readonly configPath: string;
   private current: TrafficLightsSettings;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
+  ) {
     this.configPath = this.config.get<string>(
       "TRAFFIC_LIGHTS_CONFIG_PATH",
       join(process.cwd(), ".tmp", "traffic-lights-config.json"),
     );
-    this.current = this.load();
+    this.current = this.defaultConfig();
+  }
+
+  async onModuleInit() {
+    const defaults = this.defaultConfig();
+    const stored = await this.systemConfig.loadValue(
+      TrafficLightsSettingsService.CONFIG_KEY,
+      defaults,
+      this.configPath,
+    );
+    this.current = this.sanitize({ ...defaults, ...stored });
+    await this.persist();
   }
 
   get(): TrafficLightsSettings {
     return { ...this.current };
   }
 
-  update(patch: Partial<TrafficLightsSettings>): TrafficLightsSettings {
+  async update(
+    patch: Partial<TrafficLightsSettings>,
+  ): Promise<TrafficLightsSettings> {
     this.current = this.sanitize({ ...this.current, ...patch });
-    this.persist();
+    await this.persist();
     return this.get();
   }
 
-  private load(): TrafficLightsSettings {
-    if (!existsSync(this.configPath)) return this.defaultConfig();
-
-    try {
-      const stored = JSON.parse(
-        readFileSync(this.configPath, "utf8"),
-      ) as Partial<TrafficLightsSettings>;
-      return this.sanitize({ ...this.defaultConfig(), ...stored });
-    } catch (error) {
-      this.logger.warn(
-        `No se pudo leer configuracion de semaforos: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return this.defaultConfig();
-    }
-  }
-
-  private persist() {
-    const directory = dirname(this.configPath);
-    if (!existsSync(directory)) mkdirSync(directory, { recursive: true });
-    writeFileSync(
-      this.configPath,
-      JSON.stringify(this.current, null, 2),
-      "utf8",
+  private async persist() {
+    await this.systemConfig.saveValue(
+      TrafficLightsSettingsService.CONFIG_KEY,
+      this.current,
     );
   }
 
@@ -86,6 +87,21 @@ export class TrafficLightsSettingsService {
         "TRAFFIC_LIGHTS_IMPORT_PROVINCES",
         ["Santo Domingo"],
       ),
+      automaticReportsEnabled:
+        this.config.get<string>("TRAFFIC_LIGHTS_AUTOMATIC_REPORTS_ENABLED", "true") !==
+        "false",
+      automaticReportTtlHours: this.numberFromEnv(
+        "TRAFFIC_LIGHTS_AUTOMATIC_REPORT_TTL_HOURS",
+        24,
+      ),
+      automaticReportRadiusMeters: this.numberFromEnv(
+        "TRAFFIC_LIGHTS_AUTOMATIC_REPORT_RADIUS_METERS",
+        120,
+      ),
+      automaticReportMonitorIntervalMinutes: this.numberFromEnv(
+        "TRAFFIC_LIGHTS_AUTOMATIC_REPORT_MONITOR_INTERVAL_MINUTES",
+        30,
+      ),
     };
   }
 
@@ -102,6 +118,25 @@ export class TrafficLightsSettingsService {
       defaultProvince: String(settings.defaultProvince || ""),
       defaultMunicipality: String(settings.defaultMunicipality || ""),
       importProvinces: this.cleanStringList(settings.importProvinces),
+      automaticReportsEnabled: Boolean(settings.automaticReportsEnabled),
+      automaticReportTtlHours: this.clamp(
+        Number(settings.automaticReportTtlHours),
+        24,
+        1,
+        168,
+      ),
+      automaticReportRadiusMeters: this.clamp(
+        Number(settings.automaticReportRadiusMeters),
+        120,
+        20,
+        1000,
+      ),
+      automaticReportMonitorIntervalMinutes: this.clamp(
+        Number(settings.automaticReportMonitorIntervalMinutes),
+        30,
+        5,
+        1440,
+      ),
     };
   }
 

@@ -3,12 +3,20 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
+  ServiceUnavailableException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ReportCategory } from "../../common/enums/report-category.enum";
 import { ReportStatus } from "../../common/enums/report-status.enum";
+import { UserRole } from "../../common/enums/user-role.enum";
+import { RealtimeEventPublisherService } from "../realtime-events/realtime-event-publisher.service";
 import { Report } from "../reports/entities/report.entity";
+import { StatusHistory } from "../reports/entities/status-history.entity";
+import { User } from "../users/user.entity";
 import { CreateTrafficLightDto } from "./dto/create-traffic-light.dto";
 import { ImportTrafficLightsDto } from "./dto/import-traffic-lights.dto";
 import { QueryTrafficLightsDto } from "./dto/query-traffic-lights.dto";
@@ -163,20 +171,42 @@ const DOMINICAN_PROVINCE_BOUNDS: Record<string, ProvinceBounds> = {
 };
 
 @Injectable()
-export class TrafficLightsService {
+export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TrafficLightsService.name);
   private readonly reverseGeocodeCache = new Map<
     string,
     ReverseGeocodeDetails
   >();
   private refreshLocationDetailsJob: RefreshLocationDetailsJob | null = null;
+  private trafficLightMonitorTimer?: ReturnType<typeof setInterval>;
+  private trafficLightMonitorRunning = false;
 
   constructor(
     @InjectRepository(TrafficLight)
     private readonly trafficLightsRepo: Repository<TrafficLight>,
     @InjectRepository(Report) private readonly reportsRepo: Repository<Report>,
+    @InjectRepository(StatusHistory)
+    private readonly historyRepo: Repository<StatusHistory>,
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
     private readonly settingsService: TrafficLightsSettingsService,
+    private readonly realtimeEvents: RealtimeEventPublisherService,
+    private readonly config: ConfigService,
   ) {}
+
+  onModuleInit() {
+    setTimeout(() => {
+      this.configureTrafficLightMonitorTimer();
+      this.runTrafficLightMonitorScan("startup");
+    }, 1000);
+  }
+
+  onModuleDestroy() {
+    if (this.trafficLightMonitorTimer) {
+      clearInterval(this.trafficLightMonitorTimer);
+      this.trafficLightMonitorTimer = undefined;
+    }
+  }
 
   async findAll(query: QueryTrafficLightsDto) {
     const page = Math.max(1, Number(query.page ?? 1));
@@ -223,7 +253,96 @@ export class TrafficLightsService {
   }
 
   updateSettings(patch: Partial<TrafficLightsSettings>) {
-    return this.settingsService.update(patch);
+    return this.settingsService.update(patch).then((settings) => {
+      this.configureTrafficLightMonitorTimer();
+      return settings;
+    });
+  }
+
+  async scanTrafficLightSituations(
+    source: "manual" | "scheduled" | "startup" = "manual",
+  ) {
+    const settings = this.settingsService.get();
+    if (!settings.automaticReportsEnabled) {
+      return {
+        source,
+        skipped: true,
+        reason: "automatic-reports-disabled",
+        opened: 0,
+        reused: 0,
+        closed: 0,
+      };
+    }
+
+    if (this.trafficLightMonitorRunning) {
+      return {
+        source,
+        skipped: true,
+        reason: "scan-already-running",
+        opened: 0,
+        reused: 0,
+        closed: 0,
+      };
+    }
+
+    this.trafficLightMonitorRunning = true;
+    try {
+      const radiusMeters = Math.min(
+        1000,
+        Math.max(100, Number(settings.automaticReportRadiusMeters ?? 120)),
+      );
+      const { trafficLights, insights } =
+        await this.buildGreenLightInsightsSnapshot(radiusMeters);
+      const actionableInsights = insights.filter((insight) =>
+        this.shouldCreateAutomaticTrafficLightReport(insight),
+      );
+
+      let opened = 0;
+      let reused = 0;
+      const reportIds: string[] = [];
+      const trigger =
+        source === "manual"
+          ? "manual-scan"
+          : source === "startup"
+            ? "startup-scan"
+            : "scheduled-scan";
+
+      for (const insight of actionableInsights) {
+        const result = await this.createAutomaticTrafficLightReport(
+          insight,
+          trigger,
+        );
+        if (result.created) opened += 1;
+        else reused += 1;
+        if (result.report?.id) reportIds.push(result.report.id);
+      }
+
+      const closed = await this.closeResolvedAutomaticTrafficLightReports(
+        insights,
+        radiusMeters,
+        trigger,
+      );
+
+      if (opened || closed) {
+        this.logger.log(
+          `Revision automatica de semaforos (${source}): ${opened} abiertos, ${reused} reutilizados, ${closed} cerrados.`,
+        );
+      }
+
+      return {
+        source,
+        skipped: false,
+        analyzedTrafficLights: trafficLights.length,
+        actionableTrafficLights: actionableInsights.length,
+        opened,
+        reused,
+        closed,
+        reportIds,
+        generatedAt: new Date(),
+      };
+    } finally {
+      this.trafficLightMonitorRunning = false;
+    }
   }
 
   async greenLightInsights(
@@ -234,34 +353,25 @@ export class TrafficLightsService {
       Math.max(100, Number(query.radiusMeters ?? 300)),
     );
     const limit = Math.min(50, Math.max(1, Number(query.limit ?? 12)));
-    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const { trafficLights, insights: allInsights } =
+      await this.buildGreenLightInsightsSnapshot(radiusMeters);
 
-    const [trafficLights, reports] = await Promise.all([
-      this.trafficLightsRepo.find({ order: { updatedAt: "DESC" }, take: 1000 }),
-      this.reportsRepo
-        .createQueryBuilder("report")
-        .leftJoinAndSelect("report.confirmations", "confirmations")
-        .where("report.createdAt >= :since", { since })
-        .andWhere("report.latitude IS NOT NULL")
-        .andWhere("report.longitude IS NOT NULL")
-        .getMany(),
-    ]);
-
-    const insights = trafficLights
-      .map((trafficLight) =>
-        this.buildGreenLightInsight(trafficLight, reports, radiusMeters),
-      )
+    const insights = allInsights
       .filter(
         (insight) =>
           insight.nearbyReports > 0 || insight.trafficLight.status !== "active",
       )
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
+    const automaticReports = await this.createAutomaticReportsForInsights(
+      insights,
+    );
 
     return {
       generatedAt: new Date(),
       radiusMeters,
       windowDays: 90,
+      automaticReports,
       kpis: {
         analyzedTrafficLights: trafficLights.length,
         rankedTrafficLights: insights.length,
@@ -293,7 +403,12 @@ export class TrafficLightsService {
 
     Object.assign(trafficLight, dto);
     trafficLight.lastObservedAt = new Date();
-    return this.trafficLightsRepo.save(trafficLight);
+    const saved = await this.trafficLightsRepo.save(trafficLight);
+    if (saved.status === "offline") {
+      const insight = this.buildGreenLightInsight(saved, [], 300);
+      await this.createAutomaticTrafficLightReport(insight, "status-update");
+    }
+    return saved;
   }
 
   async remove(id: string) {
@@ -475,6 +590,68 @@ export class TrafficLightsService {
     return {
       ...job,
       progress: { ...job.progress },
+    };
+  }
+
+  private configureTrafficLightMonitorTimer() {
+    if (this.trafficLightMonitorTimer) {
+      clearInterval(this.trafficLightMonitorTimer);
+      this.trafficLightMonitorTimer = undefined;
+    }
+
+    const settings = this.settingsService.get();
+    if (!settings.automaticReportsEnabled) return;
+
+    const intervalMinutes = Math.min(
+      1440,
+      Math.max(5, Number(settings.automaticReportMonitorIntervalMinutes ?? 30)),
+    );
+    this.trafficLightMonitorTimer = setInterval(
+      () => this.runTrafficLightMonitorScan("scheduled"),
+      intervalMinutes * 60 * 1000,
+    );
+    this.logger.log(
+      `Monitor automatico de semaforos activo cada ${intervalMinutes} minutos.`,
+    );
+  }
+
+  private runTrafficLightMonitorScan(source: "scheduled" | "startup") {
+    void this.scanTrafficLightSituations(source).catch((error) => {
+      this.logger.error(
+        `Fallo revision automatica de semaforos (${source}): ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    });
+  }
+
+  private async buildGreenLightInsightsSnapshot(radiusMeters: number) {
+    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const [trafficLights, reports] = await Promise.all([
+      this.trafficLightsRepo.find({ order: { updatedAt: "DESC" }, take: 1000 }),
+      this.reportsRepo
+        .createQueryBuilder("report")
+        .leftJoinAndSelect("report.confirmations", "confirmations")
+        .where("report.createdAt >= :since", { since })
+        .andWhere("report.latitude IS NOT NULL")
+        .andWhere("report.longitude IS NOT NULL")
+        .andWhere(
+          "NOT (report.category = :autoCategory AND report.source = :autoSource AND report.title LIKE :autoTitlePrefix)",
+          {
+            autoCategory: ReportCategory.TRAFFIC_LIGHT_DAMAGED,
+            autoSource: "system",
+            autoTitlePrefix: "Situacion con semaforo -%",
+          },
+        )
+        .getMany(),
+    ]);
+
+    return {
+      trafficLights,
+      reports,
+      insights: trafficLights.map((trafficLight) =>
+        this.buildGreenLightInsight(trafficLight, reports, radiusMeters),
+      ),
     };
   }
 
@@ -669,6 +846,321 @@ export class TrafficLightsService {
         recencyBoost,
       }),
     };
+  }
+
+  private async createAutomaticReportsForInsights(
+    insights: GreenLightInsight[],
+  ) {
+    if (!this.settingsService.get().automaticReportsEnabled) {
+      return { created: 0, reused: 0, skipped: insights.length, reportIds: [] };
+    }
+
+    let created = 0;
+    let reused = 0;
+    let skipped = 0;
+    const reportIds: string[] = [];
+
+    for (const insight of insights) {
+      if (!this.shouldCreateAutomaticTrafficLightReport(insight)) {
+        skipped += 1;
+        continue;
+      }
+
+      const result = await this.createAutomaticTrafficLightReport(
+        insight,
+        "green-light-insights",
+      );
+      if (result.created) created += 1;
+      else reused += 1;
+      if (result.report?.id) reportIds.push(result.report.id);
+    }
+
+    return { created, reused, skipped, reportIds };
+  }
+
+  private shouldCreateAutomaticTrafficLightReport(insight: GreenLightInsight) {
+    return (
+      insight.trafficLight.status === "offline" ||
+      insight.priority === "critical" ||
+      insight.priority === "high"
+    );
+  }
+
+  private async createAutomaticTrafficLightReport(
+    insight: GreenLightInsight,
+    trigger:
+      | "green-light-insights"
+      | "status-update"
+      | "scheduled-scan"
+      | "startup-scan"
+      | "manual-scan",
+  ) {
+    if (!this.settingsService.get().automaticReportsEnabled) {
+      return { created: false, report: null };
+    }
+
+    const existing = await this.findRecentAutomaticTrafficLightReport(
+      insight.trafficLight.latitude,
+      insight.trafficLight.longitude,
+    );
+    if (existing) return { created: false, report: existing };
+
+    const systemUser = await this.findTrafficLightSystemUser();
+    const riskLevel =
+      insight.priority === "critical" || insight.trafficLight.status === "offline"
+        ? 5
+        : 4;
+    const locationLabel =
+      insight.trafficLight.intersection ||
+      insight.trafficLight.name ||
+      insight.trafficLight.municipality ||
+      "semaforo";
+    const description = [
+      `Reporte automatico generado por KORVI AI al detectar una situacion con un semaforo.`,
+      `Prioridad: ${insight.priority}. Puntaje: ${insight.score}/100.`,
+      `Recomendacion: ${insight.recommendation}`,
+      `Senales: ${insight.reasons.join(" ")}`,
+      `Origen: ${trigger}.`,
+    ].join(" ");
+
+    const report = this.reportsRepo.create({
+      title: `Situacion con semaforo - ${locationLabel}`.slice(0, 180),
+      category: ReportCategory.TRAFFIC_LIGHT_DAMAGED,
+      description,
+      latitude: insight.trafficLight.latitude,
+      longitude: insight.trafficLight.longitude,
+      province: insight.trafficLight.province ?? undefined,
+      municipality: insight.trafficLight.municipality ?? undefined,
+      address:
+        insight.trafficLight.intersection ||
+        insight.trafficLight.name ||
+        "Referencia automatica de semaforo",
+      riskLevel,
+      source: "system",
+      createdBy: systemUser,
+      history: [
+        this.historyRepo.create({
+          toStatus: ReportStatus.PENDING,
+          comment: `Reporte automatico por situacion de semaforo. ${insight.recommendation}`,
+          changedBy: systemUser,
+        }),
+      ],
+    });
+
+    const saved = await this.reportsRepo.save(report);
+    await this.publishTrafficLightReportCreated(saved, insight, trigger);
+    return { created: true, report: saved };
+  }
+
+  private async findRecentAutomaticTrafficLightReport(
+    latitude: number,
+    longitude: number,
+  ) {
+    const radiusMeters = this.settingsService.get().automaticReportRadiusMeters;
+    const reports = await this.reportsRepo
+      .createQueryBuilder("report")
+      .where("report.category = :category", {
+        category: ReportCategory.TRAFFIC_LIGHT_DAMAGED,
+      })
+      .andWhere("report.source = :source", { source: "system" })
+      .andWhere("report.latitude IS NOT NULL")
+      .andWhere("report.longitude IS NOT NULL")
+      .andWhere("report.status NOT IN (:...closedStatuses)", {
+        closedStatuses: [
+          ReportStatus.RESOLVED,
+          ReportStatus.REJECTED,
+          ReportStatus.DUPLICATE,
+        ],
+      })
+      .getMany();
+
+    return (
+      reports.find(
+        (report) =>
+          this.metersBetween(
+            { latitude, longitude },
+            {
+              latitude: Number(report.latitude),
+              longitude: Number(report.longitude),
+            },
+          ) <= radiusMeters,
+      ) ?? null
+    );
+  }
+
+  private async closeResolvedAutomaticTrafficLightReports(
+    insights: GreenLightInsight[],
+    radiusMeters: number,
+    trigger: string,
+  ) {
+    const openAutomaticReports = await this.reportsRepo
+      .createQueryBuilder("report")
+      .where("report.category = :category", {
+        category: ReportCategory.TRAFFIC_LIGHT_DAMAGED,
+      })
+      .andWhere("report.source = :source", { source: "system" })
+      .andWhere("report.title LIKE :titlePrefix", {
+        titlePrefix: "Situacion con semaforo -%",
+      })
+      .andWhere("report.latitude IS NOT NULL")
+      .andWhere("report.longitude IS NOT NULL")
+      .andWhere("report.status NOT IN (:...closedStatuses)", {
+        closedStatuses: [
+          ReportStatus.RESOLVED,
+          ReportStatus.REJECTED,
+          ReportStatus.DUPLICATE,
+        ],
+      })
+      .getMany();
+
+    if (!openAutomaticReports.length) return 0;
+
+    const systemUser = await this.findTrafficLightSystemUser();
+    let closed = 0;
+
+    for (const report of openAutomaticReports) {
+      const nearest = this.findNearestInsightForReport(
+        report,
+        insights,
+        radiusMeters,
+      );
+      if (!nearest || this.shouldCreateAutomaticTrafficLightReport(nearest)) {
+        continue;
+      }
+
+      const previousStatus = report.status;
+      report.status = ReportStatus.RESOLVED;
+      await this.reportsRepo.save(report);
+      await this.historyRepo.save(
+        this.historyRepo.create({
+          report,
+          fromStatus: previousStatus,
+          toStatus: ReportStatus.RESOLVED,
+          comment: `Cierre automatico por revision de semaforos. No se detectan senales activas de prioridad alta, critica o apagado. Origen: ${trigger}.`,
+          changedBy: systemUser,
+        }),
+      );
+      await this.publishTrafficLightReportStatusChanged(
+        report,
+        previousStatus,
+        nearest,
+        trigger,
+      );
+      closed += 1;
+    }
+
+    return closed;
+  }
+
+  private findNearestInsightForReport(
+    report: Report,
+    insights: GreenLightInsight[],
+    radiusMeters: number,
+  ) {
+    let nearest: GreenLightInsight | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    for (const insight of insights) {
+      const distance = this.metersBetween(
+        {
+          latitude: Number(report.latitude),
+          longitude: Number(report.longitude),
+        },
+        {
+          latitude: insight.trafficLight.latitude,
+          longitude: insight.trafficLight.longitude,
+        },
+      );
+      if (distance <= radiusMeters && distance < nearestDistance) {
+        nearest = insight;
+        nearestDistance = distance;
+      }
+    }
+
+    return nearest;
+  }
+
+  private async publishTrafficLightReportCreated(
+    report: Report,
+    insight: GreenLightInsight,
+    trigger: string,
+  ) {
+    await this.realtimeEvents.publish({
+      type: "traffic_light.report_created",
+      reportId: report.id,
+      status: report.status,
+      category: report.category,
+      riskLevel: report.riskLevel,
+      province: report.province ?? null,
+      municipality: report.municipality ?? null,
+      rooms: ["reports:map", "reports:admin", "traffic-lights:alerts"],
+      data: {
+        trigger,
+        trafficLightId: insight.trafficLight.id,
+        priority: insight.priority,
+        score: insight.score,
+        latitude: Number(report.latitude),
+        longitude: Number(report.longitude),
+      },
+    });
+    await this.realtimeEvents.publish({
+      type: "report.metrics_changed",
+      rooms: ["reports:admin"],
+      data: { reportId: report.id },
+    });
+  }
+
+  private async publishTrafficLightReportStatusChanged(
+    report: Report,
+    previousStatus: ReportStatus,
+    insight: GreenLightInsight,
+    trigger: string,
+  ) {
+    await this.realtimeEvents.publish({
+      type: "report.status_changed",
+      reportId: report.id,
+      status: report.status,
+      category: report.category,
+      riskLevel: report.riskLevel,
+      province: report.province ?? null,
+      municipality: report.municipality ?? null,
+      rooms: ["reports:map", "reports:admin", "traffic-lights:alerts"],
+      data: {
+        trigger,
+        previousStatus,
+        trafficLightId: insight.trafficLight.id,
+        priority: insight.priority,
+        score: insight.score,
+        latitude: Number(report.latitude),
+        longitude: Number(report.longitude),
+      },
+    });
+    await this.realtimeEvents.publish({
+      type: "report.metrics_changed",
+      rooms: ["reports:admin"],
+      data: { reportId: report.id },
+    });
+  }
+
+  private async findTrafficLightSystemUser() {
+    const email = this.config.get<string>(
+      "TRAFFIC_LIGHT_SYSTEM_USER_EMAIL",
+      this.config.get<string>("WEATHER_SYSTEM_USER_EMAIL", "admin@demo.com"),
+    );
+    const user = await this.usersRepo
+      .createQueryBuilder("user")
+      .where("LOWER(user.email) = LOWER(:email)", { email })
+      .getOne();
+    if (user) return user;
+
+    const fallback = await this.usersRepo.findOne({
+      where: { role: UserRole.SUPER_ADMIN },
+    });
+    if (fallback) return fallback;
+
+    throw new ServiceUnavailableException(
+      "No hay usuario de sistema para crear reportes automaticos de semaforos.",
+    );
   }
 
   private greenLightPriority(score: number): GreenLightInsight["priority"] {

@@ -92,7 +92,7 @@ mat-form-field { width: 100%; }
 .empty-state { min-height: 260px; display: grid; align-content: center; justify-items: center; gap: .5rem; color: var(--rs-text-muted); text-align: center; }
 .empty-state mat-icon { color: var(--rs-secondary); font-size: 42px; width: 42px; height: 42px; }
 .empty-state strong { color: var(--rs-text); }
-mat-paginator { margin-top: 1rem; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-surface); color: var(--rs-text); }
+mat-paginator { justify-self: end; color: var(--rs-text); }
 @media (max-width: 1100px) {
   .admin-layout, .form-row.two, .form-row.three, .form-row.compact, .media-studio-grid, .lesson-list { grid-template-columns: 1fr; }
   .media-preview-panel { position: static; }

@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { SystemConfigService } from "../system-config/system-config.service";
 
 export interface FeatureFlag {
   key: string;
@@ -13,17 +13,31 @@ export interface FeatureFlag {
 }
 
 @Injectable()
-export class FeatureFlagsService {
-  private readonly logger = new Logger(FeatureFlagsService.name);
+export class FeatureFlagsService implements OnModuleInit {
+  private static readonly CONFIG_KEY = "feature_flags";
   private readonly configPath: string;
   private current: FeatureFlag[];
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
+  ) {
     this.configPath = this.config.get<string>(
       "FEATURE_FLAGS_CONFIG_PATH",
       join(process.cwd(), ".tmp", "feature-flags-config.json"),
     );
-    this.current = this.load();
+    this.current = this.defaultFlags();
+  }
+
+  async onModuleInit() {
+    this.current = this.sanitize(
+      await this.systemConfig.loadValue(
+        FeatureFlagsService.CONFIG_KEY,
+        this.defaultFlags(),
+        this.configPath,
+      ),
+    );
+    await this.persist();
   }
 
   get(): FeatureFlag[] {
@@ -34,41 +48,22 @@ export class FeatureFlagsService {
     return this.current.find((flag) => flag.key === key)?.enabled ?? false;
   }
 
-  update(next: FeatureFlag[]): FeatureFlag[] {
+  async update(next: FeatureFlag[]): Promise<FeatureFlag[]> {
     this.current = this.sanitize(next);
-    this.persist();
+    await this.persist();
     return this.get();
   }
 
-  reset(): FeatureFlag[] {
+  async reset(): Promise<FeatureFlag[]> {
     this.current = this.defaultFlags();
-    this.persist();
+    await this.persist();
     return this.get();
   }
 
-  private load(): FeatureFlag[] {
-    if (!existsSync(this.configPath)) return this.defaultFlags();
-
-    try {
-      const stored = JSON.parse(
-        readFileSync(this.configPath, "utf8"),
-      ) as FeatureFlag[];
-      return this.sanitize(stored);
-    } catch (error) {
-      this.logger.warn(
-        `No se pudo leer feature flags: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return this.defaultFlags();
-    }
-  }
-
-  private persist() {
-    const directory = dirname(this.configPath);
-    if (!existsSync(directory)) mkdirSync(directory, { recursive: true });
-    writeFileSync(
-      this.configPath,
-      JSON.stringify(this.current, null, 2),
-      "utf8",
+  private async persist() {
+    await this.systemConfig.saveValue(
+      FeatureFlagsService.CONFIG_KEY,
+      this.current,
     );
   }
 

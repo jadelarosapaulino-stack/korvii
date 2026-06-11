@@ -115,7 +115,9 @@ export class AuthService {
   }
 
   socialAuthConfig() {
-    return this.http.get<SocialAuthConfig>(`${API_URL}/auth/social/config`);
+    return this.http.get<SocialAuthConfig>(`${API_URL}/auth/social/config`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
   }
 
   socialLogin(provider: 'google' | 'facebook', token: string) {

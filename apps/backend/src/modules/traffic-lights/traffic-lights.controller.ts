@@ -57,6 +57,12 @@ export class TrafficLightsController {
     return this.trafficLightsService.updateSettings(dto);
   }
 
+  @Post("automatic-reports/scan")
+  @Roles(UserRole.MODERATOR, UserRole.INSTITUTION_ADMIN, UserRole.SUPER_ADMIN)
+  scanAutomaticReports() {
+    return this.trafficLightsService.scanTrafficLightSituations("manual");
+  }
+
   @Post("import/osm")
   @Roles(UserRole.SUPER_ADMIN)
   importFromOpenStreetMap(@Body() dto: ImportTrafficLightsDto) {

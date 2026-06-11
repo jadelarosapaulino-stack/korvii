@@ -90,7 +90,7 @@ export class ActivateAccountComponent {
     this.auth.activateAccount(email, code).subscribe({
       next: () => {
         this.toastr.success('Cuenta activada correctamente.', 'Bienvenido');
-        this.router.navigateByUrl(this.auth.canViewExecutivePanel() ? '/dashboard' : '/reportes');
+        this.router.navigateByUrl('/map');
       },
       error: () => {
         this.toastr.error('Verifica el codigo o solicita uno nuevo.', 'No se pudo activar');

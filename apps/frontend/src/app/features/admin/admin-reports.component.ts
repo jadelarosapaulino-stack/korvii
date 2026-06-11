@@ -117,7 +117,10 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
             <mat-select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
               <mat-option value="ALL">Todos</mat-option>
               @for (category of categoryOptions; track category) {
-                <mat-option [value]="category">{{ categoryLabel(category) }}</mat-option>
+                <mat-option [value]="category">
+                  <mat-icon>{{ categoryIcon(category) }}</mat-icon>
+                  {{ categoryLabel(category) }}
+                </mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -468,6 +471,7 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.realtime.on('report.assigned'),
       this.realtime.on('report.metrics_changed'),
       this.realtime.on('weather.flood_zone_created'),
+      this.realtime.on('traffic_light.report_created'),
     )
       .pipe(auditTime(500))
       .subscribe(() => this.load());
@@ -658,10 +662,10 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private createReportMapPin(report: ReportItem): HTMLElement {
     const marker = document.createElement('span');
-    marker.className = 'report-map-pin';
+    marker.className = 'korvi-map-pin report';
 
-    const icon = document.createElement('mat-icon');
-    icon.className = 'mat-icon material-icons';
+    const icon = document.createElement('span');
+    icon.className = 'material-icons';
     icon.setAttribute('aria-hidden', 'true');
     icon.textContent = this.categoryIcon(report.category);
 

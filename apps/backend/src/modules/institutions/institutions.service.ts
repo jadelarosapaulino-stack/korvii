@@ -42,6 +42,13 @@ export class InstitutionsService {
       province: institution.province,
       municipality: institution.municipality,
       coverageArea: institution.coverageArea,
+      phone: institution.phone,
+      emergencyPhone: institution.emergencyPhone,
+      whatsapp: institution.whatsapp,
+      email: institution.email,
+      websiteUrl: institution.websiteUrl,
+      sourceUrl: institution.sourceUrl,
+      address: institution.address,
     }));
   }
 }

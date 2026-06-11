@@ -17,7 +17,7 @@ import { EducationService, Lesson, LessonProgress } from '../../core/education.s
   template: `
     <section class="lesson-page">
       <header class="lesson-header">
-        <a mat-stroked-button routerLink="/educacion">
+        <a mat-stroked-button routerLink="/education">
           <mat-icon>arrow_back</mat-icon>
           Volver
         </a>
@@ -171,7 +171,7 @@ export class EducationLessonComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
-      this.router.navigateByUrl('/educacion');
+      this.router.navigateByUrl('/education');
       return;
     }
 
@@ -182,7 +182,7 @@ export class EducationLessonComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.toastr.error('La leccion no esta disponible.', 'No se pudo cargar');
-        this.router.navigateByUrl('/educacion');
+        this.router.navigateByUrl('/education');
       },
     });
   }

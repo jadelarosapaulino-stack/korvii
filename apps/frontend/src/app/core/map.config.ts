@@ -36,8 +36,35 @@ const systemConfigStorageKey = 'ruta_segura_system_config';
 
 type StoredSystemConfig = {
   integrations?: { mapProvider?: string; geocodingProvider?: string };
-  libraries?: { mapProvider?: string; maptilerApiKey?: string };
+  libraries?: {
+    mapProvider?: string;
+    maptilerApiKey?: string;
+    mapThemeLight?: Partial<KorviStoredMapTheme>;
+    mapThemeDark?: Partial<KorviStoredMapTheme>;
+  };
   apiKeys?: { maptiler?: string; googleMaps?: string };
+};
+
+type KorviStoredMapTheme = {
+  background: string;
+  land: string;
+  park: string;
+  water: string;
+  building: string;
+  buildingOutline: string;
+  road: string;
+  roadPrimary: string;
+  roadSecondary: string;
+  roadCasing: string;
+  label: string;
+  labelMuted: string;
+  poi: string;
+  boundary: string;
+  googleBrightnessMin: number;
+  googleBrightnessMax: number;
+  googleContrast: number;
+  googleSaturation: number;
+  googleHueRotate: number;
 };
 
 type KorviMapProvider = 'MapTiler' | 'OpenStreetMap' | 'Google Maps';
@@ -72,12 +99,12 @@ type NominatimReverseGeocodeResult = {
 
 type GoogleMapsTileSession = {
   session: string;
-  apiKey: string;
   expiresAt: number;
 };
 
 const googleMapsTileSessions = new globalThis.Map<string, GoogleMapsTileSession>();
 const GOOGLE_MAPS_TILE_PROVIDER_ERROR_EVENT = 'rs-map-provider-error';
+const KORVI_MAP_DESIGN_APPLIED_KEY = '__korviMapDesignApplied';
 
 export function createKorviMap(container: HTMLElement, options: KorviMapOptions): Map {
   const apiKey = currentKorviMaptilerKey();
@@ -98,6 +125,8 @@ export function createKorviMap(container: HTMLElement, options: KorviMapOptions)
   } satisfies MapOptions);
 
   mapModes.set(map, 'standard');
+  map.on('style.load', () => applyKorviBaseMapDesign(map));
+  map.once('load', () => applyKorviBaseMapDesign(map));
   if (provider === 'Google Maps') {
     applyGoogleMapsTileStyle(map, 'standard');
   }
@@ -171,12 +200,134 @@ export function onKorviMapStyleReady(map: Map, callback: () => void): void {
   const run = () => {
     if (completed) return;
     completed = true;
+    applyKorviBaseMapDesign(map);
     requestAnimationFrame(callback);
   };
 
   map.once('style.load', run);
   map.once('idle', run);
   window.setTimeout(run, 900);
+}
+
+export function applyKorviBaseMapDesign(map?: Map): void {
+  if (!map) return;
+  if (currentKorviMapProvider() !== 'MapTiler') return;
+  if (getKorviMapMode(map) === 'hybrid') return;
+
+  const style = map.getStyle();
+  const stamp = `${isKorviDarkTheme() ? 'dark' : 'light'}:${style?.name ?? 'style'}:${style?.layers?.length ?? 0}`;
+  const state = map as Map & Record<string, string | undefined>;
+  if (state[KORVI_MAP_DESIGN_APPLIED_KEY] === stamp) return;
+
+  try {
+    const palette = currentKorviMapTheme();
+
+    for (const layer of style.layers ?? []) {
+      const id = layer.id.toLowerCase();
+      if (layer.type === 'background') {
+        setPaint(map, layer.id, 'background-color', palette.background);
+      }
+      if (layer.type === 'fill') {
+        if (id.includes('water')) setPaint(map, layer.id, 'fill-color', palette.water);
+        else if (id.includes('park') || id.includes('landcover') || id.includes('landuse') || id.includes('wood') || id.includes('grass')) {
+          setPaint(map, layer.id, 'fill-color', palette.park);
+        } else if (id.includes('building')) {
+          setPaint(map, layer.id, 'fill-color', palette.building);
+          setPaint(map, layer.id, 'fill-outline-color', palette.buildingOutline);
+          setPaint(map, layer.id, 'fill-opacity', isKorviDarkTheme() ? 0.66 : 0.78);
+        } else if (id.includes('land') || id.includes('earth')) {
+          setPaint(map, layer.id, 'fill-color', palette.land);
+        }
+      }
+      if (layer.type === 'line') {
+        if (id.includes('road') || id.includes('street') || id.includes('transport')) {
+          const isMajorRoad = id.includes('motorway') || id.includes('trunk') || id.includes('primary');
+          const isSecondaryRoad = id.includes('secondary') || id.includes('tertiary');
+          setPaint(map, layer.id, 'line-color', isMajorRoad ? palette.roadPrimary : isSecondaryRoad ? palette.roadSecondary : palette.road);
+          if (isMajorRoad) setPaint(map, layer.id, 'line-opacity', isKorviDarkTheme() ? 0.92 : 0.96);
+          if (isSecondaryRoad) setPaint(map, layer.id, 'line-opacity', isKorviDarkTheme() ? 0.74 : 0.86);
+        }
+        if (id.includes('case') || id.includes('casing')) setPaint(map, layer.id, 'line-color', palette.roadCasing);
+        if (id.includes('boundary') || id.includes('admin')) {
+          setPaint(map, layer.id, 'line-color', palette.boundary);
+          setPaint(map, layer.id, 'line-opacity', isKorviDarkTheme() ? 0.45 : 0.58);
+        }
+      }
+      if (layer.type === 'symbol') {
+        if (id.includes('label') || id.includes('place') || id.includes('poi') || id.includes('road')) {
+          setPaint(map, layer.id, 'text-color', id.includes('poi') ? palette.poi : id.includes('road') ? palette.labelMuted : palette.label);
+          setPaint(map, layer.id, 'text-halo-color', isKorviDarkTheme() ? '#0D1B24' : '#FFFFFF');
+          setPaint(map, layer.id, 'text-halo-width', isKorviDarkTheme() ? 1.35 : 1.55);
+          if (id.includes('poi')) setPaint(map, layer.id, 'icon-color', palette.poi);
+        }
+      }
+    }
+
+    state[KORVI_MAP_DESIGN_APPLIED_KEY] = stamp;
+  } catch {
+    state[KORVI_MAP_DESIGN_APPLIED_KEY] = stamp;
+  }
+}
+
+function currentKorviMapTheme(): KorviStoredMapTheme {
+  const defaults = defaultKorviMapTheme(isKorviDarkTheme());
+  const stored = readStoredSystemConfig()?.libraries;
+  const override = isKorviDarkTheme() ? stored?.mapThemeDark : stored?.mapThemeLight;
+  return { ...defaults, ...override };
+}
+
+function defaultKorviMapTheme(dark: boolean): KorviStoredMapTheme {
+  return dark
+    ? {
+          background: '#0D1B24',
+          land: '#12242A',
+          park: '#153B32',
+          water: '#123F51',
+          building: '#1B3039',
+          buildingOutline: '#284652',
+          road: '#38525D',
+          roadPrimary: '#4FA3A0',
+          roadSecondary: '#53778A',
+          roadCasing: '#0A1821',
+          label: '#E5F3F1',
+          labelMuted: '#A8BDC2',
+          poi: '#98D6CF',
+          boundary: '#4F737A',
+          googleBrightnessMin: 0.04,
+          googleBrightnessMax: 0.74,
+          googleContrast: 0.14,
+          googleSaturation: -0.32,
+          googleHueRotate: 16,
+        }
+    : {
+          background: '#EEF7F6',
+          land: '#F7FBF9',
+          park: '#DDF3E6',
+          water: '#B9E7EF',
+          building: '#E2EBF0',
+          buildingOutline: '#CFDDE4',
+          road: '#FFFFFF',
+          roadPrimary: '#A7DCD7',
+          roadSecondary: '#D5E7EF',
+          roadCasing: '#8FBFCA',
+          label: '#163548',
+          labelMuted: '#657A86',
+          poi: '#4F8F8B',
+          boundary: '#9ABFC3',
+          googleBrightnessMin: 0.06,
+          googleBrightnessMax: 0.98,
+          googleContrast: 0.1,
+          googleSaturation: -0.28,
+          googleHueRotate: 22,
+        };
+}
+
+function setPaint(map: Map, layerId: string, property: string, value: unknown): void {
+  try {
+    map.setPaintProperty(layerId, property, value);
+  } catch {
+    // Some provider styles expose layers with restricted or incompatible paint keys.
+  }
 }
 
 export function toLngLat(point: LatLngPoint): [number, number] {
@@ -320,11 +471,12 @@ function openStreetMapRasterStyle(): KorviMapStyle {
 }
 
 async function applyGoogleMapsTileStyle(map: Map, mode: KorviMapMode): Promise<void> {
+  map.setStyle(googleMapsPendingStyle());
   try {
     const key = currentKorviGoogleMapsKey();
     const mapType = googleMapsMapType(mode);
     const session = await googleMapsTileSession(mapType, key);
-    map.setStyle(googleMapsRasterStyle(session.session, session.apiKey, mapType));
+    map.setStyle(googleMapsRasterStyle(session.session, mapType));
   } catch {
     dispatchGoogleMapsProviderError('No se pudo cargar Google Maps. Verifica GOOGLE_MAPS_API_KEY, billing, Map Tiles API y permisos para este origen.');
   }
@@ -412,29 +564,45 @@ async function googleMapsTileSession(mapType: string, key: string): Promise<Goog
   });
   if (!response.ok) throw new Error('Google Maps Tile API session failed');
 
-  const payload = await response.json() as { session?: string; apiKey?: string; expiry?: string };
+  const payload = await response.json() as { session?: string; expiry?: string };
   if (!payload.session) throw new Error('Google Maps Tile API session missing');
-  if (!payload.apiKey) throw new Error('Google Maps API key missing');
 
   const expiry = Number(payload.expiry);
   const session = {
     session: payload.session,
-    apiKey: payload.apiKey,
     expiresAt: Number.isFinite(expiry) ? expiry * 1000 : Date.now() + 13 * 24 * 60 * 60 * 1000,
   };
-  googleMapsTileSessions.set(`${mapType}:${key || payload.apiKey}`, session);
+  googleMapsTileSessions.set(`${mapType}:${key}`, session);
   return session;
 }
 
-function googleMapsRasterStyle(session: string, key: string, mapType: string): KorviMapStyle {
+function googleMapsRasterStyle(session: string, mapType: string): KorviMapStyle {
   const attribution = '&copy; Google';
+  const theme = currentKorviMapTheme();
+  const rasterPaint =
+    mapType === 'satellite'
+      ? {
+          'raster-brightness-min': Math.max(0, theme.googleBrightnessMin - 0.04),
+          'raster-brightness-max': Math.min(1, theme.googleBrightnessMax - 0.08),
+          'raster-contrast': Math.max(-1, theme.googleContrast - 0.02),
+          'raster-saturation': Math.max(-1, theme.googleSaturation + 0.12),
+          'raster-hue-rotate': theme.googleHueRotate - 8,
+        }
+      : {
+          'raster-brightness-min': theme.googleBrightnessMin,
+          'raster-brightness-max': theme.googleBrightnessMax,
+          'raster-contrast': theme.googleContrast,
+          'raster-saturation': theme.googleSaturation,
+          'raster-hue-rotate': theme.googleHueRotate,
+        };
+
   return {
     version: 8,
     sources: {
       google: {
         type: 'raster',
         tiles: [
-          `https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=${encodeURIComponent(session)}&key=${encodeURIComponent(key)}`,
+          `${API_URL}/reports/maps/google/tiles/{z}/{x}/{y}?session=${encodeURIComponent(session)}`,
         ],
         tileSize: 256,
         attribution,
@@ -445,6 +613,7 @@ function googleMapsRasterStyle(session: string, key: string, mapType: string): K
         id: `google-${mapType}`,
         type: 'raster',
         source: 'google',
+        paint: rasterPaint,
       },
     ],
   } as KorviMapStyle;
@@ -456,7 +625,7 @@ function googleMapsRasterStyleFromCachedSession(mode: KorviMapMode): KorviMapSty
   const mapType = googleMapsMapType(mode);
   const cached = googleMapsTileSessions.get(`${mapType}:${key}`) ?? [...googleMapsTileSessions.entries()].find(([cacheKey]) => cacheKey.startsWith(`${mapType}:`))?.[1];
   if (!cached || cached.expiresAt <= Date.now() + 60000) return null;
-  return googleMapsRasterStyle(cached.session, cached.apiKey, mapType);
+  return googleMapsRasterStyle(cached.session, mapType);
 }
 
 function googleMapsMapType(mode: KorviMapMode): 'roadmap' | 'satellite' {

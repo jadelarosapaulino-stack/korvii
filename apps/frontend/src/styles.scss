@@ -324,6 +324,10 @@ body.rs-dark-theme .korvi-map-controls button.active {
   padding-top: 1.6rem;
 }
 
+.mat-mdc-paginator-page-size-select.mat-mdc-form-field {
+  padding-top: 0 !important;
+}
+
 .mat-mdc-form-field .mat-mdc-text-field-wrapper,
 .mat-mdc-form-field .mat-mdc-form-field-flex,
 .mat-mdc-form-field .mdc-text-field,
@@ -369,6 +373,75 @@ body.rs-dark-theme .korvi-map-controls button.active {
 body.rs-dark-theme .mat-mdc-form-field .mdc-floating-label,
 body.rs-dark-theme .mat-mdc-form-field .mdc-floating-label--float-above {
   background: var(--rs-surface);
+}
+
+body:not(.rs-dark-theme) {
+  color-scheme: light;
+}
+
+body:not(.rs-dark-theme) .mat-mdc-card,
+body:not(.rs-dark-theme) .mat-mdc-menu-panel,
+body:not(.rs-dark-theme) .mat-mdc-select-panel,
+body:not(.rs-dark-theme) .mat-mdc-autocomplete-panel,
+body:not(.rs-dark-theme) .mat-mdc-dialog-surface {
+  background: var(--rs-surface) !important;
+  color: var(--rs-text) !important;
+}
+
+body:not(.rs-dark-theme) .mat-mdc-text-field-wrapper,
+body:not(.rs-dark-theme) .mdc-text-field {
+  background: var(--rs-surface) !important;
+  color: var(--rs-text) !important;
+}
+
+body:not(.rs-dark-theme) .mat-mdc-form-field {
+  --mdc-outlined-text-field-outline-color: var(--rs-border);
+  --mdc-outlined-text-field-hover-outline-color: var(--rs-primary);
+  --mdc-outlined-text-field-focus-outline-color: var(--rs-secondary);
+  --mdc-outlined-text-field-label-text-color: var(--rs-text-muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--rs-text);
+  --mdc-outlined-text-field-focus-label-text-color: var(--rs-secondary);
+  --mdc-outlined-text-field-input-text-color: var(--rs-text);
+  --mat-form-field-container-text-color: var(--rs-text);
+  --mat-form-field-subscript-text-color: var(--rs-text-muted);
+  --mat-select-enabled-trigger-text-color: var(--rs-text);
+  --mat-select-enabled-arrow-color: var(--rs-text-muted);
+  --mat-select-focused-arrow-color: var(--rs-secondary);
+}
+
+body:not(.rs-dark-theme) .mat-mdc-select-value,
+body:not(.rs-dark-theme) .mat-mdc-input-element,
+body:not(.rs-dark-theme) .mdc-text-field__input {
+  color: var(--rs-text) !important;
+  -webkit-text-fill-color: var(--rs-text) !important;
+}
+
+body:not(.rs-dark-theme) .mat-mdc-form-field .mdc-floating-label,
+body:not(.rs-dark-theme) .mat-mdc-form-field .mdc-floating-label--float-above {
+  background: var(--rs-surface);
+  color: var(--rs-text-muted) !important;
+  -webkit-text-fill-color: var(--rs-text-muted) !important;
+}
+
+body:not(.rs-dark-theme) .mat-mdc-form-field.mat-focused .mdc-floating-label,
+body:not(.rs-dark-theme) .mat-mdc-form-field.mat-focused .mdc-floating-label--float-above {
+  color: var(--rs-secondary) !important;
+  -webkit-text-fill-color: var(--rs-secondary) !important;
+}
+
+body:not(.rs-dark-theme) .mdc-notched-outline__leading,
+body:not(.rs-dark-theme) .mdc-notched-outline__notch,
+body:not(.rs-dark-theme) .mdc-notched-outline__trailing {
+  border-color: var(--rs-border) !important;
+}
+
+body:not(.rs-dark-theme) .mat-mdc-form-field:hover .mdc-notched-outline__leading,
+body:not(.rs-dark-theme) .mat-mdc-form-field:hover .mdc-notched-outline__notch,
+body:not(.rs-dark-theme) .mat-mdc-form-field:hover .mdc-notched-outline__trailing,
+body:not(.rs-dark-theme) .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+body:not(.rs-dark-theme) .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+body:not(.rs-dark-theme) .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--rs-secondary) !important;
 }
 
 body.rs-dark-theme {
@@ -528,6 +601,183 @@ body.rs-dark-theme .mat-mdc-paginator {
   background: var(--rs-surface) !important;
 }
 
+.korvi-map-pin {
+  --pin-color: var(--rs-primary);
+  --pin-icon-size: 18px;
+  position: relative;
+  width: 34px;
+  height: 40px;
+  display: block;
+  color: #fff;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 8px rgba(15, 47, 69, 0.18));
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s ease;
+  transform-origin: bottom center;
+}
+
+.korvi-map-pin:hover {
+  transform: scale(1.12);
+  filter: drop-shadow(0 6px 12px rgba(15, 47, 69, 0.24));
+}
+
+.korvi-map-pin.is-selected {
+  transform: scale(1.18);
+  filter: drop-shadow(0 8px 16px rgba(15, 47, 69, 0.3));
+}
+
+.korvi-map-pin::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--pin-color);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.korvi-map-pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  width: 12px;
+  height: 12px;
+  background: var(--pin-color);
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translateX(-50%) rotate(45deg);
+  z-index: 1;
+}
+
+.korvi-map-pin .material-icons,
+.korvi-map-pin .mat-icon {
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  width: var(--pin-icon-size);
+  height: var(--pin-icon-size);
+  color: currentColor;
+  font-family: 'Material Icons';
+  font-size: var(--pin-icon-size);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  transform: translateX(-50%);
+  z-index: 2;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+.korvi-map-pin.is-small {
+  width: 28px;
+  height: 34px;
+  --pin-icon-size: 15px;
+}
+
+.korvi-map-pin.is-small::before {
+  width: 26px;
+  height: 26px;
+}
+
+.korvi-map-pin.is-small::after {
+  top: 19px;
+  width: 10px;
+  height: 10px;
+}
+
+.korvi-map-pin.is-small .material-icons,
+.korvi-map-pin.is-small .mat-icon {
+  top: 5.5px;
+}
+
+.korvi-map-pin.is-selected::before {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin-color) 28%, transparent) !important;
+}
+
+.korvi-map-pin.is-dragging,
+.korvi-map-pin[draggable='true'] {
+  cursor: grab;
+}
+
+.korvi-map-pin[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.korvi-map-pin.low { --pin-color: var(--rs-secondary); }
+.korvi-map-pin.medium { --pin-color: var(--rs-warning); }
+.korvi-map-pin.high { --pin-color: var(--rs-danger); }
+.korvi-map-pin.report { --pin-color: var(--rs-danger); }
+.korvi-map-pin.location { --pin-color: var(--rs-danger); }
+.korvi-map-pin.traffic-light { --pin-color: var(--rs-warning); }
+.korvi-map-pin.user-location {
+  --pin-color: #1677FF;
+  --pin-icon-size: 22px;
+  width: 44px;
+  height: 52px;
+  color: #ffffff;
+  filter: drop-shadow(0 10px 18px rgba(11, 31, 58, .34));
+}
+
+.korvi-map-pin.user-location::before {
+  top: 0;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ffffff;
+  background: var(--pin-color);
+  box-shadow:
+    0 0 0 5px rgba(22, 119, 255, .2),
+    0 0 0 12px rgba(22, 119, 255, .11);
+  animation: userLocationPulse 1.9s ease-out infinite;
+}
+
+.korvi-map-pin.user-location::after {
+  top: 30px;
+  width: 14px;
+  height: 14px;
+  border-right: 4px solid #ffffff;
+  border-bottom: 4px solid #ffffff;
+  background: var(--pin-color);
+}
+
+.korvi-map-pin.user-location .material-icons,
+.korvi-map-pin.user-location .mat-icon {
+  top: 9px;
+  font-weight: 700;
+}
+
+.korvi-map-pin.user-location:hover {
+  transform: scale(1.08);
+  filter: drop-shadow(0 12px 22px rgba(11, 31, 58, .38));
+}
+
+@keyframes userLocationPulse {
+  0% {
+    box-shadow:
+      0 0 0 5px rgba(22, 119, 255, .22),
+      0 0 0 12px rgba(22, 119, 255, .12);
+  }
+  70% {
+    box-shadow:
+      0 0 0 9px rgba(22, 119, 255, .1),
+      0 0 0 22px rgba(22, 119, 255, 0);
+  }
+  100% {
+    box-shadow:
+      0 0 0 5px rgba(22, 119, 255, .22),
+      0 0 0 12px rgba(22, 119, 255, .12);
+  }
+}
+.korvi-map-pin.route-origin { --pin-color: var(--rs-secondary); }
+.korvi-map-pin.route-destination { --pin-color: var(--rs-primary); }
+
 body.rs-dark-theme .mat-datepicker-content,
 body.rs-dark-theme .mat-datepicker-content .mat-calendar {
   background: var(--rs-surface) !important;
@@ -593,11 +843,6 @@ body.rs-dark-theme .mat-calendar-body-disabled .mat-calendar-body-cell-content {
 
 body.rs-dark-theme .mat-date-range-input-separator {
   color: var(--rs-text-muted) !important;
-}
-
-body.rs-dark-theme .mat-mdc-paginator .mat-mdc-select-value,
-body.rs-dark-theme .mat-mdc-paginator .mat-mdc-icon-button {
-  color: var(--rs-text) !important;
 }
 
 body.rs-dark-theme .mat-icon,
@@ -716,13 +961,18 @@ body.rs-dark-theme .navbar-avatar.has-photo {
 body.rs-dark-theme .avatar,
 body.rs-dark-theme .avatar-preview,
 body.rs-dark-theme .avatar-choice-preview,
-body.rs-dark-theme .risk-marker,
-body.rs-dark-theme .risk-marker-level,
-body.rs-dark-theme .summary-risk-marker,
-body.rs-dark-theme .user-location-marker,
 body.rs-dark-theme .dashboard-heat-point,
 body.rs-dark-theme .mini-marker {
   border-color: var(--rs-surface) !important;
+}
+
+body.rs-dark-theme .korvi-map-pin::before {
+  border-color: var(--rs-surface);
+}
+
+body.rs-dark-theme .korvi-map-pin::after {
+  border-right-color: var(--rs-surface);
+  border-bottom-color: var(--rs-surface);
 }
 
 body.rs-dark-theme .control-tile.success > mat-icon:first-child { background: var(--rs-success-soft) !important; color: var(--rs-success) !important; }
@@ -742,6 +992,19 @@ body.rs-dark-theme .control-tile.purple > mat-icon:first-child { background: var
   background-image: none !important;
   box-shadow: none !important;
   text-shadow: none !important;
+}
+
+.auth-page {
+  background-image: url('/assets/auth/korvi-auth-background.png') !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: cover !important;
+}
+
+@media (max-width: 760px) {
+  .auth-page {
+    background-position: 62% center !important;
+  }
 }
 
 /* Pastel Material color enforcement after the prebuilt Angular Material theme. */

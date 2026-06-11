@@ -10,8 +10,8 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const router = inject(Router);
 
   if (auth.isAuthenticated()) {
-    if (auth.user()?.mustChangePassword && state.url !== '/perfil/cambiar-contrasena') {
-      return router.createUrlTree(['/perfil/cambiar-contrasena']);
+    if (auth.user()?.mustChangePassword && state.url !== '/profile/change-password') {
+      return router.createUrlTree(['/profile/change-password']);
     }
     return true;
   }
@@ -23,8 +23,8 @@ export const guestGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (!auth.isAuthenticated()) return true;
-  if (auth.user()?.mustChangePassword) return router.createUrlTree(['/perfil/cambiar-contrasena']);
-  return router.createUrlTree([auth.canViewExecutivePanel() ? '/dashboard' : '/reportes']);
+  if (auth.user()?.mustChangePassword) return router.createUrlTree(['/profile/change-password']);
+  return router.createUrlTree([auth.canViewExecutivePanel() ? '/dashboard' : '/reports']);
 };
 
 export const reportManagerGuard: CanActivateFn = () => {
@@ -36,7 +36,7 @@ export const reportManagerGuard: CanActivateFn = () => {
   return permissions.load().pipe(
     map(() => {
       const baseRole = permissions.baseRoleFor(auth.user()?.role);
-      return ['MODERATOR', 'INSTITUTION_ADMIN', 'INSURANCE_ADMIN', 'SUPER_ADMIN'].includes(baseRole) ? true : router.createUrlTree(['/reportes']);
+      return ['MODERATOR', 'INSTITUTION_ADMIN', 'INSURANCE_ADMIN', 'SUPER_ADMIN'].includes(baseRole) ? true : router.createUrlTree(['/reports']);
     }),
   );
 };
@@ -50,7 +50,7 @@ export const executivePanelGuard: CanActivateFn = () => {
   return permissions.load().pipe(
     map(() => {
       const baseRole = permissions.baseRoleFor(auth.user()?.role);
-      return ['MODERATOR', 'INSTITUTION_ADMIN', 'INSURANCE_ADMIN', 'SUPER_ADMIN'].includes(baseRole) ? true : router.createUrlTree(['/reportes']);
+      return ['MODERATOR', 'INSTITUTION_ADMIN', 'INSURANCE_ADMIN', 'SUPER_ADMIN'].includes(baseRole) ? true : router.createUrlTree(['/reports']);
     }),
   );
 };
@@ -62,7 +62,7 @@ export const superAdminGuard: CanActivateFn = () => {
 
   if (auth.canManageSystem()) return true;
   return permissions.load().pipe(
-    map(() => permissions.baseRoleFor(auth.user()?.role) === 'SUPER_ADMIN' ? true : router.createUrlTree(['/reportes'])),
+    map(() => permissions.baseRoleFor(auth.user()?.role) === 'SUPER_ADMIN' ? true : router.createUrlTree(['/reports'])),
   );
 };
 
@@ -100,7 +100,7 @@ export const featureFlagGuard: CanActivateFn = (route) => {
       const allowed = featureKey
         ? featureFlags.isEnabled(featureKey)
         : Boolean(featureAnyOf?.some((key) => featureFlags.isEnabled(key)));
-      return allowed ? true : router.createUrlTree(['/reportes']);
+      return allowed ? true : router.createUrlTree(['/reports']);
     }),
   );
 };
@@ -108,10 +108,10 @@ export const featureFlagGuard: CanActivateFn = (route) => {
 function fallbackRoute(auth: AuthService, permissions: RolePermissionsService): string {
   const role = auth.user()?.role;
   const candidates = [
-    { key: 'reports', route: '/reportes' },
-    { key: 'map', route: '/mapa' },
-    { key: 'education', route: '/educacion' },
+    { key: 'reports', route: '/reports' },
+    { key: 'map', route: '/map' },
+    { key: 'education', route: '/education' },
     { key: 'dashboard', route: '/dashboard' },
   ];
-  return candidates.find((candidate) => permissions.isEnabled(role, candidate.key))?.route ?? '/perfil';
+  return candidates.find((candidate) => permissions.isEnabled(role, candidate.key))?.route ?? '/profile';
 }

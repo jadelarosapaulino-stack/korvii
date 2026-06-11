@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
+import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { REPORT_CATEGORY_LABELS, ReportCategory } from './reports.service';
 import { API_URL } from './api.config';
 
@@ -40,6 +41,8 @@ export interface SystemLibraryConfig {
   maptilerApiKey: string;
   mapStyleLight: string;
   mapStyleDark: string;
+  mapThemeLight: SystemMapThemeConfig;
+  mapThemeDark: SystemMapThemeConfig;
   defaultLatitude: number;
   defaultLongitude: number;
   defaultZoom: number;
@@ -55,6 +58,28 @@ export interface SystemLibraryConfig {
   routingEndpoint: string;
   avoidHighRiskReports: boolean;
   routeRiskRadiusMeters: number;
+}
+
+export interface SystemMapThemeConfig {
+  background: string;
+  land: string;
+  park: string;
+  water: string;
+  building: string;
+  buildingOutline: string;
+  road: string;
+  roadPrimary: string;
+  roadSecondary: string;
+  roadCasing: string;
+  label: string;
+  labelMuted: string;
+  poi: string;
+  boundary: string;
+  googleBrightnessMin: number;
+  googleBrightnessMax: number;
+  googleContrast: number;
+  googleSaturation: number;
+  googleHueRotate: number;
 }
 
 export interface SystemSubscriptionConfig {
@@ -139,6 +164,13 @@ export class SystemConfigService {
 
   constructor(private readonly http: HttpClient) {}
 
+  loadSharedConfig(): Observable<SystemConfig> {
+    return this.http.get<Partial<SystemConfig>>(`${API_URL}/system/config`).pipe(
+      map((shared) => this.applySharedConfig(shared)),
+      catchError(() => of(this.config())),
+    );
+  }
+
   loadWeatherConfig() {
     this.http.get<SystemWeatherConfig>(`${API_URL}/reports/weather/config`).subscribe({
       next: (weather) => this.applyWeatherConfig(weather),
@@ -179,19 +211,11 @@ export class SystemConfigService {
   updateSocialAuth(patch: Partial<SystemSocialAuthConfig>) {
     const optimistic = { ...this.config().socialAuth, ...patch };
     this.update({ ...this.config(), socialAuth: optimistic });
-    this.http.patch<SystemSocialAuthConfig>(`${API_URL}/auth/social/settings`, patch).subscribe({
-      next: (socialAuth) => this.applySocialAuthConfig(socialAuth),
-      error: () => undefined,
-    });
   }
 
   updateWeather(patch: Partial<SystemWeatherConfig>) {
     const optimistic = { ...this.config().weather, ...patch };
     this.update({ ...this.config(), weather: optimistic });
-    this.http.patch<SystemWeatherConfig>(`${API_URL}/reports/weather/config`, patch).subscribe({
-      next: (weather) => this.applyWeatherConfig(weather),
-      error: () => undefined,
-    });
   }
 
   updateApiKeys(patch: Partial<SystemApiKeysConfig>) {
@@ -235,14 +259,41 @@ export class SystemConfigService {
   resetDefaults() {
     const defaults = this.defaultConfig();
     this.update(defaults);
-    this.http.patch<SystemWeatherConfig>(`${API_URL}/reports/weather/config`, defaults.weather).subscribe({
-      next: (weather) => this.applyWeatherConfig(weather),
-      error: () => undefined,
-    });
-    this.http.patch<SystemSocialAuthConfig>(`${API_URL}/auth/social/settings`, defaults.socialAuth).subscribe({
-      next: (socialAuth) => this.applySocialAuthConfig(socialAuth),
-      error: () => undefined,
-    });
+  }
+
+  saveSharedConfig(config = this.config()): Observable<Partial<SystemConfig>> {
+    const payload: Partial<SystemConfig> = {
+      categories: config.categories,
+      libraries: config.libraries,
+      integrations: config.integrations,
+      apiKeys: config.apiKeys,
+      storage: config.storage,
+      subscriptions: config.subscriptions,
+    };
+    return this.http.patch<Partial<SystemConfig>>(`${API_URL}/system/config`, payload).pipe(
+      map((shared) => {
+        this.applySharedConfig(shared);
+        return shared;
+      }),
+    );
+  }
+
+  saveConfig(config = this.config()) {
+    const socialAuth: Partial<SystemSocialAuthConfig> = {
+      googleClientId: config.socialAuth.googleClientId,
+      facebookAppId: config.socialAuth.facebookAppId,
+    };
+    return forkJoin({
+      shared: this.saveSharedConfig(config),
+      weather: this.http.patch<SystemWeatherConfig>(`${API_URL}/reports/weather/config`, config.weather),
+      socialAuth: this.http.patch<SystemSocialAuthConfig>(`${API_URL}/auth/social/settings`, socialAuth),
+    }).pipe(
+      map((result) => {
+        this.applyWeatherConfig(result.weather);
+        this.applySocialAuthConfig(result.socialAuth);
+        return result;
+      }),
+    );
   }
 
   private update(next: SystemConfig) {
@@ -259,64 +310,83 @@ export class SystemConfigService {
     this.update({ ...this.config(), socialAuth: { ...this.defaultConfig().socialAuth, ...socialAuth } });
   }
 
+  private applySharedConfig(shared: Partial<SystemConfig>): SystemConfig {
+    const next = this.mergeConfig(shared, this.config());
+    this.update(next);
+    return next;
+  }
+
   private readConfig(): SystemConfig {
     const raw = localStorage.getItem(this.storageKey);
     if (!raw) return this.defaultConfig();
 
     try {
       const stored = JSON.parse(raw) as Partial<SystemConfig>;
-      const apiKeys = {
-        ...this.defaultConfig().apiKeys,
-        ...stored.apiKeys,
-        maptiler: stored.apiKeys?.maptiler ?? stored.libraries?.maptilerApiKey ?? this.defaultConfig().apiKeys.maptiler,
-        googleMaps: stored.apiKeys?.googleMaps ?? '',
-        googleForecast:
-          stored.apiKeys?.googleForecast ??
-          (stored.weather?.weatherProvider === 'Google Weather Forecast API' || stored.weather?.premiumProvider === 'Google Forecast' ? stored.weather?.premiumApiKey : '') ??
-          '',
-        tomorrowIo: stored.apiKeys?.tomorrowIo ?? (stored.weather?.premiumProvider === 'Tomorrow.io' ? stored.weather?.premiumApiKey : '') ?? '',
-        meteomatics: stored.apiKeys?.meteomatics ?? (stored.weather?.premiumProvider === 'Meteomatics' ? stored.weather?.premiumApiKey : '') ?? '',
-        googleFloodForecasting: stored.apiKeys?.googleFloodForecasting ?? (stored.weather?.floodProvider === 'Google Flood Forecasting API' ? stored.weather?.premiumApiKey : '') ?? '',
-      };
-      const defaultConfig = this.defaultConfig();
-      const integrations = {
-        ...defaultConfig.integrations,
-        ...stored.integrations,
-        mapProvider: stored.integrations?.mapProvider ?? stored.libraries?.mapProvider ?? defaultConfig.integrations.mapProvider,
-        routingProvider: stored.integrations?.routingProvider ?? stored.libraries?.routingProvider ?? defaultConfig.integrations.routingProvider,
-        weatherProvider: stored.integrations?.weatherProvider ?? stored.weather?.weatherProvider ?? defaultConfig.integrations.weatherProvider,
-        floodProvider: stored.integrations?.floodProvider ?? stored.weather?.floodProvider ?? defaultConfig.integrations.floodProvider,
-        storageProvider: stored.integrations?.storageProvider ?? stored.storage?.provider ?? defaultConfig.integrations.storageProvider,
-      };
-      return {
-        ...defaultConfig,
-        ...stored,
-        categories: this.mergeCategories(stored.categories),
-        storage: { ...defaultConfig.storage, ...stored.storage, provider: integrations.storageProvider },
-        libraries: { ...defaultConfig.libraries, ...stored.libraries, mapProvider: integrations.mapProvider, routingProvider: integrations.routingProvider },
-        subscriptions: { ...defaultConfig.subscriptions, ...stored.subscriptions },
-        socialAuth: { ...defaultConfig.socialAuth, ...stored.socialAuth },
-        weather: {
-          ...defaultConfig.weather,
-          ...stored.weather,
-          weatherProvider: integrations.weatherProvider,
-          floodProvider: integrations.floodProvider,
-          floodMonitorCountries: stored.weather?.floodMonitorCountries?.length
-            ? stored.weather.floodMonitorCountries
-            : [stored.weather?.floodMonitorCountry ?? defaultConfig.weather.floodMonitorCountry],
-        },
-        apiKeys,
-        integrations,
-      };
+      return this.mergeConfig(stored);
     } catch {
       localStorage.removeItem(this.storageKey);
       return this.defaultConfig();
     }
   }
 
-  private mergeCategories(stored: SystemConfig['categories'] | undefined): ReportCategoryConfig[] {
+  private mergeConfig(stored: Partial<SystemConfig>, base = this.defaultConfig()): SystemConfig {
+      const apiKeys = {
+        ...base.apiKeys,
+        ...stored.apiKeys,
+        maptiler: stored.apiKeys?.maptiler ?? stored.libraries?.maptilerApiKey ?? base.apiKeys.maptiler,
+        googleMaps: stored.apiKeys?.googleMaps ?? base.apiKeys.googleMaps,
+        googleForecast:
+          stored.apiKeys?.googleForecast ??
+          (stored.weather?.weatherProvider === 'Google Weather Forecast API' || stored.weather?.premiumProvider === 'Google Forecast' ? stored.weather?.premiumApiKey : '') ??
+          base.apiKeys.googleForecast,
+        tomorrowIo: stored.apiKeys?.tomorrowIo ?? (stored.weather?.premiumProvider === 'Tomorrow.io' ? stored.weather?.premiumApiKey : '') ?? base.apiKeys.tomorrowIo,
+        meteomatics: stored.apiKeys?.meteomatics ?? (stored.weather?.premiumProvider === 'Meteomatics' ? stored.weather?.premiumApiKey : '') ?? base.apiKeys.meteomatics,
+        googleFloodForecasting:
+          stored.apiKeys?.googleFloodForecasting ??
+          (stored.weather?.floodProvider === 'Google Flood Forecasting API' ? stored.weather?.premiumApiKey : '') ??
+          base.apiKeys.googleFloodForecasting,
+      };
+      const integrations = {
+        ...base.integrations,
+        ...stored.integrations,
+        mapProvider: stored.integrations?.mapProvider ?? stored.libraries?.mapProvider ?? base.integrations.mapProvider,
+        routingProvider: stored.integrations?.routingProvider ?? stored.libraries?.routingProvider ?? base.integrations.routingProvider,
+        weatherProvider: stored.integrations?.weatherProvider ?? stored.weather?.weatherProvider ?? base.integrations.weatherProvider,
+        floodProvider: stored.integrations?.floodProvider ?? stored.weather?.floodProvider ?? base.integrations.floodProvider,
+        storageProvider: stored.integrations?.storageProvider ?? stored.storage?.provider ?? base.integrations.storageProvider,
+      };
+      return {
+        ...base,
+        ...stored,
+        categories: this.mergeCategories(stored.categories, base.categories),
+        storage: { ...base.storage, ...stored.storage, provider: integrations.storageProvider },
+        libraries: {
+          ...base.libraries,
+          ...stored.libraries,
+          mapProvider: integrations.mapProvider,
+          routingProvider: integrations.routingProvider,
+          mapThemeLight: { ...base.libraries.mapThemeLight, ...stored.libraries?.mapThemeLight },
+          mapThemeDark: { ...base.libraries.mapThemeDark, ...stored.libraries?.mapThemeDark },
+        },
+        subscriptions: { ...base.subscriptions, ...stored.subscriptions },
+        socialAuth: { ...base.socialAuth, ...stored.socialAuth },
+        weather: {
+          ...base.weather,
+          ...stored.weather,
+          weatherProvider: integrations.weatherProvider,
+          floodProvider: integrations.floodProvider,
+          floodMonitorCountries: stored.weather?.floodMonitorCountries?.length
+            ? stored.weather.floodMonitorCountries
+            : [stored.weather?.floodMonitorCountry ?? base.weather.floodMonitorCountry],
+        },
+        apiKeys,
+        integrations,
+      };
+  }
+
+  private mergeCategories(stored: SystemConfig['categories'] | undefined, base = this.defaultConfig().categories): ReportCategoryConfig[] {
     const storedById = new Map((stored ?? []).map((item) => [item.id, item]));
-    return this.defaultConfig().categories.map((category) => ({ ...category, ...storedById.get(category.id) }));
+    return base.map((category) => ({ ...category, ...storedById.get(category.id) }));
   }
 
   private defaultConfig(): SystemConfig {
@@ -358,6 +428,8 @@ export class SystemConfigService {
         maptilerApiKey: '',
         mapStyleLight: 'streets-v2',
         mapStyleDark: 'streets-v2-dark',
+        mapThemeLight: this.defaultMapThemeLight(),
+        mapThemeDark: this.defaultMapThemeDark(),
         defaultLatitude: 18.4861,
         defaultLongitude: -69.9312,
         defaultZoom: 12,
@@ -449,6 +521,54 @@ export class SystemConfigService {
       OTHER: 2,
     };
     return risk[category];
+  }
+
+  private defaultMapThemeLight(): SystemMapThemeConfig {
+    return {
+      background: '#EEF7F6',
+      land: '#F7FBF9',
+      park: '#DDF3E6',
+      water: '#B9E7EF',
+      building: '#E2EBF0',
+      buildingOutline: '#CFDDE4',
+      road: '#FFFFFF',
+      roadPrimary: '#A7DCD7',
+      roadSecondary: '#D5E7EF',
+      roadCasing: '#8FBFCA',
+      label: '#163548',
+      labelMuted: '#657A86',
+      poi: '#4F8F8B',
+      boundary: '#9ABFC3',
+      googleBrightnessMin: 0.06,
+      googleBrightnessMax: 0.98,
+      googleContrast: 0.1,
+      googleSaturation: -0.28,
+      googleHueRotate: 22,
+    };
+  }
+
+  private defaultMapThemeDark(): SystemMapThemeConfig {
+    return {
+      background: '#0D1B24',
+      land: '#12242A',
+      park: '#153B32',
+      water: '#123F51',
+      building: '#1B3039',
+      buildingOutline: '#284652',
+      road: '#38525D',
+      roadPrimary: '#4FA3A0',
+      roadSecondary: '#53778A',
+      roadCasing: '#0A1821',
+      label: '#E5F3F1',
+      labelMuted: '#A8BDC2',
+      poi: '#98D6CF',
+      boundary: '#4F737A',
+      googleBrightnessMin: 0.04,
+      googleBrightnessMax: 0.74,
+      googleContrast: 0.14,
+      googleSaturation: -0.32,
+      googleHueRotate: 16,
+    };
   }
 }
 

@@ -61,7 +61,9 @@ export class RealtimeServerService
       });
       socket.data.user = payload;
       next();
-    } catch {
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Socket auth rejected: ${detail}`);
       next(new Error("AUTH_INVALID"));
     }
   }

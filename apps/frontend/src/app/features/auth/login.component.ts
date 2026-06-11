@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, effect, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService, SocialAuthConfig } from '../../core/auth.service';
+import { I18nService } from '../../core/i18n.service';
 
 declare global {
   interface Window {
@@ -39,7 +40,7 @@ declare global {
   template: `
     <section class="auth-page">
       <div class="auth-shell">
-        <mat-card class="auth-card">
+        <mat-card class="auth-card login-card">
           <div class="brand-lockup">
             <img src="assets/brand/korvi-wordmark.svg" alt="KORVI" />
             <span>Smart Mobility Platform</span>
@@ -70,16 +71,16 @@ declare global {
               </div>
 
               <div class="form-actions">
-                <a routerLink="/recuperar-contrasena">Recuperar acceso</a>
-                <a routerLink="/activar-cuenta">Activar cuenta</a>
+                <a routerLink="/forgot-password">Recuperar acceso</a>
+                <a routerLink="/activate-account">Activar cuenta</a>
               </div>
 
               <div class="primary-actions">
                 <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || loading() || socialLoading()">Entrar</button>
-                <a mat-stroked-button routerLink="/registro">Crear cuenta</a>
+                <a mat-stroked-button routerLink="/register">Crear cuenta</a>
               </div>
 
-              @if (socialConfig()?.google || socialConfig()?.facebook) {
+              @if (hasVisibleSocialProviders()) {
                 <div class="social-login">
                   <div class="social-divider"><span>O entra con</span></div>
                   @if (socialConfig()?.google && socialConfig()?.googleClientId) {
@@ -111,7 +112,7 @@ declare global {
       </div>
     </section>
   `,
-  styleUrls: ['./login.component.css'],
+  styleUrls: ['./auth-flow.component.css', './login.component.css'],
 })
 export class LoginComponent implements OnInit, AfterViewInit {
   @ViewChild('googleButtonContainer') private googleButtonContainer?: ElementRef<HTMLElement>;
@@ -131,7 +132,15 @@ export class LoginComponent implements OnInit, AfterViewInit {
     private readonly auth: AuthService,
     private readonly router: Router,
     private readonly toastr: ToastrService,
-  ) {}
+    public readonly i18n: I18nService,
+  ) {
+    effect(() => {
+      this.i18n.language();
+      this.googleButtonReady.set(false);
+      this.googleButtonContainer?.nativeElement.replaceChildren();
+      queueMicrotask(() => this.initializeSocialProviders());
+    });
+  }
 
   ngOnInit(): void {
     this.auth.socialAuthConfig().subscribe({
@@ -191,6 +200,11 @@ export class LoginComponent implements OnInit, AfterViewInit {
     );
   }
 
+  hasVisibleSocialProviders(): boolean {
+    const config = this.socialConfig();
+    return Boolean((config?.google && config.googleClientId) || (config?.facebook && config.facebookAppId));
+  }
+
   private initializeSocialProviders() {
     const config = this.socialConfig();
     if (!config) return;
@@ -215,7 +229,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
         shape: 'rectangular',
         width: Math.min(424, container.clientWidth || 424),
         text: 'signin_with',
-        locale: 'es',
+        locale: this.i18n.language() === 'en' ? 'en' : 'es',
       });
       this.googleButtonReady.set(true);
     }).catch(() => this.toastr.error('No se pudo cargar Google Sign-In.', 'Login social'));
@@ -234,7 +248,8 @@ export class LoginComponent implements OnInit, AfterViewInit {
       this.facebookReady.set(true);
     };
 
-    this.loadScript('facebook-jssdk', 'https://connect.facebook.net/es_LA/sdk.js').catch(() =>
+    const locale = this.i18n.language() === 'en' ? 'en_US' : 'es_LA';
+    this.loadScript('facebook-jssdk', `https://connect.facebook.net/${locale}/sdk.js`).catch(() =>
       this.toastr.error('No se pudo cargar Facebook Login.', 'Login social'),
     );
   }
@@ -259,10 +274,8 @@ export class LoginComponent implements OnInit, AfterViewInit {
     this.toastr.success(message, 'Bienvenido');
     this.router.navigateByUrl(
       this.auth.user()?.mustChangePassword
-        ? '/perfil/cambiar-contrasena'
-        : this.auth.canViewExecutivePanel()
-          ? '/dashboard'
-          : '/reportes',
+        ? '/profile/change-password'
+        : '/map',
     );
   }
 

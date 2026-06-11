@@ -12,9 +12,9 @@ import {
 } from "class-validator";
 
 export class RoadTelemetryDto {
-  @ApiProperty({ enum: ["impact", "speed_drop"], example: "impact" })
-  @IsIn(["impact", "speed_drop"])
-  eventType: "impact" | "speed_drop";
+  @ApiProperty({ enum: ["impact", "speed_drop", "high_flow"], example: "high_flow" })
+  @IsIn(["impact", "speed_drop", "high_flow"])
+  eventType: "impact" | "speed_drop" | "high_flow";
 
   @ApiProperty({ example: 18.4861 })
   @Type(() => Number)

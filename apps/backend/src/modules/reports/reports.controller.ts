@@ -30,6 +30,7 @@ import { CreateEmergencyCallLogDto } from "./dto/create-emergency-call-log.dto";
 import { CreateReportDto } from "./dto/create-report.dto";
 import {
   GoogleMapsTileSessionDto,
+  HighFlowTrafficDto,
   OptimizeRiskRouteDto,
 } from "./dto/optimize-risk-route.dto";
 import { QueryReportsDto } from "./dto/query-reports.dto";
@@ -107,6 +108,11 @@ export class ReportsController {
     return this.reportsService.findMapPoints(query);
   }
 
+  @Get("metrics")
+  metrics(@Query() query: QueryReportsDto) {
+    return this.reportsService.adminMetrics(query);
+  }
+
   @Get("admin/metrics")
   @Roles(UserRole.MODERATOR, UserRole.INSTITUTION_ADMIN, UserRole.SUPER_ADMIN)
   adminMetrics(@Query() query: QueryReportsDto) {
@@ -166,6 +172,12 @@ export class ReportsController {
   @FeatureFlag("optimized-routes")
   optimizeRiskRoute(@Body() dto: OptimizeRiskRouteDto) {
     return this.reportsService.optimizeRiskRoute(dto);
+  }
+
+  @Post("routes/high-flow")
+  @FeatureFlag("optimized-routes")
+  highFlowTraffic(@Body() dto: HighFlowTrafficDto) {
+    return this.reportsService.highFlowTraffic(dto);
   }
 
   @Post("maps/google/tile-session")

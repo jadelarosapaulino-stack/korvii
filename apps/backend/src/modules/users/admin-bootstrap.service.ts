@@ -13,9 +13,8 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
   constructor(private readonly usersService: UsersService) {}
 
   async onApplicationBootstrap() {
-    const existing = await this.usersService.findByEmailWithPassword(
-      adminEmail,
-    );
+    const existing =
+      await this.usersService.findByEmailWithPassword(adminEmail);
     if (existing) return;
 
     await this.usersService.create({

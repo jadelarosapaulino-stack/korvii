@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { SystemConfigService } from "../system-config/system-config.service";
 
 export interface WeatherAutomationConfig {
   weatherProvider: string;
@@ -26,52 +26,49 @@ export interface WeatherAutomationConfig {
 }
 
 @Injectable()
-export class WeatherSettingsService {
-  private readonly logger = new Logger(WeatherSettingsService.name);
+export class WeatherSettingsService implements OnModuleInit {
+  private static readonly CONFIG_KEY = "weather_settings";
   private readonly configPath: string;
   private current: WeatherAutomationConfig;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
+  ) {
     this.configPath = this.config.get<string>(
       "WEATHER_CONFIG_PATH",
       join(process.cwd(), ".tmp", "weather-config.json"),
     );
-    this.current = this.load();
+    this.current = this.defaultConfig();
+  }
+
+  async onModuleInit() {
+    const defaults = this.defaultConfig();
+    const stored = await this.systemConfig.loadValue(
+      WeatherSettingsService.CONFIG_KEY,
+      defaults,
+      this.configPath,
+    );
+    this.current = this.sanitize({ ...defaults, ...stored });
+    await this.persist();
   }
 
   get(): WeatherAutomationConfig {
     return { ...this.current };
   }
 
-  update(patch: Partial<WeatherAutomationConfig>): WeatherAutomationConfig {
+  async update(
+    patch: Partial<WeatherAutomationConfig>,
+  ): Promise<WeatherAutomationConfig> {
     this.current = this.sanitize({ ...this.current, ...patch });
-    this.persist();
+    await this.persist();
     return this.get();
   }
 
-  private load(): WeatherAutomationConfig {
-    if (!existsSync(this.configPath)) return this.defaultConfig();
-
-    try {
-      const stored = JSON.parse(
-        readFileSync(this.configPath, "utf8"),
-      ) as Partial<WeatherAutomationConfig>;
-      return this.sanitize({ ...this.defaultConfig(), ...stored });
-    } catch (error) {
-      this.logger.warn(
-        `No se pudo leer configuracion climatica: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return this.defaultConfig();
-    }
-  }
-
-  private persist() {
-    const directory = dirname(this.configPath);
-    if (!existsSync(directory)) mkdirSync(directory, { recursive: true });
-    writeFileSync(
-      this.configPath,
-      JSON.stringify(this.current, null, 2),
-      "utf8",
+  private async persist() {
+    await this.systemConfig.saveValue(
+      WeatherSettingsService.CONFIG_KEY,
+      this.current,
     );
   }
 

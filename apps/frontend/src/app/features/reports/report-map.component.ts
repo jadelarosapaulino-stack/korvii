@@ -3,15 +3,13 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { Map as MapTilerMap, Marker, Popup, type MapMouseEvent } from '@maptiler/sdk';
 import { auditTime, merge, Subscription } from 'rxjs';
 import { API_URL } from '../../core/api.config';
 import { LatLngPoint, applyKorviMapTheme, circlePolygon, createKorviMap, mapReady, metersBetween, observeMapResize, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
 import { RealtimeService } from '../../core/realtime.service';
-import { ReportCategory, ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/reports.service';
+import { HighFlowTraffic, OptimizedRiskRoute, ReportCategory, ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/reports.service';
 import { SystemConfigService } from '../../core/system-config.service';
 import { RiskChipComponent } from '../../shared/ui/risk-chip/risk-chip.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
@@ -40,7 +38,7 @@ type ScoredRoute = NonNullable<OsrmRouteResponse['routes']>[number] & {
 @Component({
   selector: 'app-report-map',
   standalone: true,
-  imports: [RouterLink, MatButtonModule, MatCardModule, MatChipsModule, MatFormFieldModule, MatIconModule, MatSelectModule, RiskChipComponent, StatusChipComponent],
+  imports: [RouterLink, MatButtonModule, MatCardModule, MatChipsModule, MatIconModule, RiskChipComponent, StatusChipComponent],
   template: `
     <section class="map-workspace" [class.detail-open]="selected()">
       <div class="map-canvas">
@@ -52,33 +50,45 @@ type ScoredRoute = NonNullable<OsrmRouteResponse['routes']>[number] & {
               <strong>Mapa de riesgo</strong>
               <span>{{ reports().length }} de {{ allReports().length }} reportes{{ activeCategoryLabel() }}{{ routeSummary() ? ' - ' + routeSummary() : '' }}</span>
             </div>
-            <mat-form-field class="category-select" appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Categoría</mat-label>
-              <mat-select [value]="activeCategory()" (selectionChange)="setCategoryFilter($event.value)">
-                <mat-option value="ALL">Todas</mat-option>
-                @for (category of categoryOptions; track category) {
-                  <mat-option [value]="category">
-                    <span class="category-option">
-                      <i [style.background]="categoryColor(category)"></i>
-                      {{ categoryLabel(category) }}
-                    </span>
-                  </mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-            <button mat-stroked-button type="button" (click)="loadMapReports()" [disabled]="loading()">
-              <mat-icon>refresh</mat-icon>
-              Actualizar
-            </button>
-            <a mat-stroked-button routerLink="/reportes/nuevo">
-              <mat-icon>add_location_alt</mat-icon>
-              Nuevo reporte
-            </a>
-            <button mat-flat-button color="primary" type="button" (click)="startAvoidRoute()" [disabled]="routing()">
-              <mat-icon>alt_route</mat-icon>
-              Evitar riesgos
-            </button>
           </div>
+        </div>
+
+        <div class="map-control-rail" aria-label="Opciones del mapa">
+          <button mat-icon-button type="button" title="Actualizar reportes" aria-label="Actualizar reportes" (click)="loadMapReports()" [disabled]="loading()">
+            <mat-icon>{{ loading() ? 'sync' : 'refresh' }}</mat-icon>
+          </button>
+          <a mat-icon-button routerLink="/reports/new" title="Nuevo reporte" aria-label="Nuevo reporte">
+            <mat-icon>add_location_alt</mat-icon>
+          </a>
+          <button mat-icon-button type="button" title="Evitar riesgos" aria-label="Evitar riesgos" (click)="startAvoidRoute()" [disabled]="routing()">
+            <mat-icon>alt_route</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            [class.active]="highFlowMode()"
+            [title]="highFlowMode() ? 'Ocultar alto flujo de transito' : 'Mostrar alto flujo de transito'"
+            [attr.aria-label]="highFlowMode() ? 'Ocultar alto flujo de transito' : 'Mostrar alto flujo de transito'"
+            (click)="toggleHighFlowMode()"
+            [disabled]="recordingTrafficFlow()">
+            <mat-icon>{{ recordingTrafficFlow() ? 'sync' : 'traffic' }}</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            [class.active]="hybridMode()"
+            [title]="hybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+            [attr.aria-label]="hybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
+            (click)="toggleHybridMode()">
+            <mat-icon>{{ hybridMode() ? 'map' : 'satellite' }}</mat-icon>
+          </button>
+          <span class="rail-separator"></span>
+          <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomIn()">
+            <mat-icon>add</mat-icon>
+          </button>
+          <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomOut()">
+            <mat-icon>remove</mat-icon>
+          </button>
         </div>
 
         @if (loading()) {
@@ -90,6 +100,11 @@ type ScoredRoute = NonNullable<OsrmRouteResponse['routes']>[number] & {
           <div class="map-state error">
             <mat-icon>warning</mat-icon>
             <span>{{ error() }}</span>
+          </div>
+        } @else if (highFlowMode()) {
+          <div class="map-state route-mode traffic-mode">
+            <mat-icon>traffic</mat-icon>
+            <span>{{ highFlowStatus() }}</span>
           </div>
         } @else if (routeMode()) {
           <div class="map-state route-mode">
@@ -109,22 +124,35 @@ type ScoredRoute = NonNullable<OsrmRouteResponse['routes']>[number] & {
           <strong>Alto</strong>
         </div>
 
-        <div class="zoom-controls" aria-label="Controles de zoom del mapa">
-          <button
-            mat-icon-button
-            type="button"
-            [class.active]="hybridMode()"
-            [title]="hybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-            [attr.aria-label]="hybridMode() ? 'Ver mapa estandar' : 'Ver mapa hibrido'"
-            (click)="toggleHybridMode()">
-            <mat-icon>{{ hybridMode() ? 'map' : 'satellite' }}</mat-icon>
+        @if (routeSummary() || highFlowMode()) {
+          <div class="traffic-legend" aria-label="Estado de trafico de la ruta">
+            <span><i class="slow"></i>Lento</span>
+            <span><i class="jam"></i>Taponamiento</span>
+          </div>
+        }
+
+        <div class="category-menu" aria-label="Filtros de categorias del mapa">
+          <button mat-icon-button type="button" class="category-menu-trigger" title="Categorias del mapa" aria-label="Categorias del mapa">
+            <mat-icon>layers</mat-icon>
           </button>
-          <button mat-icon-button type="button" title="Acercar mapa" aria-label="Acercar mapa" (click)="zoomIn()">
-            <mat-icon>add</mat-icon>
-          </button>
-          <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomOut()">
-            <mat-icon>remove</mat-icon>
-          </button>
+          <div class="category-panel">
+            <button mat-button type="button" class="category-pill" [class.active]="activeCategory() === 'ALL'" (click)="setCategoryFilter('ALL')">
+              <mat-icon>layers</mat-icon>
+              <span>Todas</span>
+            </button>
+            @for (category of categoryOptions; track category) {
+              <button
+                mat-button
+                type="button"
+                class="category-pill"
+                [class.active]="activeCategory() === category"
+                [style.--category-color]="categoryColor(category)"
+                (click)="setCategoryFilter(category)">
+                <mat-icon>{{ categoryIcon(category) }}</mat-icon>
+                <span>{{ categoryLabel(category) }}</span>
+              </button>
+            }
+          </div>
         </div>
       </div>
 
@@ -216,6 +244,11 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   private readonly selectedReportZoom = 16;
   private readonly routeSourceId = 'ruta-segura-avoid-route';
   private readonly routeLayerId = 'ruta-segura-avoid-route-line';
+  private readonly routeTrafficSourceId = 'ruta-segura-route-traffic';
+  private readonly routeTrafficLayerId = 'ruta-segura-route-traffic-line';
+  private readonly highFlowSourceId = 'ruta-segura-high-flow-zones';
+  private readonly highFlowFillLayerId = 'ruta-segura-high-flow-zones-fill';
+  private readonly highFlowLineLayerId = 'ruta-segura-high-flow-zones-line';
   private readonly userRadiusSourceId = 'ruta-segura-user-radius';
   private readonly userRadiusFillLayerId = 'ruta-segura-user-radius-fill';
   private readonly userRadiusLineLayerId = 'ruta-segura-user-radius-line';
@@ -261,6 +294,9 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   routeSummary = signal<string | null>(null);
   routeWarning = signal<string | null>(null);
   hybridMode = signal(false);
+  highFlowMode = signal(false);
+  recordingTrafficFlow = signal(false);
+  highFlowStatus = signal('Consultando alto flujo de transito con Google Routes...');
 
   private map?: MapTilerMap;
   private reportMarkers = new globalThis.Map<string, Marker>();
@@ -270,11 +306,15 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   private activeReportPopup?: Popup;
   private mapResizeObserver?: ResizeObserver;
   private dbReportLayerEventsRegistered = false;
+  private initialized = false;
   private readonly mapStyleReadyHandler = () => this.renderMapOverlaysAfterStyleChange();
   private initialLocationPending = false;
   private userLocation?: LatLngPoint;
   private origin?: LatLngPoint;
   private destination?: LatLngPoint;
+  private highFlowTrafficSegments: HighFlowTraffic['segments'] = [];
+  private highFlowReloadTimer?: number;
+  private lastHighFlowBoundsKey = '';
   private readonly themeChangeHandler = () => this.applyMapTheme();
   private readonly mapProviderErrorHandler = (event: Event) => {
     const detail = event instanceof CustomEvent ? String(event.detail || '') : '';
@@ -288,10 +328,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.initMap();
-    this.locateUserForInitialCenter();
-    this.loadMapReports();
-    this.subscribeToRealtime();
+    this.systemConfig.loadSharedConfig().subscribe(() => this.initializeMapFlow());
     window.addEventListener('rs-theme-change', this.themeChangeHandler);
     window.addEventListener('rs-map-config-change', this.themeChangeHandler);
     window.addEventListener('rs-map-provider-error', this.mapProviderErrorHandler);
@@ -308,6 +345,16 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     this.activeReportPopup?.remove();
     this.mapResizeObserver?.disconnect();
     this.map?.remove();
+    if (this.highFlowReloadTimer) window.clearTimeout(this.highFlowReloadTimer);
+  }
+
+  private initializeMapFlow() {
+    if (this.initialized) return;
+    this.initialized = true;
+    this.initMap();
+    this.locateUserForInitialCenter();
+    this.loadMapReports();
+    this.subscribeToRealtime();
   }
 
   private applyMapTheme() {
@@ -316,6 +363,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     applyKorviMapTheme(this.map, () => {
       this.renderMarkers(this.reports());
       if (this.userLocation) this.drawUserLocation(this.userLocation);
+      this.drawHighFlowZones();
       if (this.origin && this.destination) this.calculateAvoidingRoute();
       this.resizeMap();
     });
@@ -329,6 +377,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
         const validReports = reports.filter((report) => this.isValidReportCoordinate(report));
         this.allReports.set(validReports);
         this.applyReportFilter();
+        this.scheduleReportRenderRefresh();
         this.loading.set(false);
       },
       error: () => {
@@ -349,6 +398,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
       this.realtime.on('report.status_changed'),
       this.realtime.on('report.assigned'),
       this.realtime.on('weather.flood_zone_created'),
+      this.realtime.on('traffic_light.report_created'),
     )
       .pipe(auditTime(500))
       .subscribe(() => this.loadMapReports());
@@ -413,6 +463,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     const mode = toggleKorviMapMode(this.map, () => {
       this.renderMarkers(this.reports());
       if (this.userLocation) this.drawUserLocation(this.userLocation);
+      this.drawHighFlowZones();
       if (this.origin && this.destination) this.calculateAvoidingRoute();
       this.resizeMap();
     });
@@ -438,7 +489,10 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     });
 
     this.map.on('click', (event: MapMouseEvent) => this.handleMapClick(event));
+    this.map.on('moveend', () => this.scheduleHighFlowReloadForCurrentView());
     this.map.on('style.load', this.mapStyleReadyHandler);
+    this.map.once('load', this.mapStyleReadyHandler);
+    this.map.once('idle', this.mapStyleReadyHandler);
     this.mapResizeObserver = observeMapResize(this.map, this.mapContainer.nativeElement);
   }
 
@@ -446,6 +500,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     this.dbReportLayerEventsRegistered = false;
     this.renderMarkers(this.reports());
     if (this.userLocation) this.drawUserLocation(this.userLocation);
+    this.drawHighFlowZones();
     if (this.origin && this.destination) this.calculateAvoidingRoute();
     this.resizeMap();
   }
@@ -461,8 +516,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
-        this.drawUserLocation(this.userLocation);
-        this.fitToCurrentLocationRadius(this.userLocation);
+        this.centerInitialUserLocation(this.userLocation);
       },
       () => {
         this.initialLocationPending = false;
@@ -472,6 +526,18 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     );
   }
 
+  private centerInitialUserLocation(position: LatLngPoint) {
+    if (!this.map) return;
+
+    mapReady(this.map, () => {
+      this.drawUserLocation(position);
+      this.fitToCurrentLocationRadius(position);
+      window.setTimeout(() => this.fitToCurrentLocationRadius(position), 180);
+      window.setTimeout(() => this.fitToCurrentLocationRadius(position), 520);
+      window.setTimeout(() => this.renderMarkers(this.reports()), 620);
+    });
+  }
+
   startAvoidRoute() {
     if (!navigator.geolocation) {
       this.routeWarning.set('Este navegador no soporta geolocalizacion para calcular rutas.');
@@ -479,6 +545,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     }
 
     this.routing.set(true);
+    this.highFlowMode.set(false);
     this.routeWarning.set(null);
     this.routeSummary.set(null);
 
@@ -512,6 +579,77 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     this.calculateAvoidingRoute();
   }
 
+  toggleHighFlowMode() {
+    if (this.recordingTrafficFlow()) return;
+    const next = !this.highFlowMode();
+    this.routeMode.set(false);
+    if (next) {
+      this.highFlowMode.set(true);
+      this.routeWarning.set(null);
+      this.routeSummary.set(null);
+      this.loadHighFlowTraffic();
+      return;
+    }
+
+    this.highFlowMode.set(false);
+    this.highFlowTrafficSegments = [];
+    this.lastHighFlowBoundsKey = '';
+    this.drawHighFlowZones();
+    this.routeWarning.set(null);
+  }
+
+  private loadHighFlowTraffic(force = false) {
+    const bounds = this.currentMapTrafficBounds();
+    if (!bounds) {
+      this.highFlowMode.set(false);
+      this.routeWarning.set('No se pudo leer el area visible del mapa para consultar transito.');
+      return;
+    }
+
+    const boundsKey = this.highFlowBoundsKey(bounds);
+    if (!force && boundsKey === this.lastHighFlowBoundsKey) return;
+    if (this.recordingTrafficFlow()) return;
+
+    this.lastHighFlowBoundsKey = boundsKey;
+    this.recordingTrafficFlow.set(true);
+    this.highFlowStatus.set('Consultando alto flujo de transito con Google Routes...');
+    this.highFlowTrafficSegments = [];
+    this.drawHighFlowZones();
+
+    const config = this.systemConfig.config();
+    this.reportsService.highFlowTraffic(bounds, { googleMapsApiKey: config.apiKeys.googleMaps }).subscribe({
+      next: (traffic) => {
+        this.recordingTrafficFlow.set(false);
+        this.highFlowTrafficSegments = traffic.segments;
+        this.drawHighFlowZones();
+        const parts = [
+          traffic.jamSegments ? `${traffic.jamSegments} tramo(s) con taponamiento` : '',
+          traffic.slowSegments ? `${traffic.slowSegments} tramo(s) lento(s)` : '',
+        ].filter(Boolean);
+        this.highFlowStatus.set(parts.length
+          ? `Se detecto ${parts.join(' y ')} en el area visible.`
+          : 'No se detecto alto flujo en el area visible.');
+      },
+      error: (error) => {
+        this.recordingTrafficFlow.set(false);
+        this.highFlowMode.set(false);
+        this.highFlowTrafficSegments = [];
+        this.lastHighFlowBoundsKey = '';
+        this.drawHighFlowZones();
+        this.routeWarning.set(error?.error?.message || 'No se pudo consultar alto flujo de transito desde Routes API.');
+      },
+    });
+  }
+
+  private scheduleHighFlowReloadForCurrentView() {
+    if (!this.highFlowMode()) return;
+    if (this.highFlowReloadTimer) window.clearTimeout(this.highFlowReloadTimer);
+    this.highFlowReloadTimer = window.setTimeout(() => {
+      this.highFlowReloadTimer = undefined;
+      this.loadHighFlowTraffic();
+    }, 350);
+  }
+
   private calculateAvoidingRoute() {
     if (!this.origin || !this.destination) return;
 
@@ -525,12 +663,13 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     })
       .subscribe({
         next: (route) => {
-          this.drawRoute(route.geometry.coordinates, route.risk);
+          this.drawRoute(route.geometry.coordinates, route.risk, route.traffic);
           this.routeSummary.set(`${route.summary.distanceKm.toFixed(1)} km - ${route.summary.durationMinutes} min`);
           const provider = this.routeProviderLabel(route.provider);
+          const trafficSummary = this.routeTrafficSummary(route);
           this.routeWarning.set(route.risk.unsafe
-            ? `${provider}: ruta optimizada con riesgo residual cerca de ${route.risk.floodZones} zona(s) inundadas y ${route.risk.highRiskReports} reporte(s) de alto riesgo.`
-            : `${provider}: ruta optimizada sin cruces cercanos a zonas inundadas ni reportes de alto riesgo.`);
+            ? `${provider}: ruta optimizada con riesgo residual cerca de ${route.risk.floodZones} zona(s) inundadas y ${route.risk.highRiskReports} reporte(s) de alto riesgo.${trafficSummary}`
+            : `${provider}: ruta optimizada sin cruces cercanos a zonas inundadas ni reportes de alto riesgo.${trafficSummary}`);
           this.routing.set(false);
         },
         error: (error) => {
@@ -544,6 +683,16 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     if (provider === 'google-routes') return 'Google Routes';
     if (provider === 'openrouteservice') return 'OpenRouteService';
     return 'OSRM';
+  }
+
+  private routeTrafficSummary(route: OptimizedRiskRoute): string {
+    if (route.provider !== 'google-routes' || !route.traffic?.segments?.length) return '';
+    if (!route.traffic.congestedSegments) return ' Trafico: fluido en la ruta calculada.';
+    const parts = [
+      route.traffic.jamSegments ? `${route.traffic.jamSegments} tramo(s) con taponamiento` : '',
+      route.traffic.slowSegments ? `${route.traffic.slowSegments} tramo(s) lento(s)` : '',
+    ].filter(Boolean);
+    return ` Trafico: ${parts.join(' y ')}.`;
   }
 
   private async chooseRiskAvoidingShortestRoute(routes: NonNullable<OsrmRouteResponse['routes']>): Promise<ScoredRoute | null> {
@@ -608,7 +757,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     return responses.flatMap((response) => response.status === 'fulfilled' ? [response.value] : []);
   }
 
-  private drawRoute(coordinates: Array<[number, number]>, riskScore: RouteRiskScore) {
+  private drawRoute(coordinates: Array<[number, number]>, riskScore: RouteRiskScore, traffic?: OptimizedRiskRoute['traffic']) {
     if (!this.map) return;
 
     mapReady(this.map, () => {
@@ -641,6 +790,8 @@ export class ReportMapComponent implements OnInit, OnDestroy {
           'line-join': 'round',
         },
       });
+
+      this.drawRouteTraffic(traffic);
 
       if (this.origin) this.routeMarkers.push(this.simpleMarker(this.origin, '#2F7D73', 'Origen'));
       if (this.destination) this.routeMarkers.push(this.simpleMarker(this.destination, '#3B8A8A', 'Destino'));
@@ -720,6 +871,59 @@ export class ReportMapComponent implements OnInit, OnDestroy {
 
     this.resizeMap();
     this.renderDbReportLayer(reports);
+  }
+
+  private drawRouteTraffic(traffic?: OptimizedRiskRoute['traffic']) {
+    if (!this.map || !traffic?.segments?.length) return;
+
+    const features = traffic.segments
+      .filter((segment) => segment.coordinates.length >= 2 && segment.speed !== 'NORMAL')
+      .map((segment) => ({
+        type: 'Feature' as const,
+        properties: { speed: segment.speed },
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: segment.coordinates,
+        },
+      }));
+    if (!features.length) return;
+
+    this.map.addSource(this.routeTrafficSourceId, {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features,
+      },
+    });
+    this.map.addLayer({
+      id: this.routeTrafficLayerId,
+      type: 'line',
+      source: this.routeTrafficSourceId,
+      paint: {
+        'line-color': [
+          'match',
+          ['get', 'speed'],
+          'TRAFFIC_JAM',
+          '#E45757',
+          'SLOW',
+          '#F2A93B',
+          '#2F7D73',
+        ],
+        'line-width': ['match', ['get', 'speed'], 'TRAFFIC_JAM', 9, 'SLOW', 7, 5],
+        'line-opacity': 0.94,
+        'line-blur': 0.2,
+      },
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+    });
+  }
+
+  private scheduleReportRenderRefresh() {
+    window.setTimeout(() => this.renderMarkers(this.reports()), 120);
+    window.setTimeout(() => this.renderMarkers(this.reports()), 360);
+    window.setTimeout(() => this.renderMarkers(this.reports()), 900);
   }
 
   private renderReportDomMarkers(reports: ReportMapPoint[]) {
@@ -992,12 +1196,13 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   private drawPinShape(context: CanvasRenderingContext2D, centerX: number, topY: number, size: number, fill?: string) {
     const radius = size / 2;
     const centerY = topY + radius;
-    const tipY = topY + size + 22;
+    const tipY = topY + size + 14;
 
     context.beginPath();
-    context.arc(centerX, centerY, radius, Math.PI * 0.78, Math.PI * 2.22);
-    context.quadraticCurveTo(centerX + 18, topY + size + 4, centerX, tipY);
-    context.quadraticCurveTo(centerX - 18, topY + size + 4, centerX - radius * 0.72, centerY + radius * 0.7);
+    // Arc of the circle from 0.65 * PI to 0.35 * PI clockwise
+    context.arc(centerX, centerY, radius, 0.65 * Math.PI, 0.35 * Math.PI, false);
+    // Draw line to the tip
+    context.lineTo(centerX, tipY);
     context.closePath();
 
     if (fill) {
@@ -1266,13 +1471,62 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     return true;
   }
 
+  private drawHighFlowZones() {
+    if (!this.map) return;
+
+    mapReady(this.map, () => {
+      this.removeLayerIfExists(this.highFlowFillLayerId);
+      this.removeLayerIfExists(this.highFlowLineLayerId);
+      this.removeSourceIfExists(this.highFlowSourceId);
+      if (!this.highFlowTrafficSegments.length) return;
+
+      this.map?.addSource(this.highFlowSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: this.highFlowTrafficSegments.map((segment) => ({
+            type: 'Feature' as const,
+            properties: { speed: segment.speed },
+            geometry: {
+              type: 'LineString' as const,
+              coordinates: segment.coordinates,
+            },
+          })),
+        },
+      });
+      this.map?.addLayer({
+        id: this.highFlowLineLayerId,
+        type: 'line',
+        source: this.highFlowSourceId,
+        paint: {
+          'line-color': [
+            'match',
+            ['get', 'speed'],
+            'TRAFFIC_JAM',
+            '#E45757',
+            'SLOW',
+            '#F2A93B',
+            '#B9852C',
+          ],
+          'line-opacity': 0.94,
+          'line-width': ['match', ['get', 'speed'], 'TRAFFIC_JAM', 9, 'SLOW', 7, 5],
+          'line-blur': 0.2,
+        },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+      });
+    });
+  }
+
   private drawUserLocation(position: LatLngPoint) {
     if (!this.map) return;
 
     this.userLocationMarker?.remove();
     this.userLocationMarker = new Marker({
-      element: this.htmlElement('<span class="user-location-shell"><span class="user-location-marker"><span class="material-icons">person_pin_circle</span></span></span>'),
-      anchor: 'center',
+      element: this.htmlElement('<span class="korvi-map-pin user-location"><span class="material-icons">my_location</span></span>'),
+      anchor: 'bottom',
     })
       .setLngLat(toLngLat(position))
       .setPopup(new Popup({ offset: 20 }).setText('Mi ubicación'))
@@ -1362,20 +1616,20 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   private markerElement(report: ReportMapPoint, selected = false): HTMLElement {
     const levelClass = report.riskLevel >= 4 ? 'high' : report.riskLevel === 3 ? 'medium' : 'low';
     const icon = this.categoryIcon(report.category);
-    return this.htmlElement(`<span class="risk-marker-shell"><span class="risk-marker ${levelClass}${selected ? ' selected' : ''}" title="${this.escapeHtml(reportCategoryLabel(report.category))}"><span class="material-icons">${icon}</span></span></span>`);
+    return this.htmlElement(`<span class="korvi-map-pin ${levelClass}${selected ? ' is-selected' : ''}" title="${this.escapeHtml(reportCategoryLabel(report.category))}"><span class="material-icons">${icon}</span></span>`);
   }
 
-  private categoryIcon(category: ReportMapPoint['category']): string {
+  categoryIcon(category: ReportMapPoint['category']): string {
     const icons: Record<ReportMapPoint['category'], string> = {
-      ACCIDENT: 'car_crash',
+      ACCIDENT: 'directions_car',
       TRAFFIC_LIGHT_DAMAGED: 'traffic',
       ROAD_DAMAGE: 'construction',
-      ROAD_OBSTRUCTION: 'deployed_code_alert',
-      POOR_LIGHTING: 'lightbulb',
-      MISSING_SIGNAGE: 'signpost',
+      ROAD_OBSTRUCTION: 'block',
+      POOR_LIGHTING: 'wb_incandescent',
+      MISSING_SIGNAGE: 'report_problem',
       RECKLESS_DRIVING: 'speed',
       DANGEROUS_CROSSING: 'directions_walk',
-      FLOOD_ZONE: 'flood',
+      FLOOD_ZONE: 'waves',
       OTHER: 'warning',
     };
     return icons[category] ?? 'warning';
@@ -1396,7 +1650,12 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private simpleMarker(position: LatLngPoint, color: string, label: string): Marker {
-    return new Marker({ color })
+    const kind = color === '#A84D4F' ? 'route-destination' : 'route-origin';
+    const icon = kind === 'route-destination' ? 'flag' : 'trip_origin';
+    return new Marker({
+      element: this.htmlElement(`<span class="korvi-map-pin ${kind}"><span class="material-icons">${icon}</span></span>`),
+      anchor: 'bottom',
+    })
       .setLngLat(toLngLat(position))
       .setPopup(new Popup({ offset: 18 }).setText(label))
       .addTo(this.map as MapTilerMap);
@@ -1405,6 +1664,8 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   private clearRoute() {
     this.routeMarkers.forEach((marker) => marker.remove());
     this.routeMarkers = [];
+    this.removeLayerIfExists(this.routeTrafficLayerId);
+    this.removeSourceIfExists(this.routeTrafficSourceId);
     this.removeLayerIfExists(this.routeLayerId);
     this.removeSourceIfExists(this.routeSourceId);
   }
@@ -1451,6 +1712,41 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     const latitude = Number(report.latitude);
     const longitude = Number(report.longitude);
     return this.isInsideDominicanRepublicBounds({ latitude, longitude });
+  }
+
+  private currentMapTrafficBounds() {
+    if (!this.map) return null;
+    const bounds = this.map.getBounds();
+    const southWest = bounds.getSouthWest();
+    const northEast = bounds.getNorthEast();
+    const minLatitude = Math.max(this.dominicanRepublicBounds.minLatitude, southWest.lat);
+    const maxLatitude = Math.min(this.dominicanRepublicBounds.maxLatitude, northEast.lat);
+    const minLongitude = Math.max(this.dominicanRepublicBounds.minLongitude, southWest.lng);
+    const maxLongitude = Math.min(this.dominicanRepublicBounds.maxLongitude, northEast.lng);
+
+    if (
+      ![minLatitude, maxLatitude, minLongitude, maxLongitude].every(Number.isFinite) ||
+      minLatitude >= maxLatitude ||
+      minLongitude >= maxLongitude
+    ) {
+      return null;
+    }
+
+    return { minLatitude, maxLatitude, minLongitude, maxLongitude };
+  }
+
+  private highFlowBoundsKey(bounds: {
+    minLatitude: number;
+    maxLatitude: number;
+    minLongitude: number;
+    maxLongitude: number;
+  }): string {
+    return [
+      bounds.minLatitude,
+      bounds.maxLatitude,
+      bounds.minLongitude,
+      bounds.maxLongitude,
+    ].map((value) => value.toFixed(3)).join(':');
   }
 
   private isInsideDominicanRepublicBounds(point: LatLngPoint): boolean {

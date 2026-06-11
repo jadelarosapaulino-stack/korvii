@@ -298,9 +298,7 @@
 }
 
 mat-paginator {
-  border: 1px solid var(--rs-border);
-  border-radius: var(--rs-radius);
-  background: var(--rs-surface);
+  justify-self: end;
 }
 
 @media (max-width: 1100px) {

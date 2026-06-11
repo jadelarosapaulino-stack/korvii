@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class UserMustChangePassword1771300000000
-  implements MigrationInterface
-{
+export class UserMustChangePassword1771300000000 implements MigrationInterface {
   name = "UserMustChangePassword1771300000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {

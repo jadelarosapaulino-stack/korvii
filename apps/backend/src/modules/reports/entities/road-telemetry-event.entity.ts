@@ -16,7 +16,7 @@ export class RoadTelemetryEvent {
   id: string;
 
   @Column({ length: 30 })
-  eventType: "impact" | "speed_drop";
+  eventType: "impact" | "speed_drop" | "high_flow";
 
   @Column({ type: "decimal", precision: 10, scale: 7 })
   latitude: number;

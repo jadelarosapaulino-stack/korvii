@@ -54,3 +54,32 @@ export class GoogleMapsTileSessionDto {
   @IsString()
   mapType?: string;
 }
+
+export class HighFlowTrafficBoundsDto {
+  @Type(() => Number)
+  @IsNumber()
+  minLatitude: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  maxLatitude: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  minLongitude: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  maxLongitude: number;
+}
+
+export class HighFlowTrafficDto {
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => HighFlowTrafficBoundsDto)
+  bounds: HighFlowTrafficBoundsDto;
+
+  @IsOptional()
+  @IsString()
+  googleMapsApiKey?: string;
+}

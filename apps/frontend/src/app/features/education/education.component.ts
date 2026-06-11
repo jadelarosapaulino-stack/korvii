@@ -18,7 +18,7 @@ import { EducationService, Lesson, LessonProgress } from '../../core/education.s
       <div>
         <span class="rs-eyebrow">Academia preventiva</span>
         <h1>Capacitacion vial</h1>
-        <!-- <p>Microcursos para reducir exposición al riesgo, mejorar conducta vial y convertir alertas del mapa en aprendizaje accionable.</p> -->
+        <p>Microcursos para reducir exposicion al riesgo, mejorar conducta vial y convertir alertas del mapa en aprendizaje accionable.</p>
       </div>
 
       <div class="hero-stats">
@@ -80,14 +80,20 @@ import { EducationService, Lesson, LessonProgress } from '../../core/education.s
             </mat-card-content>
 
             <mat-card-actions>
-              <a mat-flat-button color="primary" [routerLink]="['/educacion', lesson.id]">
+              <a mat-flat-button color="primary" [routerLink]="['/education', lesson.id]">
                 <mat-icon>{{ isCompleted(lesson.id) ? 'visibility' : lessonProgress(lesson.id) > 0 ? 'menu_book' : 'play_circle' }}</mat-icon>
                 {{ isCompleted(lesson.id) ? 'Revisar leccion' : lessonProgress(lesson.id) > 0 ? 'Continuar leccion' : 'Iniciar leccion' }}
               </a>
             </mat-card-actions>
           </mat-card>
         } @empty {
-          <mat-card><mat-card-content>No hay lecciones disponibles.</mat-card-content></mat-card>
+          <mat-card class="empty-course-state">
+            <mat-card-content>
+              <mat-icon>school</mat-icon>
+              <strong>No hay lecciones disponibles</strong>
+              <span>Cuando el equipo publique contenido preventivo aparecera en esta ruta.</span>
+            </mat-card-content>
+          </mat-card>
         }
       </div>
 

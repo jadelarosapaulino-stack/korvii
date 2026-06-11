@@ -15,6 +15,7 @@ import { GamificationModule } from "./modules/gamification/gamification.module";
 import { InstitutionsModule } from "./modules/institutions/institutions.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { RolePermissionsModule } from "./modules/role-permissions/role-permissions.module";
+import { SystemConfigModule } from "./modules/system-config/system-config.module";
 import { TrafficLightsModule } from "./modules/traffic-lights/traffic-lights.module";
 import { UsersModule } from "./modules/users/users.module";
 
@@ -45,10 +46,8 @@ import { UsersModule } from "./modules/users/users.module";
             config.get<string>("DB_SSL", "false") === "true"
               ? {
                   rejectUnauthorized:
-                    config.get<string>(
-                      "DB_SSL_REJECT_UNAUTHORIZED",
-                      "true",
-                    ) !== "false",
+                    config.get<string>("DB_SSL_REJECT_UNAUTHORIZED", "true") !==
+                    "false",
                 }
               : base.ssl,
           synchronize: config.get<string>("DB_SYNC", "false") === "true",
@@ -66,6 +65,7 @@ import { UsersModule } from "./modules/users/users.module";
     InstitutionsModule,
     ReportsModule,
     RolePermissionsModule,
+    SystemConfigModule,
     TrafficLightsModule,
     EducationModule,
     AnalyticsModule,

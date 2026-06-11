@@ -30,15 +30,15 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
 };
 
 export const REPORT_CATEGORY_ICONS: Record<ReportCategory, string> = {
-  ACCIDENT: 'car_crash',
+  ACCIDENT: 'directions_car',
   TRAFFIC_LIGHT_DAMAGED: 'traffic',
   ROAD_DAMAGE: 'construction',
-  ROAD_OBSTRUCTION: 'deployed_code_alert',
-  POOR_LIGHTING: 'lightbulb',
-  MISSING_SIGNAGE: 'signpost',
+  ROAD_OBSTRUCTION: 'block',
+  POOR_LIGHTING: 'wb_incandescent',
+  MISSING_SIGNAGE: 'report_problem',
   RECKLESS_DRIVING: 'speed',
   DANGEROUS_CROSSING: 'directions_walk',
-  FLOOD_ZONE: 'flood',
+  FLOOD_ZONE: 'waves',
   OTHER: 'warning',
 };
 
@@ -80,6 +80,14 @@ export interface ReportItem {
     type?: string;
     province?: string;
     municipality?: string;
+    coverageArea?: string;
+    phone?: string;
+    emergencyPhone?: string;
+    whatsapp?: string;
+    email?: string;
+    websiteUrl?: string;
+    sourceUrl?: string;
+    address?: string;
   } | null;
   assignmentNote?: string | null;
   assignedAt?: string | null;
@@ -123,6 +131,13 @@ export interface InstitutionOption {
   province?: string;
   municipality?: string;
   coverageArea?: string;
+  phone?: string;
+  emergencyPhone?: string;
+  whatsapp?: string;
+  email?: string;
+  websiteUrl?: string;
+  sourceUrl?: string;
+  address?: string;
 }
 
 export interface ReportMapPoint extends ReportItem {
@@ -139,6 +154,7 @@ export interface ReportPage {
 
 export interface ReportAdminMetrics {
   total: number;
+  highRisk: number;
   pending: number;
   validated: number;
   inProgress: number;
@@ -222,8 +238,44 @@ export interface OptimizedRiskRoute {
     total: number;
     unsafe: boolean;
   };
+  traffic?: {
+    congestedSegments: number;
+    slowSegments: number;
+    jamSegments: number;
+    segments: Array<{
+      speed: 'NORMAL' | 'SLOW' | 'TRAFFIC_JAM' | string;
+      coordinates: Array<[number, number]>;
+    }>;
+  };
   alternativesEvaluated: number;
   via?: { latitude: number; longitude: number } | null;
+}
+
+export interface RoadTelemetryResult {
+  accepted: boolean;
+  reused?: boolean;
+  confirmationAdded?: boolean;
+  pendingSignal?: boolean;
+  signalCount?: number;
+  reason?: string;
+  report?: ReportMapPoint;
+}
+
+export interface HighFlowTraffic {
+  provider: 'google-routes';
+  bounds: {
+    minLatitude: number;
+    maxLatitude: number;
+    minLongitude: number;
+    maxLongitude: number;
+  };
+  congestedSegments: number;
+  slowSegments: number;
+  jamSegments: number;
+  segments: Array<{
+    speed: 'SLOW' | 'TRAFFIC_JAM' | string;
+    coordinates: Array<[number, number]>;
+  }>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -244,6 +296,14 @@ export class ReportsService {
       if (value !== undefined && value !== '') params = params.set(key, String(value));
     });
     return this.http.get<ReportAdminMetrics>(`${API_URL}/reports/admin/metrics`, { params });
+  }
+
+  metrics(filters: Record<string, string | number | undefined> = {}) {
+    let params = new HttpParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') params = params.set(key, String(value));
+    });
+    return this.http.get<ReportAdminMetrics>(`${API_URL}/reports/metrics`, { params });
   }
 
   create(payload: Record<string, unknown> | FormData) {
@@ -282,6 +342,19 @@ export class ReportsService {
     return this.http.post<WeatherFloodScanResult>(`${API_URL}/reports/weather/flood-zones/scan`, {});
   }
 
+  recordRoadTelemetry(payload: {
+    eventType: 'impact' | 'speed_drop' | 'high_flow';
+    latitude: number;
+    longitude: number;
+    accelerationMagnitude?: number;
+    speedBeforeKmh?: number;
+    speedAfterKmh?: number;
+    accuracyMeters?: number;
+    source?: string;
+  }) {
+    return this.http.post<RoadTelemetryResult>(`${API_URL}/reports/road-telemetry`, payload);
+  }
+
   optimizeRiskRoute(
     origin: { latitude: number; longitude: number },
     destination: { latitude: number; longitude: number },
@@ -293,6 +366,18 @@ export class ReportsService {
     } = {},
   ) {
     return this.http.post<OptimizedRiskRoute>(`${API_URL}/reports/routes/optimize-risk`, { origin, destination, ...options });
+  }
+
+  highFlowTraffic(
+    bounds: {
+      minLatitude: number;
+      maxLatitude: number;
+      minLongitude: number;
+      maxLongitude: number;
+    },
+    options: { googleMapsApiKey?: string } = {},
+  ) {
+    return this.http.post<HighFlowTraffic>(`${API_URL}/reports/routes/high-flow`, { bounds, ...options });
   }
 
   institutions(filters: Record<string, string | undefined> = {}) {

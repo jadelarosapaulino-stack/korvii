@@ -1,8 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { UserRole } from "../../common/enums/user-role.enum";
+import { SystemConfigService } from "../system-config/system-config.service";
 
 export interface RolePermissionItem {
   key: string;
@@ -28,32 +28,46 @@ export interface RolePermissionView {
 }
 
 @Injectable()
-export class RolePermissionsService {
-  private readonly logger = new Logger(RolePermissionsService.name);
+export class RolePermissionsService implements OnModuleInit {
+  private static readonly CONFIG_KEY = "role_permissions";
   private readonly configPath: string;
   private current: RolePermissionView[];
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
+  ) {
     this.configPath = this.config.get<string>(
       "ROLE_PERMISSIONS_CONFIG_PATH",
       join(process.cwd(), ".tmp", "role-permissions-config.json"),
     );
-    this.current = this.load();
+    this.current = this.defaultConfig();
+  }
+
+  async onModuleInit() {
+    this.current = this.sanitize(
+      await this.systemConfig.loadValue(
+        RolePermissionsService.CONFIG_KEY,
+        this.defaultConfig(),
+        this.configPath,
+      ),
+    );
+    await this.persist();
   }
 
   get(): RolePermissionView[] {
     return structuredClone(this.current);
   }
 
-  update(next: RolePermissionView[]): RolePermissionView[] {
+  async update(next: RolePermissionView[]): Promise<RolePermissionView[]> {
     this.current = this.sanitize(next);
-    this.persist();
+    await this.persist();
     return this.get();
   }
 
-  reset(): RolePermissionView[] {
+  async reset(): Promise<RolePermissionView[]> {
     this.current = this.defaultConfig();
-    this.persist();
+    await this.persist();
     return this.get();
   }
 
@@ -70,29 +84,10 @@ export class RolePermissionsService {
     );
   }
 
-  private load(): RolePermissionView[] {
-    if (!existsSync(this.configPath)) return this.defaultConfig();
-
-    try {
-      const stored = JSON.parse(
-        readFileSync(this.configPath, "utf8"),
-      ) as RolePermissionView[];
-      return this.sanitize(stored);
-    } catch (error) {
-      this.logger.warn(
-        `No se pudo leer configuracion de permisos por rol: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return this.defaultConfig();
-    }
-  }
-
-  private persist() {
-    const directory = dirname(this.configPath);
-    if (!existsSync(directory)) mkdirSync(directory, { recursive: true });
-    writeFileSync(
-      this.configPath,
-      JSON.stringify(this.current, null, 2),
-      "utf8",
+  private async persist() {
+    await this.systemConfig.saveValue(
+      RolePermissionsService.CONFIG_KEY,
+      this.current,
     );
   }
 

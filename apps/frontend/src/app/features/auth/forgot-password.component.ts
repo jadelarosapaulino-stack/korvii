@@ -78,7 +78,7 @@ export class ForgotPasswordComponent {
     this.auth.requestPasswordReset(email).subscribe({
       next: () => {
         this.toastr.info('Si el correo existe, recibiras un codigo.', 'Revisa tu correo');
-        this.router.navigate(['/restablecer-contrasena'], { queryParams: { email } });
+        this.router.navigate(['/reset-password'], { queryParams: { email } });
       },
       error: () => {
         this.toastr.error('No se pudo solicitar la recuperacion.', 'Error');

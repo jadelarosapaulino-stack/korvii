@@ -60,7 +60,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
           </mat-form-field>
 
           <div class="actions">
-            <a mat-button routerLink="/perfil" *ngIf="!auth.user()?.mustChangePassword">Volver al perfil</a>
+            <a mat-button routerLink="/profile" *ngIf="!auth.user()?.mustChangePassword">Volver al perfil</a>
             <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || loading()">Guardar cambio</button>
           </div>
         </form>
@@ -97,7 +97,7 @@ export class ChangePasswordComponent {
         this.form.reset();
         this.auth.refreshUser().subscribe(() => {
           this.loading.set(false);
-          this.router.navigateByUrl(this.auth.canViewExecutivePanel() ? '/dashboard' : '/reportes');
+          this.router.navigateByUrl(this.auth.canViewExecutivePanel() ? '/dashboard' : '/reports');
         });
       },
       error: () => {

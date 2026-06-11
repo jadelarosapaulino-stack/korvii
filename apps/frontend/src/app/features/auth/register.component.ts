@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -109,30 +109,9 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
               <mat-error *ngIf="form.controls.confirmPassword.invalid || form.hasError('passwordMismatch')">Las contrasenas deben coincidir.</mat-error>
             </mat-form-field>
 
-            <div class="rs-grid two">
-              <mat-form-field appearance="outline">
-                <mat-label>Provincia</mat-label>
-                <mat-select formControlName="province" (selectionChange)="onProvinceChange($event.value)">
-                  @for (province of provinces; track province) {
-                    <mat-option [value]="province">{{ province }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Municipio</mat-label>
-                <mat-select formControlName="municipality">
-                  @for (municipality of municipalityOptions(); track municipality) {
-                    <mat-option [value]="municipality">{{ municipality }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            </div>
-
             <div class="location-helper">
               <mat-icon>{{ locating() ? 'sync' : 'my_location' }}</mat-icon>
               <span>{{ locationMessage() }}</span>
-              <button mat-button type="button" (click)="detectLocation()" [disabled]="locating()">Usar mi ubicacion</button>
             </div>
 
             <mat-form-field appearance="outline">
@@ -146,7 +125,7 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
             </mat-form-field>
 
             <div class="register-actions">
-              <button mat-flat-button color="primary" type="submit" [disabled]="loading()">Crear cuenta</button>
+              <button mat-flat-button color="primary" type="submit" [disabled]="loading() || locating()">Crear cuenta</button>
               <a routerLink="/login">Volver al login</a>
             </div>
           </form>
@@ -168,10 +147,10 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
   `,
   styleUrls: ['./auth-flow.component.css', './register.component.css'],
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent {
   loading = signal(false);
   locating = signal(false);
-  locationMessage = signal('Detectaremos tu provincia y municipio automaticamente si permites la ubicacion.');
+  locationMessage = signal('Al crear la cuenta intentaremos detectar tu provincia y municipio automaticamente. Luego podras cambiarlos desde tu perfil.');
   passwordVisible = signal(false);
   confirmPasswordVisible = signal(false);
   readonly provinces = Object.keys(MUNICIPALITIES_BY_PROVINCE);
@@ -180,8 +159,8 @@ export class RegisterComponent implements OnInit {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', [Validators.required, Validators.minLength(8)]],
-    province: ['Santo Domingo'],
-    municipality: ['Santo Domingo Este'],
+    province: [''],
+    municipality: [''],
     vehicleType: ['Motocicleta'],
   }, { validators: passwordMatchValidator });
 
@@ -191,10 +170,6 @@ export class RegisterComponent implements OnInit {
     private readonly router: Router,
     private readonly toastr: ToastrService,
   ) {}
-
-  ngOnInit(): void {
-    this.detectLocation();
-  }
 
   municipalityOptions(): string[] {
     return MUNICIPALITIES_BY_PROVINCE[this.form.controls.province.value] ?? [];
@@ -208,33 +183,38 @@ export class RegisterComponent implements OnInit {
     }
   }
 
-  detectLocation() {
+  private detectLocationForRegistration(): Promise<AdministrativeDetails> {
     if (!navigator.geolocation) {
-      this.locationMessage.set('Tu navegador no soporta geolocalizacion. Puedes seleccionar provincia y municipio manualmente.');
-      return;
+      this.locationMessage.set('Tu navegador no soporta geolocalizacion. Podras completar provincia y municipio desde tu perfil.');
+      return Promise.resolve({});
     }
 
     this.locating.set(true);
     this.locationMessage.set('Solicitando ubicacion del dispositivo...');
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        const details = await this.reverseGeocodeLocation(latitude, longitude);
-        const normalized = this.normalizeDominicanLocation(details, latitude, longitude);
-        this.applyAdministrativeSelection(normalized);
-        this.locationMessage.set(
-          normalized.province && normalized.municipality
-            ? `Ubicacion sugerida: ${normalized.province} - ${normalized.municipality}. Puedes cambiarla.`
-            : 'No pudimos detectar provincia/municipio. Puedes seleccionarlos manualmente.',
-        );
-        this.locating.set(false);
-      },
-      () => {
-        this.locationMessage.set('Permiso de ubicacion no concedido. Puedes seleccionar provincia y municipio manualmente.');
-        this.locating.set(false);
-      },
-      { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 },
-    );
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const details = await this.reverseGeocodeLocation(latitude, longitude);
+          const normalized = this.normalizeDominicanLocation(details, latitude, longitude);
+          this.applyAdministrativeSelection(normalized);
+          this.locationMessage.set(
+            normalized.province && normalized.municipality
+              ? `Ubicacion detectada: ${normalized.province} - ${normalized.municipality}. Podras cambiarla desde tu perfil.`
+              : 'No pudimos detectar provincia/municipio. Podras completarlos desde tu perfil.',
+          );
+          this.locating.set(false);
+          resolve(normalized);
+        },
+        () => {
+          this.locationMessage.set('Permiso de ubicacion no concedido. Podras completar provincia y municipio desde tu perfil.');
+          this.locating.set(false);
+          resolve({});
+        },
+        { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 },
+      );
+    });
   }
 
   private applyAdministrativeSelection(details: AdministrativeDetails) {
@@ -295,18 +275,19 @@ export class RegisterComponent implements OnInit {
     return (value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
-  submit() {
+  async submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.toastr.error('Completa los campos requeridos y verifica que las contrasenas coincidan.', 'Registro incompleto');
       return;
     }
     this.loading.set(true);
+    await this.detectLocationForRegistration();
     const { confirmPassword: _confirmPassword, ...payload } = this.form.getRawValue();
     this.auth.register(payload).subscribe({
       next: (response) => {
         this.toastr.success(response.message || 'Cuenta creada. Revisa tu correo.', 'Registro completado');
-        this.router.navigate(['/activar-cuenta'], { queryParams: { email: response.email } });
+        this.router.navigate(['/activate-account'], { queryParams: { email: response.email } });
       },
       error: () => {
         this.toastr.error('Revisa los datos o intenta nuevamente.', 'No se pudo registrar el usuario');

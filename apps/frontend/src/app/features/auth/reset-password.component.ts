@@ -69,7 +69,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
               <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || loading()">Actualizar contrasena</button>
             </form>
 
-            <p class="rs-muted"><a routerLink="/recuperar-contrasena">Solicitar otro codigo</a></p>
+            <p class="rs-muted"><a routerLink="/forgot-password">Solicitar otro codigo</a></p>
           </mat-card-content>
         </mat-card>
 

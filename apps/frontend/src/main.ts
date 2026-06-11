@@ -9,7 +9,9 @@ import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { AuthService } from './app/core/auth.service';
 import { authInterceptor } from './app/core/auth.interceptor';
+import { cacheInterceptor } from './app/core/cache.interceptor';
 import { loadingInterceptor } from './app/core/loading.interceptor';
+import { SystemConfigService } from './app/core/system-config.service';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -22,10 +24,11 @@ bootstrapApplication(AppComponent, {
       preventDuplicates: true,
       timeOut: 3500,
     }),
-    provideHttpClient(withInterceptors([loadingInterceptor, authInterceptor])),
+    provideHttpClient(withInterceptors([loadingInterceptor, authInterceptor, cacheInterceptor])),
     provideAppInitializer(() => {
       const auth = inject(AuthService);
-      return auth.isAuthenticated() ? firstValueFrom(auth.refreshUser()) : undefined;
+      const systemConfig = inject(SystemConfigService);
+      return auth.isAuthenticated() ? firstValueFrom(systemConfig.loadSharedConfig()).then(() => firstValueFrom(auth.refreshUser())) : undefined;
     }),
   ],
 }).catch((err) => console.error(err));

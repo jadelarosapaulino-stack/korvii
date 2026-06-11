@@ -17,21 +17,27 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
         <div>
           <span class="rs-eyebrow">Producto premium</span>
           <h1>KORVI AI</h1>
-          <p>Inteligencia de riesgo vial para aseguradoras, gobierno y empresas con flotillas.</p>
+          <p>Inteligencia de riesgo vial para priorizar intervenciones, anticipar exposicion territorial y coordinar respuesta operativa.</p>
         </div>
-        <button mat-stroked-button type="button" (click)="load()">
-          <mat-icon>refresh</mat-icon>
-          Actualizar
-        </button>
+        <div class="intel-header-actions">
+          <span class="freshness-pill">
+            <mat-icon>schedule</mat-icon>
+            {{ generatedAtLabel() }}
+          </span>
+          <button mat-stroked-button type="button" (click)="load()" [disabled]="loading() || greenLoading()">
+            <mat-icon>{{ loading() || greenLoading() ? 'sync' : 'refresh' }}</mat-icon>
+            {{ loading() || greenLoading() ? 'Actualizando' : 'Actualizar' }}
+          </button>
+        </div>
       </header>
 
       <section class="hero-band">
-        <div>
+        <div class="score-card exposure" [class]="scoreTone(data()?.kpis?.exposureScore ?? 0)">
           <span>Scoring territorial</span>
           <strong>{{ data()?.kpis?.exposureScore ?? 0 }}/100</strong>
           <p>Indice de exposicion combinado por volumen de reportes, severidad, inundaciones y carga abierta.</p>
         </div>
-        <div>
+        <div class="score-card prevention" [class]="scoreTone(data()?.kpis?.preventionIndex ?? 0)">
           <span>Indice de prevencion</span>
           <strong>{{ data()?.kpis?.preventionIndex ?? 0 }}/100</strong>
           <p>Lectura ejecutiva para medir mitigacion, cierres y prioridad de accion.</p>
@@ -39,25 +45,33 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
       </section>
 
       <section class="kpi-grid">
-        <mat-card>
-          <mat-icon>stacked_bar_chart</mat-icon>
-          <span>Total reportes</span>
-          <strong>{{ data()?.kpis?.totalReports ?? 0 }}</strong>
+        <mat-card class="kpi-card">
+          <mat-icon>bar_chart</mat-icon>
+          <div>
+            <span>Total reportes</span>
+            <strong>{{ data()?.kpis?.totalReports ?? 0 }}</strong>
+          </div>
         </mat-card>
-        <mat-card>
+        <mat-card class="kpi-card danger">
           <mat-icon>warning</mat-icon>
-          <span>Alto riesgo</span>
-          <strong>{{ data()?.kpis?.highRiskReports ?? 0 }}</strong>
+          <div>
+            <span>Alto riesgo</span>
+            <strong>{{ data()?.kpis?.highRiskReports ?? 0 }}</strong>
+          </div>
         </mat-card>
-        <mat-card>
-          <mat-icon>flood</mat-icon>
-          <span>Zonas inundables</span>
-          <strong>{{ data()?.kpis?.floodZones ?? 0 }}</strong>
+        <mat-card class="kpi-card blue">
+          <mat-icon>waves</mat-icon>
+          <div>
+            <span>Zonas inundables</span>
+            <strong>{{ data()?.kpis?.floodZones ?? 0 }}</strong>
+          </div>
         </mat-card>
-        <mat-card>
+        <mat-card class="kpi-card warning">
           <mat-icon>pending_actions</mat-icon>
-          <span>Carga abierta</span>
-          <strong>{{ data()?.kpis?.openReports ?? 0 }}</strong>
+          <div>
+            <span>Carga abierta</span>
+            <strong>{{ data()?.kpis?.openReports ?? 0 }}</strong>
+          </div>
         </mat-card>
       </section>
 
@@ -66,10 +80,11 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
           <div>
             <span>Semaforos inteligentes</span>
             <strong>Green Light operativo</strong>
+            <small>{{ greenGeneratedAtLabel() }}</small>
           </div>
-          <button mat-stroked-button type="button" (click)="loadGreenLight()">
-            <mat-icon>traffic</mat-icon>
-            Recalcular
+          <button mat-stroked-button type="button" (click)="loadGreenLight()" [disabled]="greenLoading()">
+            <mat-icon>{{ greenLoading() ? 'sync' : 'traffic' }}</mat-icon>
+            {{ greenLoading() ? 'Recalculando' : 'Recalcular' }}
           </button>
         </div>
 
@@ -102,7 +117,10 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
               <div class="green-content">
                 <div class="green-title">
                   <strong>{{ trafficLightTitle(item) }}</strong>
-                  <mat-chip>{{ trafficStatusLabel(item.trafficLight.status) }}</mat-chip>
+                  <div class="green-badges">
+                    <mat-chip>{{ trafficStatusLabel(item.trafficLight.status) }}</mat-chip>
+                    <span>{{ item.averageRisk }}/5 riesgo promedio</span>
+                  </div>
                 </div>
                 <small class="traffic-light-id">{{ item.trafficLight.name }}</small>
                 <p>{{ item.recommendation }}</p>
@@ -110,7 +128,7 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
                   <span><mat-icon>location_on</mat-icon>{{ item.trafficLight.province || 'Sin provincia' }} - {{ item.trafficLight.municipality || 'Sin municipio' }}</span>
                   <span><mat-icon>report</mat-icon>{{ item.nearbyReports }} reportes</span>
                   <span><mat-icon>warning</mat-icon>{{ item.highRiskReports }} alto riesgo</span>
-                  <span><mat-icon>car_crash</mat-icon>{{ item.accidents }} accidentes</span>
+                  <span><mat-icon>directions_car</mat-icon>{{ item.accidents }} accidentes</span>
                   <span><mat-icon>traffic</mat-icon>{{ item.damagedSignalReports }} semaforo danado</span>
                 </div>
                 <div class="reason-line">
@@ -142,7 +160,7 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
                 <strong>{{ row.label }}</strong>
                 <span>{{ row.count }} reportes · riesgo {{ row.averageRisk }}/5 · {{ row.highRiskCount }} alto riesgo</span>
               </div>
-              <meter min="0" max="100" [value]="row.score"></meter>
+              <i class="score-bar"><em [style.width.%]="trendWidth(row.score)"></em></i>
               <b>{{ row.score }}</b>
             </article>
           }
@@ -159,7 +177,7 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
                 <strong>{{ categoryLabel(row.label) }}</strong>
                 <span>{{ row.count }} eventos · promedio {{ row.averageRisk }}/5</span>
               </div>
-              <meter min="0" max="100" [value]="row.score"></meter>
+              <i class="score-bar"><em [style.width.%]="trendWidth(row.score)"></em></i>
               <b>{{ row.score }}</b>
             </article>
           }
@@ -253,6 +271,8 @@ import { GreenLightInsight, GreenLightInsightsSummary, TrafficLightsService } fr
 export class IntelligenceComponent implements OnInit {
   data = signal<IntelligenceSummary | null>(null);
   greenLight = signal<GreenLightInsightsSummary | null>(null);
+  loading = signal(false);
+  greenLoading = signal(false);
   municipalityRows = computed(() => this.data()?.trends.byMunicipality ?? []);
   categoryRows = computed(() => this.data()?.trends.byCategory ?? []);
   greenLightRows = computed<GreenLightInsight[]>(() => this.greenLight()?.insights ?? []);
@@ -283,18 +303,52 @@ export class IntelligenceComponent implements OnInit {
   }
 
   load() {
+    this.loading.set(true);
     this.analytics.intelligence().subscribe({
-      next: (data) => this.data.set(data),
-      error: () => this.data.set(null),
+      next: (data) => {
+        this.data.set(data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.data.set(null);
+        this.loading.set(false);
+      },
     });
     this.loadGreenLight();
   }
 
   loadGreenLight() {
+    this.greenLoading.set(true);
     this.trafficLights.greenLightInsights({ radiusMeters: 300, limit: 12 }).subscribe({
-      next: (data) => this.greenLight.set(data),
-      error: () => this.greenLight.set(null),
+      next: (data) => {
+        this.greenLight.set(data);
+        this.greenLoading.set(false);
+      },
+      error: () => {
+        this.greenLight.set(null);
+        this.greenLoading.set(false);
+      },
     });
+  }
+
+  generatedAtLabel(): string {
+    return this.formatTimestamp(this.data()?.generatedAt, 'Sin datos');
+  }
+
+  greenGeneratedAtLabel(): string {
+    const summary = this.greenLight();
+    if (!summary?.generatedAt) return 'Sin recalculo reciente';
+    return `Actualizado ${this.formatTimestamp(summary.generatedAt, '')}`;
+  }
+
+  scoreTone(score: number): string {
+    if (score >= 75) return 'critical';
+    if (score >= 50) return 'elevated';
+    return 'stable';
+  }
+
+  trendWidth(score: number): number {
+    return Math.max(4, Math.min(100, Number(score) || 0));
   }
 
   categoryLabel(category: string): string {
@@ -329,5 +383,17 @@ export class IntelligenceComponent implements OnInit {
     if (location) return location;
 
     return `${trafficLight.latitude.toFixed(6)}, ${trafficLight.longitude.toFixed(6)}`;
+  }
+
+  private formatTimestamp(value: string | null | undefined, fallback: string): string {
+    if (!value) return fallback;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return fallback;
+    return date.toLocaleString('es-DO', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }

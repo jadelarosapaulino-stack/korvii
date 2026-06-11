@@ -6,7 +6,8 @@ export type RealtimeEventType =
   | "report.status_changed"
   | "report.assigned"
   | "report.metrics_changed"
-  | "weather.flood_zone_created";
+  | "weather.flood_zone_created"
+  | "traffic_light.report_created";
 
 export interface RealtimeEventPayload {
   type: RealtimeEventType;

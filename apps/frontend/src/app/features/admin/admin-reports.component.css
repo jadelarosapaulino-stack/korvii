@@ -81,7 +81,7 @@
 .empty-state { min-height: 320px; display: grid; align-content: center; justify-items: center; gap: .5rem; color: var(--rs-text-muted); box-shadow: none !important; }
 .empty-state mat-icon { color: var(--rs-secondary); font-size: 42px; width: 42px; height: 42px; }
 .empty-state strong { color: var(--rs-text); }
-mat-paginator { border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-surface); color: var(--rs-text); }
+mat-paginator { justify-self: end; color: var(--rs-text); }
 
 .report-map-modal-backdrop { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 1.25rem; background: rgba(15, 23, 42, .54); backdrop-filter: blur(4px); }
 .report-map-modal { position: relative; width: min(980px, 100%); height: min(680px, calc(100dvh - 2.5rem)); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-surface); }
@@ -95,8 +95,6 @@ mat-paginator { border: 1px solid var(--rs-border); border-radius: var(--rs-radi
 .report-modal-details div { min-width: 0; }
 .report-modal-details span { display: block; color: var(--rs-text-muted); font-size: .72rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
 .report-modal-details strong { display: block; margin-top: .12rem; overflow: hidden; color: var(--rs-text); text-overflow: ellipsis; white-space: nowrap; }
-:host ::ng-deep .report-map-pin { width: 28px; height: 28px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50% 50% 50% 0; background: var(--rs-danger); color: #fff; transform: rotate(-45deg); }
-:host ::ng-deep .report-map-pin .mat-icon { width: 17px; height: 17px; font-size: 17px; color: currentColor; transform: rotate(45deg); }
 
 @media (max-width: 1180px) {
   .metrics-chart-layout { grid-template-columns: 1fr; }

@@ -66,8 +66,6 @@ mat-form-field { width: 100%; }
 .nearby-reports button:hover { border-color: rgba(36,70,95,.32); background: var(--rs-primary-soft); }
 .nearby-reports span { overflow: hidden; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .nearby-reports small { overflow: hidden; color: var(--rs-text-muted); font-size: .74rem; text-overflow: ellipsis; white-space: nowrap; }
-:host ::ng-deep .summary-risk-marker-shell { width: 36px; height: 36px; display: block; }
-:host ::ng-deep .summary-risk-marker { width: 36px; height: 36px; display: grid; place-items: center; border: 3px solid #fff; border-radius: var(--rs-radius); background: var(--rs-danger); color: #fff; font-weight: 900; box-shadow: var(--rs-shadow-sm); }
 .location-modal-backdrop { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 1.25rem; background: rgba(15, 23, 42, .62); backdrop-filter: blur(4px); }
 .location-modal { width: min(1120px, 100%); height: min(760px, calc(100dvh - 2.5rem)); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid rgba(255,255,255,.18); border-radius: var(--rs-radius); background: #fff; box-shadow: 0 24px 80px rgba(0,0,0,.32); }
 .location-modal header { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: .8rem; align-items: center; padding: .85rem 1rem; color: var(--rs-primary); background: var(--rs-primary-pastel); }

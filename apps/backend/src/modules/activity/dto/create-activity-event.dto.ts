@@ -22,7 +22,7 @@ export class CreateActivityEventDto {
   @IsIn(["web", "mobile"])
   platform: "web" | "mobile";
 
-  @ApiPropertyOptional({ example: "/reportes/nuevo" })
+  @ApiPropertyOptional({ example: "/reports/new" })
   @IsOptional()
   @IsString()
   @MaxLength(240)

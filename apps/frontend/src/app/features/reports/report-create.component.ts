@@ -14,7 +14,7 @@ import { Map as MapTilerMap, Marker, Popup, type MapMouseEvent } from '@maptiler
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
 import { LatLngPoint, ReverseGeocodeDetails, applyKorviMapTheme, circlePolygon, createKorviMap, mapReady, metersBetween, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
-import { InstitutionOption, ReportCategory, ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/reports.service';
+import { InstitutionOption, ReportCategory, ReportMapPoint, ReportsService, reportCategoryIcon, reportCategoryLabel } from '../../core/reports.service';
 import { ReportCategoryConfig, SystemConfigService } from '../../core/system-config.service';
 import { RiskChipComponent } from '../../shared/ui/risk-chip/risk-chip.component';
 
@@ -115,16 +115,12 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
               <mat-form-field appearance="outline">
                 <mat-label>Categoría</mat-label>
                 <mat-select formControlName="category">
-                  <mat-option value="ACCIDENT">Accidente</mat-option>
-                  <mat-option value="TRAFFIC_LIGHT_DAMAGED">Semáforo dañado</mat-option>
-                  <mat-option value="ROAD_DAMAGE">Vía en mal estado</mat-option>
-                  <mat-option value="ROAD_OBSTRUCTION">Obstrucción en la vía</mat-option>
-                  <mat-option value="POOR_LIGHTING">Falta de iluminación</mat-option>
-                  <mat-option value="MISSING_SIGNAGE">Falta de señalización</mat-option>
-                  <mat-option value="RECKLESS_DRIVING">Conducción imprudente</mat-option>
-                  <mat-option value="DANGEROUS_CROSSING">Cruce peligroso</mat-option>
-                  <mat-option value="FLOOD_ZONE">Zona de posible inundacion</mat-option>
-                  <mat-option value="OTHER">Otro</mat-option>
+                  @for (category of categoryOptions; track category) {
+                    <mat-option [value]="category">
+                      <mat-icon>{{ categoryIcon(category) }}</mat-icon>
+                      {{ categoryLabel(category) }}
+                    </mat-option>
+                  }
                 </mat-select>
               </mat-form-field>
             </div>
@@ -515,6 +511,18 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
 
   readonly provinceOptions = Object.keys(MUNICIPALITIES_BY_PROVINCE);
   private readonly defaultReportCategory: ReportCategory = 'TRAFFIC_LIGHT_DAMAGED';
+  readonly categoryOptions: ReportCategory[] = [
+    'ACCIDENT',
+    'TRAFFIC_LIGHT_DAMAGED',
+    'ROAD_DAMAGE',
+    'ROAD_OBSTRUCTION',
+    'POOR_LIGHTING',
+    'MISSING_SIGNAGE',
+    'RECKLESS_DRIVING',
+    'DANGEROUS_CROSSING',
+    'FLOOD_ZONE',
+    'OTHER',
+  ];
   private readonly categoryDraftSuggestions: Record<ReportCategory, CategoryDraftSuggestion> = {
     ACCIDENT: {
       title: 'Accidente de tránsito reportado',
@@ -711,7 +719,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
         } else {
           this.toastr.success('El incidente fue enviado para verificacion.', 'Reporte creado');
         }
-        this.router.navigateByUrl('/reportes');
+        this.router.navigateByUrl('/reports');
       },
       error: (error: unknown) => {
         const moderationMessage = this.moderationErrorMessage(error);
@@ -776,6 +784,10 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     return reportCategoryLabel(category);
   }
 
+  categoryIcon(category: string | null | undefined): string {
+    return reportCategoryIcon(category);
+  }
+
   selectedInstitutionName(): string {
     const institutionId = this.form.controls.assignedInstitutionId.value;
     return this.institutions().find((institution) => institution.id === institutionId)?.name ?? 'Sin mencionar';
@@ -786,7 +798,12 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     const institution = this.institutions().find((item) => item.id === institutionId);
     if (!institution) return 'El reporte quedara sin autoridad mencionada hasta que sea asignado por una cuenta institucional.';
     const location = [institution.province, institution.municipality].filter(Boolean).join(' · ');
-    return `Se mencionara a ${institution.name}${location ? ` para ${location}` : ''}.`;
+    const contacts = [
+      institution.emergencyPhone ? `Emergencia ${institution.emergencyPhone}` : '',
+      institution.phone ? `Tel. ${institution.phone}` : '',
+      institution.whatsapp ? `WhatsApp ${institution.whatsapp}` : '',
+    ].filter(Boolean);
+    return `Se mencionara a ${institution.name}${location ? ` para ${location}` : ''}${contacts.length ? `. Contacto: ${contacts.join(' - ')}` : ''}.`;
   }
 
   emergencyLocationDetails(): string {
@@ -1203,7 +1220,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     const position: LatLngPoint = { latitude, longitude };
 
     if (!this.previewMarker) {
-      this.previewMarker = new Marker({ element: this.summaryMarkerElement(), draggable: true, anchor: 'center' })
+      this.previewMarker = new Marker({ element: this.locationPinMarkerElement(), draggable: true, anchor: 'bottom' })
         .setLngLat(toLngLat(position))
         .addTo(this.previewMap);
       this.previewMarker.on('dragend', () => {
@@ -1213,7 +1230,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
       });
     } else {
       this.previewMarker.setLngLat(toLngLat(position));
-      this.previewMarker.getElement().replaceChildren(...Array.from(this.summaryMarkerElement().childNodes));
+      this.previewMarker.getElement().replaceChildren(...Array.from(this.locationPinMarkerElement().childNodes));
     }
 
     this.previewMap.flyTo({ center: toLngLat(position), zoom: 15, essential: true });
@@ -1252,7 +1269,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     const position: LatLngPoint = { latitude, longitude };
 
     if (!this.modalMarker) {
-      this.modalMarker = new Marker({ element: this.summaryMarkerElement(), draggable: true, anchor: 'center' })
+      this.modalMarker = new Marker({ element: this.locationPinMarkerElement(), draggable: true, anchor: 'bottom' })
         .setLngLat(toLngLat(position))
         .addTo(this.modalMap);
       this.modalMarker.on('dragend', () => {
@@ -1262,15 +1279,15 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
       });
     } else {
       this.modalMarker.setLngLat(toLngLat(position));
-      this.modalMarker.getElement().replaceChildren(...Array.from(this.summaryMarkerElement().childNodes));
+      this.modalMarker.getElement().replaceChildren(...Array.from(this.locationPinMarkerElement().childNodes));
     }
 
     this.modalLocationLabel.set(`${latitude.toFixed(7)}, ${longitude.toFixed(7)}`);
   }
 
-  private summaryMarkerElement(): HTMLElement {
+  private locationPinMarkerElement(): HTMLElement {
     const wrapper = document.createElement('span');
-    wrapper.innerHTML = `<span class="summary-risk-marker-shell"><span class="summary-risk-marker">${this.riskLevel()}</span></span>`;
+    wrapper.innerHTML = '<span class="korvi-map-pin location" draggable="true"><span class="material-icons">location_on</span></span>';
     return wrapper.firstElementChild as HTMLElement;
   }
 

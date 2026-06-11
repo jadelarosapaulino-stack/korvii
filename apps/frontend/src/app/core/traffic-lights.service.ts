@@ -30,6 +30,10 @@ export interface TrafficLightsSettings {
   defaultProvince: string;
   defaultMunicipality: string;
   importProvinces: string[];
+  automaticReportsEnabled: boolean;
+  automaticReportTtlHours: number;
+  automaticReportRadiusMeters: number;
+  automaticReportMonitorIntervalMinutes: number;
 }
 
 export interface TrafficLightsPage {

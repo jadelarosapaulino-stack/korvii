@@ -540,8 +540,7 @@ export class AccuWeatherService {
         }),
       },
     );
-    if (!response.ok)
-      throw new Error(`Google Flood HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`Google Flood HTTP ${response.status}`);
 
     const data = (await response.json()) as GoogleFloodStatusResponse;
     return data.floodStatuses ?? [];

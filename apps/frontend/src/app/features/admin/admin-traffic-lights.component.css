@@ -20,11 +20,13 @@
 .section-heading strong, .list-toolbar strong { display: block; color: var(--rs-text); letter-spacing: 0; }
 .section-heading span, .list-toolbar span { display: block; margin-top: .15rem; color: var(--rs-text-muted); font-size: .82rem; line-height: 1.35; }
 .config-card .section-heading span { font-size: .78rem; }
+.section-heading.compact { margin-top: .35rem; }
 .field-grid { display: grid; gap: .75rem; margin-top: 1rem; }
 .config-card .field-grid { gap: .55rem; margin-top: .75rem; }
 .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .wide-field { grid-column: 1 / -1; }
 .config-card .field-grid.two { grid-template-columns: minmax(320px, 1.2fr) minmax(280px, 1fr) minmax(220px, .85fr); width: 100%; max-width: none; }
+.field-grid.three { grid-template-columns: minmax(220px, .8fr) repeat(2, minmax(140px, 1fr)); align-items: center; }
 .field-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .config-card .field-grid.four { grid-template-columns: repeat(4, minmax(140px, 1fr)); width: 100%; max-width: none; }
 .config-card mat-form-field { font-size: .84rem; }
@@ -37,6 +39,10 @@
 .background-status { min-width: 220px; color: var(--rs-text-muted); font-size: .82rem; font-weight: 700; line-height: 1.25; }
 :host ::ng-deep .config-actions .mdc-switch { transform: scale(.82); transform-origin: left center; }
 :host ::ng-deep .config-actions .mat-mdc-slide-toggle .mdc-label { font-size: .82rem; }
+:host ::ng-deep .field-grid.three .mdc-switch { transform: scale(.82); transform-origin: left center; }
+:host ::ng-deep .field-grid.three .mat-mdc-slide-toggle .mdc-label { color: var(--rs-text); font-size: .82rem; font-weight: 750; }
+:host ::ng-deep .field-grid.four .mdc-switch { transform: scale(.82); transform-origin: left center; }
+:host ::ng-deep .field-grid.four .mat-mdc-slide-toggle .mdc-label { color: var(--rs-text); font-size: .82rem; font-weight: 750; }
 .list-card { display: grid; gap: .8rem; }
 .list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .filters { display: grid; grid-template-columns: 240px 170px; gap: .75rem; align-items: end; }
@@ -65,7 +71,7 @@
 :host ::ng-deep .danger-menu-item { margin-top: .25rem; border-top: 1px solid var(--rs-border); padding-top: .25rem; }
 :host ::ng-deep .danger-menu-item mat-icon { background: var(--rs-danger-soft); color: var(--rs-danger); }
 :host ::ng-deep .danger-menu-item span { color: var(--rs-danger); }
-mat-paginator { border-top: 1px solid var(--rs-border); background: var(--rs-surface); color: var(--rs-text); }
+mat-paginator { justify-self: end; color: var(--rs-text); }
 .empty-state { min-height: 260px; display: grid; align-content: center; justify-items: center; gap: .5rem; color: var(--rs-text-muted); }
 .empty-state mat-icon { color: var(--rs-secondary); font-size: 42px; width: 42px; height: 42px; }
 .empty-state strong { color: var(--rs-text); }
@@ -99,8 +105,6 @@ mat-paginator { border-top: 1px solid var(--rs-border); background: var(--rs-sur
 .traffic-modal-details div { min-width: 0; }
 .traffic-modal-details span { display: block; color: var(--rs-text-muted); font-size: .72rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
 .traffic-modal-details strong { display: block; margin-top: .12rem; overflow: hidden; color: var(--rs-text); text-overflow: ellipsis; white-space: nowrap; }
-:host ::ng-deep .traffic-light-map-pin { width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50% 50% 50% 0; background: var(--rs-warning); color: #fff; transform: rotate(-45deg); }
-:host ::ng-deep .traffic-light-map-pin .mat-icon { width: 18px; height: 18px; font-size: 18px; color: currentColor; transform: rotate(45deg); }
 @media (max-width: 1180px) {
   .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-layout, .traffic-table-head, .traffic-row { grid-template-columns: 1fr; }
@@ -110,7 +114,7 @@ mat-paginator { border-top: 1px solid var(--rs-border); background: var(--rs-sur
   .traffic-header, .list-toolbar { align-items: stretch; flex-direction: column; }
   .header-actions { justify-content: stretch; }
   .header-actions button { width: 100%; justify-content: center; }
-  .summary-grid, .field-grid.two, .field-grid.four, .filters, .config-card .field-grid.two, .config-card .field-grid.four { grid-template-columns: 1fr; max-width: none; }
+  .summary-grid, .field-grid.two, .field-grid.three, .field-grid.four, .filters, .config-card .field-grid.two, .config-card .field-grid.four { grid-template-columns: 1fr; max-width: none; }
   .manual-dialog footer { flex-direction: column-reverse; }
   .manual-dialog footer button { width: 100%; justify-content: center; }
   .confirm-dialog footer { flex-direction: column-reverse; }

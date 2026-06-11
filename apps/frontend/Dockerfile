@@ -13,3 +13,4 @@ RUN pnpm --filter @ruta-segura/frontend build
 FROM nginx:1.27-alpine AS runner
 COPY --from=build /app/apps/frontend/dist/ruta-segura-frontend/browser /usr/share/nginx/html
 EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

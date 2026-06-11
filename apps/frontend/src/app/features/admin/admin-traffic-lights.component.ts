@@ -121,6 +121,31 @@ interface TrafficLightLocationDetails {
             </mat-form-field>
           </div>
 
+          <div class="section-heading compact">
+            <div>
+              <strong>Reportes automaticos</strong>
+              <span>Crea un reporte cuando KORVI AI detecte un semaforo en prioridad alta, critica o apagado.</span>
+            </div>
+          </div>
+
+          <div class="field-grid four">
+            <mat-slide-toggle [checked]="settings().automaticReportsEnabled" (change)="patchSettings({ automaticReportsEnabled: $event.checked })">
+              Activar reportes automaticos
+            </mat-slide-toggle>
+            <mat-form-field appearance="outline">
+              <mat-label>Ventana sin duplicados (horas)</mat-label>
+              <input matInput type="number" min="1" max="168" [ngModel]="settings().automaticReportTtlHours" (ngModelChange)="patchSettings({ automaticReportTtlHours: numberValue($event, settings().automaticReportTtlHours) })" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Radio duplicado (m)</mat-label>
+              <input matInput type="number" min="20" max="1000" [ngModel]="settings().automaticReportRadiusMeters" (ngModelChange)="patchSettings({ automaticReportRadiusMeters: numberValue($event, settings().automaticReportRadiusMeters) })" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Revision cada (min)</mat-label>
+              <input matInput type="number" min="5" max="1440" [ngModel]="settings().automaticReportMonitorIntervalMinutes" (ngModelChange)="patchSettings({ automaticReportMonitorIntervalMinutes: numberValue($event, settings().automaticReportMonitorIntervalMinutes) })" />
+            </mat-form-field>
+          </div>
+
           <div class="config-actions">
             <mat-slide-toggle [checked]="replaceExisting()" (change)="replaceExisting.set($event.checked)">
               Reemplazar estado existente al importar
@@ -227,16 +252,16 @@ interface TrafficLightLocationDetails {
             <span>Importa desde OpenStreetMap o crea un registro manual.</span>
           </div>
         }
-
-        <mat-paginator
-          [length]="totalTrafficLights()"
-          [pageIndex]="pageIndex()"
-          [pageSize]="pageSize()"
-          [pageSizeOptions]="[10, 20, 50]"
-          showFirstLastButtons
-          (page)="onPage($event)">
-        </mat-paginator>
       </mat-card>
+
+      <mat-paginator
+        [length]="totalTrafficLights()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        showFirstLastButtons
+        (page)="onPage($event)">
+      </mat-paginator>
 
       <ng-template #manualDialog>
         <section class="manual-dialog">
@@ -467,6 +492,10 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
     defaultProvince: 'Santo Domingo',
     defaultMunicipality: 'Gran Santo Domingo',
     importProvinces: ['Santo Domingo'],
+    automaticReportsEnabled: true,
+    automaticReportTtlHours: 24,
+    automaticReportRadiusMeters: 120,
+    automaticReportMonitorIntervalMinutes: 30,
   });
   draft = signal<Partial<TrafficLightItem>>({
     name: '',
@@ -999,10 +1028,10 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
 
   private createTrafficLightMapPin(): HTMLElement {
     const marker = document.createElement('span');
-    marker.className = 'traffic-light-map-pin';
+    marker.className = 'korvi-map-pin traffic-light';
 
-    const icon = document.createElement('mat-icon');
-    icon.className = 'mat-icon material-icons';
+    const icon = document.createElement('span');
+    icon.className = 'material-icons';
     icon.setAttribute('aria-hidden', 'true');
     icon.textContent = 'traffic';
 

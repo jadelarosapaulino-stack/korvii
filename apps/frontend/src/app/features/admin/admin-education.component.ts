@@ -119,7 +119,7 @@ import { EducationCategory, EducationService, Lesson, YoutubeVideoMetadata } fro
                 <mat-label>URL del video</mat-label>
                 <input matInput formControlName="videoUrl" placeholder="https://www.youtube.com/watch?v=..." (blur)="loadYoutubeMetadataFromForm()" />
                 <button mat-icon-button matSuffix type="button" [disabled]="youtubeMetadataLoading()" aria-label="Leer parametros de YouTube" (click)="loadYoutubeMetadataFromForm(true)">
-                  <mat-icon>{{ youtubeMetadataLoading() ? 'sync' : 'youtube_activity' }}</mat-icon>
+                  <mat-icon>{{ youtubeMetadataLoading() ? 'sync' : 'smart_display' }}</mat-icon>
                 </button>
               </mat-form-field>
 
@@ -298,16 +298,16 @@ import { EducationCategory, EducationService, Lesson, YoutubeVideoMetadata } fro
               </div>
             }
           </div>
-
-          <mat-paginator
-            [length]="lessons().length"
-            [pageIndex]="pageIndex()"
-            [pageSize]="pageSize()"
-            [pageSizeOptions]="[5, 10, 20]"
-            showFirstLastButtons
-            (page)="onPage($event)">
-          </mat-paginator>
         </mat-card>
+
+        <mat-paginator
+          [length]="lessons().length"
+          [pageIndex]="pageIndex()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="[5, 10, 20]"
+          showFirstLastButtons
+          (page)="onPage($event)">
+        </mat-paginator>
       </section>
 
       @if (previewLesson(); as lesson) {

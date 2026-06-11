@@ -19,7 +19,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
         <div>
           <span class="rs-eyebrow">Panel ejecutivo</span>
           <h1>KORVI Insight</h1>
-          <p>Vista consolidada para priorizar zonas críticas, medir carga operativa y sustentar decisiones institucionales o aseguradoras.</p>
+          <p>Vista ejecutiva para priorizar riesgos, medir carga operativa y sustentar decisiones comerciales y operativas.</p>
         </div>
         <button mat-stroked-button type="button" (click)="load()">
           <mat-icon>refresh</mat-icon>
@@ -29,6 +29,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
 
       <section class="kpi-row">
         <mat-card class="metric-card">
+          <mat-icon>insights</mat-icon>
           <div>
             <span>Total reportes</span>
             <strong>{{ summary()?.total ?? reports().length }}</strong>
@@ -37,6 +38,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
         </mat-card>
 
         <mat-card class="metric-card accent-warning">
+          <mat-icon>pending_actions</mat-icon>
           <div>
             <span>Pendientes</span>
             <strong>{{ summary()?.pending ?? countByStatus('PENDING') }}</strong>
@@ -45,6 +47,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
         </mat-card>
 
         <mat-card class="metric-card accent-primary">
+          <mat-icon>route</mat-icon>
           <div>
             <span>En intervención</span>
             <strong>{{ summary()?.inProgress ?? countByStatus('IN_PROGRESS') }}</strong>
@@ -53,6 +56,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
         </mat-card>
 
         <mat-card class="metric-card accent-danger">
+          <mat-icon>monitoring</mat-icon>
           <div>
             <span>Riesgo promedio</span>
             <strong>{{ averageRisk() }}/5</strong>
@@ -111,8 +115,8 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
             <article>
               <mat-icon>shield</mat-icon>
               <div>
-                <strong>Exposición asegurable</strong>
-                <span>{{ highRiskCount() }} puntos de alto riesgo impactan scoring, pricing y prevención.</span>
+                <strong>Exposición territorial</strong>
+                <span>{{ highRiskCount() }} puntos de alto riesgo impactan prevencion, cobertura y priorizacion.</span>
               </div>
             </article>
             <article>
@@ -346,7 +350,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private statusChart?: Chart;
   private readonly themeChangeHandler = () => this.applyMapTheme();
 
-  private readonly chartColors = ['#3B8A8A', '#B9852C', '#A84D4F', '#2F7D73', '#7B4BA0', '#D85F3B', '#5E7E3E'];
+  private readonly chartColors = ['#66B7B0', '#9CB8D8', '#F0B981', '#A8D8A5', '#D8B7E8', '#F2A6A0', '#8CC7E8'];
 
   private applyMapTheme() {
     if (!this.heatMap) return;
@@ -411,7 +415,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             id: report.id,
             title: report.title,
             riskLevel: report.riskLevel,
-            color: report.riskLevel >= 4 ? '#A94C4C' : report.riskLevel === 3 ? '#B9852C' : '#3B8A8A',
+            color: report.riskLevel >= 4 ? '#E58F8A' : report.riskLevel === 3 ? '#F0B981' : '#66B7B0',
             radius: 14 + report.riskLevel * 6,
             opacity: report.riskLevel >= 4 ? 0.34 : 0.22,
           },
@@ -543,18 +547,33 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           data: chartRows.map((row) => row.count),
           backgroundColor: colors,
           borderColor: '#ffffff',
-          borderWidth: 3,
-          hoverOffset: 10,
+          borderWidth: 4,
+          hoverOffset: 8,
+          spacing: 3,
         }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '58%',
+        cutout: '64%',
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 900,
+          easing: 'easeOutQuart',
+        },
         plugins: {
           legend: {
-            position: 'bottom',
-            labels: { boxWidth: 12, color: '#0F2F45', font: { weight: 700 } },
+            position: 'right',
+            align: 'center',
+            labels: {
+              boxWidth: 10,
+              boxHeight: 10,
+              color: '#526678',
+              font: { weight: 700 },
+              padding: 14,
+              usePointStyle: true,
+            },
           },
           tooltip: { callbacks: { label: (context) => `${context.label}: ${context.parsed} reportes` } },
         },
@@ -578,22 +597,27 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           label: 'Reportes',
           data: chartRows.map((row) => row.count),
           backgroundColor: chartRows.map((row) => row.color),
-          borderRadius: 10,
-          maxBarThickness: 54,
+          borderRadius: 8,
+          maxBarThickness: 42,
         }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 850,
+          easing: 'easeOutCubic',
+        },
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: '#0F2F45', font: { weight: 800 } },
+            ticks: { color: '#526678', font: { weight: 750 } },
           },
           y: {
             beginAtZero: true,
-            ticks: { precision: 0, color: '#637387' },
-            grid: { color: 'rgba(99, 115, 135, .16)' },
+            border: { display: false },
+            ticks: { precision: 0, color: '#7B8997' },
+            grid: { color: 'rgba(123, 137, 151, .14)' },
           },
         },
         plugins: {
@@ -607,11 +631,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private statusRows() {
     const summary = this.summary();
     return [
-      { label: 'Pendientes', count: summary?.pending ?? this.countByStatus('PENDING'), color: '#B9852C' },
-      { label: 'Validados', count: summary?.validated ?? this.countByStatus('VALIDATED'), color: '#3B8A8A' },
-      { label: 'En proceso', count: summary?.inProgress ?? this.countByStatus('IN_PROGRESS'), color: '#2F7D73' },
-      { label: 'Resueltos', count: summary?.resolved ?? this.countByStatus('RESOLVED'), color: '#5E7E3E' },
-      { label: 'Descartados', count: this.countByStatus('REJECTED') + this.countByStatus('DUPLICATE'), color: '#A84D4F' },
+      { label: 'Pendientes', count: summary?.pending ?? this.countByStatus('PENDING'), color: '#F0B981' },
+      { label: 'Validados', count: summary?.validated ?? this.countByStatus('VALIDATED'), color: '#66B7B0' },
+      { label: 'En proceso', count: summary?.inProgress ?? this.countByStatus('IN_PROGRESS'), color: '#9CB8D8' },
+      { label: 'Resueltos', count: summary?.resolved ?? this.countByStatus('RESOLVED'), color: '#A8D8A5' },
+      { label: 'Descartados', count: this.countByStatus('REJECTED') + this.countByStatus('DUPLICATE'), color: '#E58F8A' },
     ];
   }
 }

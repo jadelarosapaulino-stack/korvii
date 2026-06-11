@@ -31,6 +31,27 @@ export class Institution {
   @Column({ type: "text", nullable: true })
   coverageArea?: string;
 
+  @Column({ length: 40, nullable: true })
+  phone?: string;
+
+  @Column({ length: 40, nullable: true })
+  emergencyPhone?: string;
+
+  @Column({ length: 40, nullable: true })
+  whatsapp?: string;
+
+  @Column({ length: 150, nullable: true })
+  email?: string;
+
+  @Column({ length: 250, nullable: true })
+  websiteUrl?: string;
+
+  @Column({ length: 250, nullable: true })
+  sourceUrl?: string;
+
+  @Column({ length: 220, nullable: true })
+  address?: string;
+
   @Column({ default: true })
   isActive: boolean;
 

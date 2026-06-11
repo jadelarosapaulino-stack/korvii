@@ -8,12 +8,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSliderModule } from '@angular/material/slider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ToastrService } from 'ngx-toastr';
 import { ReportCategory, ReportsService } from '../../core/reports.service';
 import { FeatureFlag, FeatureFlagsService } from '../../core/feature-flags.service';
 import { GamificationService } from '../../core/gamification.service';
-import { SystemApiKeysConfig, SystemConfigService, SystemIntegrationConfig, SystemSocialAuthConfig } from '../../core/system-config.service';
+import { SystemApiKeysConfig, SystemConfigService, SystemIntegrationConfig, SystemMapThemeConfig, SystemSocialAuthConfig } from '../../core/system-config.service';
 
 type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' | 'storage' | 'maps' | 'libraries' | 'integrations' | 'weather';
 
@@ -30,6 +31,7 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
     MatIconModule,
     MatInputModule,
     MatSelectModule,
+    MatSliderModule,
     MatSlideToggleModule,
   ],
   template: `
@@ -49,6 +51,10 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
             <mat-icon>restart_alt</mat-icon>
             Restaurar valores
           </button>
+          <button mat-flat-button type="button" (click)="saveSettings()" [disabled]="savingMapSettings">
+            <mat-icon>{{ savingMapSettings ? 'sync' : 'save' }}</mat-icon>
+            {{ savingMapSettings ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
         </div>
       </header>
 
@@ -56,8 +62,8 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
         <aside class="settings-sidebar" aria-label="Menu de configuracion administrativa">
           @for (section of sections; track section.id) {
             <a
-              routerLink="/admin/sistema"
-              [queryParams]="{ seccion: section.id }"
+              routerLink="/admin/system"
+              [queryParams]="{ section: section.id }"
               class="settings-nav-item"
               [class.active]="activeSection === section.id">
               <mat-icon>{{ section.icon }}</mat-icon>
@@ -81,42 +87,73 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
 
               <div class="category-list">
                 @for (category of config.config().categories; track category.id) {
-                  <article>
-                    <div class="category-main">
-                      <mat-slide-toggle [checked]="category.enabled" (change)="updateCategory(category.id, { enabled: $event.checked })">
-                        Activa
-                      </mat-slide-toggle>
-                      <div>
-                        <strong>{{ category.label }}</strong>
-                        <span>{{ category.id }}</span>
+                  <article class="category-card" [class.disabled]="!category.enabled" [class.emergency]="category.requiresEmergencyCall">
+                    <div class="category-card-header">
+                      <div class="category-main">
+                        <span class="category-icon">
+                          <mat-icon>{{ categoryIcon(category.id) }}</mat-icon>
+                        </span>
+                        <div>
+                          <strong>{{ category.label }}</strong>
+                          <span>{{ category.id }}</span>
+                        </div>
+                      </div>
+
+                      <div class="category-state">
+                        <span class="category-status" [class.enabled]="category.enabled">
+                          {{ category.enabled ? 'Activa' : 'Inactiva' }}
+                        </span>
+                        <mat-slide-toggle
+                          [checked]="category.enabled"
+                          (change)="updateCategory(category.id, { enabled: $event.checked })"
+                          aria-label="Activar categoria">
+                        </mat-slide-toggle>
                       </div>
                     </div>
 
-                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>Riesgo base</mat-label>
-                      <input
-                        matInput
-                        type="number"
-                        min="1"
-                        max="5"
-                        [ngModel]="category.defaultRiskLevel"
-                        (ngModelChange)="updateCategory(category.id, { defaultRiskLevel: clampRisk($event) })" />
-                    </mat-form-field>
+                    <div class="category-controls">
+                      <div class="risk-control">
+                        <div class="control-label">
+                          <span>Riesgo base</span>
+                          <strong>{{ riskLabel(category.defaultRiskLevel) }}</strong>
+                        </div>
+                        <div class="risk-options" role="group" aria-label="Riesgo base">
+                          @for (level of riskLevels; track level) {
+                            <button
+                              type="button"
+                              [class.active]="category.defaultRiskLevel === level"
+                              [class.high]="level >= 4"
+                              (click)="updateCategory(category.id, { defaultRiskLevel: level })"
+                              [attr.aria-label]="'Riesgo ' + level">
+                              {{ level }}
+                            </button>
+                          }
+                        </div>
+                      </div>
 
-                    <mat-slide-toggle
-                      class="emergency-toggle"
-                      [checked]="category.requiresEmergencyCall"
-                      (change)="updateCategory(category.id, { requiresEmergencyCall: $event.checked })">
-                      Emergencia
-                    </mat-slide-toggle>
+                      <button
+                        type="button"
+                        class="emergency-action"
+                        [class.active]="category.requiresEmergencyCall"
+                        (click)="updateCategory(category.id, { requiresEmergencyCall: !category.requiresEmergencyCall })">
+                        <mat-icon>{{ category.requiresEmergencyCall ? 'emergency' : 'notifications_none' }}</mat-icon>
+                        <span>
+                          <strong>{{ category.requiresEmergencyCall ? 'Emergencia activa' : 'Sin emergencia' }}</strong>
+                          <small>{{ category.requiresEmergencyCall ? 'Sugiere llamada inmediata' : 'No sugiere llamada' }}</small>
+                        </span>
+                      </button>
 
-                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="instructions-field">
-                      <mat-label>Mensaje de emergencia</mat-label>
-                      <input
-                        matInput
-                        [ngModel]="category.emergencyInstructions"
-                        (ngModelChange)="updateCategory(category.id, { emergencyInstructions: $event })" />
-                    </mat-form-field>
+                      <div class="instructions-wrap">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="instructions-field">
+                          <mat-label>Mensaje de emergencia</mat-label>
+                          <input
+                            matInput
+                            [disabled]="!category.requiresEmergencyCall"
+                            [ngModel]="category.emergencyInstructions"
+                            (ngModelChange)="updateCategory(category.id, { emergencyInstructions: $event })" />
+                        </mat-form-field>
+                      </div>
+                    </div>
                   </article>
                 }
               </div>
@@ -436,7 +473,9 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                   <h2>Mapas</h2>
                   <p>Configura proveedor base, geocodificacion, rutas, render y credenciales cartograficas.</p>
                 </div>
-                <mat-chip>{{ config.config().integrations.mapProvider }} · {{ config.config().integrations.routingProvider }}</mat-chip>
+                <div class="section-actions">
+                  <mat-chip>{{ config.config().integrations.mapProvider }} · {{ config.config().integrations.routingProvider }}</mat-chip>
+                </div>
               </div>
 
               <div class="library-grid">
@@ -529,6 +568,104 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                       <input matInput [ngModel]="config.config().libraries.mapStyleDark" (ngModelChange)="config.updateLibraries({ mapStyleDark: $event })" />
                     </mat-form-field>
                   </div>
+                </mat-card>
+
+                <mat-card class="library-section">
+                  <div class="section-row">
+                    <h3>Tema visual del mapa</h3>
+                    <div class="preset-actions">
+                      <button mat-stroked-button type="button" (click)="applyMapThemePreset('korvi')">
+                        <mat-icon>palette</mat-icon>
+                        Korvi
+                      </button>
+                      <button mat-stroked-button type="button" (click)="applyMapThemePreset('cool')">
+                        <mat-icon>water_drop</mat-icon>
+                        Fresco
+                      </button>
+                      <button mat-stroked-button type="button" (click)="applyMapThemePreset('mono')">
+                        <mat-icon>contrast</mat-icon>
+                        Minimal
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="map-theme-grid">
+                    <section>
+                      <strong>Modo claro</strong>
+                      <div class="color-grid">
+                        @for (field of mapThemeColorFields; track field.key) {
+                          <label class="color-swatch-control" [style.--swatch-color]="config.config().libraries.mapThemeLight[field.key]">
+                            <span class="swatch-preview" aria-hidden="true"></span>
+                            <span class="swatch-copy">
+                              <strong>{{ field.label }}</strong>
+                              <small>{{ config.config().libraries.mapThemeLight[field.key] }}</small>
+                            </span>
+                            <input type="color" [attr.aria-label]="'Color claro ' + field.label" [ngModel]="config.config().libraries.mapThemeLight[field.key]" (ngModelChange)="updateMapThemeColor('light', field.key, $event)" />
+                          </label>
+                        }
+                      </div>
+                    </section>
+
+                    <section>
+                      <strong>Modo oscuro</strong>
+                      <div class="color-grid">
+                        @for (field of mapThemeColorFields; track field.key) {
+                          <label class="color-swatch-control" [style.--swatch-color]="config.config().libraries.mapThemeDark[field.key]">
+                            <span class="swatch-preview" aria-hidden="true"></span>
+                            <span class="swatch-copy">
+                              <strong>{{ field.label }}</strong>
+                              <small>{{ config.config().libraries.mapThemeDark[field.key] }}</small>
+                            </span>
+                            <input type="color" [attr.aria-label]="'Color oscuro ' + field.label" [ngModel]="config.config().libraries.mapThemeDark[field.key]" (ngModelChange)="updateMapThemeColor('dark', field.key, $event)" />
+                          </label>
+                        }
+                      </div>
+                    </section>
+                  </div>
+
+                  <div class="filter-slider-grid">
+                    @for (field of googleMapFilterFields; track field.key) {
+                      <article class="filter-slider">
+                        <div class="filter-slider-header">
+                          <span>
+                            <strong>{{ field.label }}</strong>
+                            <small>Modo claro</small>
+                          </span>
+                          <b>{{ formatMapSliderValue(field, config.config().libraries.mapThemeLight[field.key]) }}</b>
+                        </div>
+                        <mat-slider [min]="field.min" [max]="field.max" [step]="field.step" discrete>
+                          <input matSliderThumb [ngModel]="config.config().libraries.mapThemeLight[field.key]" (ngModelChange)="updateMapThemeNumber('light', field.key, $event)" />
+                        </mat-slider>
+                        <div class="slider-scale" aria-hidden="true">
+                          <span>{{ formatMapSliderTick(field, field.min) }}</span>
+                          @if (field.min < 0 && field.max > 0) {
+                            <span>0</span>
+                          }
+                          <span>{{ formatMapSliderTick(field, field.max) }}</span>
+                        </div>
+                      </article>
+                      <article class="filter-slider">
+                        <div class="filter-slider-header">
+                          <span>
+                            <strong>{{ field.label }}</strong>
+                            <small>Modo oscuro</small>
+                          </span>
+                          <b>{{ formatMapSliderValue(field, config.config().libraries.mapThemeDark[field.key]) }}</b>
+                        </div>
+                        <mat-slider [min]="field.min" [max]="field.max" [step]="field.step" discrete>
+                          <input matSliderThumb [ngModel]="config.config().libraries.mapThemeDark[field.key]" (ngModelChange)="updateMapThemeNumber('dark', field.key, $event)" />
+                        </mat-slider>
+                        <div class="slider-scale" aria-hidden="true">
+                          <span>{{ formatMapSliderTick(field, field.min) }}</span>
+                          @if (field.min < 0 && field.max > 0) {
+                            <span>0</span>
+                          }
+                          <span>{{ formatMapSliderTick(field, field.max) }}</span>
+                        </div>
+                      </article>
+                    }
+                  </div>
+                  <p class="hint">MapTiler aplica colores por capas. Google Maps usa filtros raster globales, por eso los controles de Google afectan el tono general del tile.</p>
                 </mat-card>
 
                 <mat-card class="library-section">
@@ -875,6 +1012,7 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
 export class SystemAdminComponent implements OnInit {
   activeSection: AdminSettingsSection = 'categories';
   weatherFloodScanRunning = false;
+  savingMapSettings = false;
   visibleSocialCredentials: Partial<Record<keyof SystemSocialAuthConfig, boolean>> = {};
   readonly storageProviders = [
     { id: 'Local uploads', label: 'Local uploads', description: 'Archivos en disco del servidor', icon: 'folder' },
@@ -890,8 +1028,9 @@ export class SystemAdminComponent implements OnInit {
     { id: 'maps', label: 'Mapas', description: 'Proveedores y rutas', icon: 'map' },
     { id: 'libraries', label: 'Librerias', description: 'Graficos y UI', icon: 'extension' },
     { id: 'integrations', label: 'Integraciones', description: 'API keys por servicio', icon: 'key' },
-    { id: 'weather', label: 'Clima', description: 'Inundaciones y pronosticos', icon: 'flood' },
+    { id: 'weather', label: 'Clima', description: 'Inundaciones y pronosticos', icon: 'waves' },
   ];
+  readonly riskLevels = [1, 2, 3, 4, 5];
   readonly apiKeyServices: Array<{ key: keyof SystemApiKeysConfig; label: string; description: string; icon: string }> = [
     { key: 'maptiler', label: 'MapTiler', description: 'Mapas base, geocodificacion y modo hibrido.', icon: 'map' },
     { key: 'googleMaps', label: 'Google Maps', description: 'Map Tiles, Routes API y Geocoding de Google Maps Platform.', icon: 'satellite_alt' },
@@ -905,9 +1044,9 @@ export class SystemAdminComponent implements OnInit {
     { key: 'windy', label: 'Windy API', description: 'Capas meteorologicas, radar y visualizacion avanzada.', icon: 'air' },
     { key: 'ibmWeather', label: 'IBM Weather', description: 'Datos empresariales de The Weather Company.', icon: 'business' },
     { key: 'googleForecast', label: 'Google Forecast', description: 'Pronostico meteorologico de Google por coordenadas.', icon: 'partly_cloudy_day' },
-    { key: 'tomorrowIo', label: 'Tomorrow.io', description: 'Nowcasting y datos meteorologicos premium.', icon: 'thunderstorm' },
+    { key: 'tomorrowIo', label: 'Tomorrow.io', description: 'Nowcasting y datos meteorologicos premium.', icon: 'cloud_queue' },
     { key: 'meteomatics', label: 'Meteomatics', description: 'Pronostico meteorologico premium alternativo.', icon: 'cloud' },
-    { key: 'googleFloodForecasting', label: 'Google Flood Forecasting', description: 'Proveedor de prediccion de inundaciones.', icon: 'flood' },
+    { key: 'googleFloodForecasting', label: 'Google Flood Forecasting', description: 'Proveedor de prediccion de inundaciones.', icon: 'waves' },
     { key: 'localWeatherAuthority', label: 'Autoridad local', description: 'Token o credencial para INDOMET/ONAMET, COE, INDRHI u otra entidad.', icon: 'account_balance' },
   ];
   readonly socialAuthProviders: Array<{ key: 'google' | 'facebook'; label: string; description: string; hint: string; icon: string }> = [
@@ -945,6 +1084,29 @@ export class SystemAdminComponent implements OnInit {
     { value: 'MapTiler routing', label: 'MapTiler routing' },
     { value: 'GraphHopper', label: 'GraphHopper' },
     { value: 'Valhalla', label: 'Valhalla' },
+  ];
+  readonly mapThemeColorFields: Array<{ key: keyof Pick<SystemMapThemeConfig, 'background' | 'land' | 'park' | 'water' | 'building' | 'buildingOutline' | 'road' | 'roadPrimary' | 'roadSecondary' | 'roadCasing' | 'label' | 'labelMuted' | 'poi' | 'boundary'>; label: string }> = [
+    { key: 'background', label: 'Fondo' },
+    { key: 'land', label: 'Terreno' },
+    { key: 'park', label: 'Verde' },
+    { key: 'water', label: 'Agua' },
+    { key: 'building', label: 'Edificios' },
+    { key: 'buildingOutline', label: 'Borde edif.' },
+    { key: 'road', label: 'Calles' },
+    { key: 'roadPrimary', label: 'Vias principales' },
+    { key: 'roadSecondary', label: 'Vias secundarias' },
+    { key: 'roadCasing', label: 'Borde vias' },
+    { key: 'label', label: 'Texto' },
+    { key: 'labelMuted', label: 'Texto vias' },
+    { key: 'poi', label: 'POI' },
+    { key: 'boundary', label: 'Limites' },
+  ];
+  readonly googleMapFilterFields: Array<{ key: keyof Pick<SystemMapThemeConfig, 'googleBrightnessMin' | 'googleBrightnessMax' | 'googleContrast' | 'googleSaturation' | 'googleHueRotate'>; label: string; min: number; max: number; step: number }> = [
+    { key: 'googleBrightnessMin', label: 'Brillo min.', min: 0, max: 1, step: 0.01 },
+    { key: 'googleBrightnessMax', label: 'Brillo max.', min: 0, max: 1, step: 0.01 },
+    { key: 'googleContrast', label: 'Contraste', min: -1, max: 1, step: 0.01 },
+    { key: 'googleSaturation', label: 'Saturacion', min: -1, max: 1, step: 0.01 },
+    { key: 'googleHueRotate', label: 'Tono', min: -180, max: 180, step: 1 },
   ];
   readonly aiProviders = [
     { value: 'OpenAI', label: 'OpenAI' },
@@ -1038,7 +1200,7 @@ export class SystemAdminComponent implements OnInit {
     this.config.loadWeatherConfig();
     this.config.loadSocialAuthConfig();
     this.route.queryParamMap.subscribe((params) => {
-      const section = params.get('seccion');
+      const section = params.get('section');
       this.activeSection = this.isValidSection(section) ? section : 'categories';
     });
   }
@@ -1050,6 +1212,33 @@ export class SystemAdminComponent implements OnInit {
 
   clampRisk(value: string | number): number {
     return Math.min(5, Math.max(1, this.numberValue(value, 3)));
+  }
+
+  riskLabel(value: number): string {
+    if (value >= 5) return 'Critico';
+    if (value >= 4) return 'Alto';
+    if (value >= 3) return 'Medio';
+    if (value >= 2) return 'Bajo';
+    return 'Minimo';
+  }
+
+  categoryIcon(categoryId: string): string {
+    const normalized = categoryId.toLowerCase();
+    const icons: Array<[string, string]> = [
+      ['inund', 'water_damage'],
+      ['flood', 'water_damage'],
+      ['semaforo', 'traffic'],
+      ['traffic', 'traffic'],
+      ['via', 'construction'],
+      ['road', 'construction'],
+      ['cruce', 'signpost'],
+      ['cross', 'signpost'],
+      ['ilumin', 'lightbulb'],
+      ['light', 'lightbulb'],
+      ['senal', 'wrong_location'],
+      ['signal', 'wrong_location'],
+    ];
+    return icons.find(([key]) => normalized.includes(key))?.[1] ?? 'report_problem';
   }
 
   numberValue(value: string | number, fallback: number): number {
@@ -1076,6 +1265,22 @@ export class SystemAdminComponent implements OnInit {
 
   updateApiKey(key: keyof SystemApiKeysConfig, value: string) {
     this.config.updateApiKeys({ [key]: value } as Partial<SystemApiKeysConfig>);
+  }
+
+  saveSettings() {
+    if (this.savingMapSettings) return;
+
+    this.savingMapSettings = true;
+    this.config.saveConfig().subscribe({
+      next: () => {
+        this.savingMapSettings = false;
+        this.toastr.success('Configuracion guardada en la base de datos.', 'Sistema');
+      },
+      error: (error) => {
+        this.savingMapSettings = false;
+        this.toastr.error(error?.error?.message || 'No se pudo guardar la configuracion en la base de datos.', 'Sistema');
+      },
+    });
   }
 
   activeIntegrationSummary() {
@@ -1106,6 +1311,88 @@ export class SystemAdminComponent implements OnInit {
       this.config.updateIntegrations({ mapProvider: 'Google Maps' });
     }
     this.toastr.success('Render del mapa actualizado.', 'Librerias');
+  }
+
+  updateMapThemeColor(mode: 'light' | 'dark', key: keyof SystemMapThemeConfig, value: string) {
+    const libraries = this.config.config().libraries;
+    const property = mode === 'light' ? 'mapThemeLight' : 'mapThemeDark';
+    this.config.updateLibraries({
+      [property]: {
+        ...libraries[property],
+        [key]: value,
+      },
+    } as Partial<typeof libraries>);
+  }
+
+  updateMapThemeNumber(mode: 'light' | 'dark', key: keyof SystemMapThemeConfig, value: number | string) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return;
+    const libraries = this.config.config().libraries;
+    const property = mode === 'light' ? 'mapThemeLight' : 'mapThemeDark';
+    this.config.updateLibraries({
+      [property]: {
+        ...libraries[property],
+        [key]: numericValue,
+      },
+    } as Partial<typeof libraries>);
+  }
+
+  formatMapSliderValue(field: (typeof this.googleMapFilterFields)[number], value: number | string): string {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return '0';
+    if (field.key === 'googleHueRotate') return `${Math.round(numericValue)}deg`;
+    if (field.key === 'googleBrightnessMin' || field.key === 'googleBrightnessMax') return `${Math.round(numericValue * 100)}%`;
+    return numericValue.toFixed(2);
+  }
+
+  formatMapSliderTick(field: (typeof this.googleMapFilterFields)[number], value: number): string {
+    if (field.key === 'googleHueRotate') return `${value}deg`;
+    if (field.key === 'googleBrightnessMin' || field.key === 'googleBrightnessMax') return `${Math.round(value * 100)}%`;
+    return value.toString();
+  }
+
+  applyMapThemePreset(preset: 'korvi' | 'cool' | 'mono') {
+    const themes = {
+      korvi: {
+        light: {
+          background: '#EEF7F6', land: '#F7FBF9', park: '#DDF3E6', water: '#B9E7EF', building: '#E2EBF0', buildingOutline: '#CFDDE4',
+          road: '#FFFFFF', roadPrimary: '#A7DCD7', roadSecondary: '#D5E7EF', roadCasing: '#8FBFCA', label: '#163548', labelMuted: '#657A86',
+          poi: '#4F8F8B', boundary: '#9ABFC3', googleBrightnessMin: 0.06, googleBrightnessMax: 0.98, googleContrast: 0.1, googleSaturation: -0.28, googleHueRotate: 22,
+        },
+        dark: {
+          background: '#0D1B24', land: '#12242A', park: '#153B32', water: '#123F51', building: '#1B3039', buildingOutline: '#284652',
+          road: '#38525D', roadPrimary: '#4FA3A0', roadSecondary: '#53778A', roadCasing: '#0A1821', label: '#E5F3F1', labelMuted: '#A8BDC2',
+          poi: '#98D6CF', boundary: '#4F737A', googleBrightnessMin: 0.04, googleBrightnessMax: 0.74, googleContrast: 0.14, googleSaturation: -0.32, googleHueRotate: 16,
+        },
+      },
+      cool: {
+        light: {
+          background: '#EEF6FA', land: '#F8FBFC', park: '#E4F2EE', water: '#B7DEF1', building: '#E4EBF3', buildingOutline: '#D0DBE8',
+          road: '#FFFFFF', roadPrimary: '#9CC7E6', roadSecondary: '#D8E8F4', roadCasing: '#A8C5D8', label: '#17354A', labelMuted: '#60788A',
+          poi: '#4E86A6', boundary: '#A7C2D3', googleBrightnessMin: 0.07, googleBrightnessMax: 0.98, googleContrast: 0.08, googleSaturation: -0.34, googleHueRotate: 8,
+        },
+        dark: {
+          background: '#0B1824', land: '#111F2C', park: '#17312F', water: '#10354A', building: '#1B2B38', buildingOutline: '#2B4354',
+          road: '#334E61', roadPrimary: '#5AA5C7', roadSecondary: '#4F7185', roadCasing: '#08131E', label: '#E2F0F7', labelMuted: '#A6BBC7',
+          poi: '#91D5E8', boundary: '#4B6D80', googleBrightnessMin: 0.04, googleBrightnessMax: 0.72, googleContrast: 0.16, googleSaturation: -0.38, googleHueRotate: 6,
+        },
+      },
+      mono: {
+        light: {
+          background: '#F3F6F8', land: '#FAFBFC', park: '#E9F1ED', water: '#D4E6ED', building: '#E8EDF1', buildingOutline: '#D4DDE5',
+          road: '#FFFFFF', roadPrimary: '#CAD9E1', roadSecondary: '#E1E9EE', roadCasing: '#B8C8D2', label: '#1E3442', labelMuted: '#697987',
+          poi: '#607A85', boundary: '#B2C0C8', googleBrightnessMin: 0.08, googleBrightnessMax: 0.98, googleContrast: 0.06, googleSaturation: -0.55, googleHueRotate: 0,
+        },
+        dark: {
+          background: '#101820', land: '#151F27', park: '#1D2A2C', water: '#182D38', building: '#202B34', buildingOutline: '#34424D',
+          road: '#3A4A55', roadPrimary: '#60717B', roadSecondary: '#4B5C66', roadCasing: '#0C1218', label: '#EDF2F5', labelMuted: '#B4C0C7',
+          poi: '#B8C8CC', boundary: '#5D707A', googleBrightnessMin: 0.04, googleBrightnessMax: 0.7, googleContrast: 0.12, googleSaturation: -0.6, googleHueRotate: 0,
+        },
+      },
+    }[preset];
+
+    this.config.updateLibraries({ mapThemeLight: themes.light, mapThemeDark: themes.dark });
+    this.toastr.success('Tema del mapa actualizado.', 'Mapas');
   }
 
   weatherPremiumApiKeyName(): keyof SystemApiKeysConfig {

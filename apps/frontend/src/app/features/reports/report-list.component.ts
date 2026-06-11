@@ -14,7 +14,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { createKorviMap, observeMapResize, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
-import { ReportCategory, ReportItem, ReportStatus, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
+import { ReportAdminMetrics, ReportCategory, ReportItem, ReportStatus, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
 import { reportStatusStyle } from '../../shared/utils/report-status-style';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 
@@ -31,11 +31,11 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
           <p>Registro consolidado para priorizar riesgos, coordinar instituciones y dar seguimiento territorial.</p>
         </div>
         <div class="hero-actions">
-          <a mat-stroked-button routerLink="/mapa">
+          <a mat-stroked-button routerLink="/map">
             <mat-icon>travel_explore</mat-icon>
             Ver mapa
           </a>
-          <a mat-flat-button color="primary" routerLink="/reportes/nuevo">
+          <a mat-flat-button color="primary" routerLink="/reports/new">
             <mat-icon>add_location_alt</mat-icon>
             Nuevo reporte
           </a>
@@ -90,24 +90,28 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
           </div>
         </aside>
 
-        <div class="reports-panel rs-panel">
-          <div class="panel-toolbar">
-            <div>
-              <strong>Bandeja de incidentes</strong>
-              <span>{{ reports().length }} visibles en esta pagina</span>
+        <div class="reports-main">
+          <div class="reports-panel rs-panel">
+            <div class="panel-toolbar">
+              <div>
+                <strong>Bandeja de incidentes</strong>
+                <span>{{ reports().length }} visibles en esta pagina</span>
+              </div>
+              <mat-chip>{{ highRiskReports() }} alto riesgo</mat-chip>
             </div>
-            <mat-chip>{{ highRiskReports() }} criticos</mat-chip>
-          </div>
 
-          <div class="date-filter-bar" aria-label="Filtro por fecha y hora">
+            <div class="date-filter-bar" aria-label="Filtro por fecha y hora">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Tipo</mat-label>
               <mat-select [value]="categoryFilter()" (selectionChange)="categoryFilter.set($event.value)">
-                <mat-option value="ALL">Todos</mat-option>
-                @for (category of categoryOptions; track category) {
-                  <mat-option [value]="category">{{ categoryLabel(category) }}</mat-option>
-                }
-              </mat-select>
+              <mat-option value="ALL">Todos</mat-option>
+              @for (category of categoryOptions; track category) {
+                <mat-option [value]="category">
+                  <mat-icon>{{ categoryIcon(category) }}</mat-icon>
+                  {{ categoryLabel(category) }}
+                </mat-option>
+              }
+            </mat-select>
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Estado</mat-label>
@@ -199,9 +203,15 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
             <div class="empty-state">
               <mat-icon>add_location_alt</mat-icon>
               <strong>No hay reportes registrados</strong>
-              <span>Crea el primer incidente para iniciar el mapa operativo.</span>
+              <span>Ajusta los filtros o crea un nuevo incidente para iniciar el seguimiento operativo.</span>
+              <a mat-flat-button color="primary" routerLink="/reports/new">
+                <mat-icon>add_location_alt</mat-icon>
+                Nuevo reporte
+              </a>
             </div>
           }
+
+          </div>
 
           <mat-paginator
             [length]="totalReportCount()"
@@ -294,6 +304,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
   @ViewChild('reportMapContainer') private readonly reportMapContainer?: ElementRef<HTMLElement>;
 
   reports = signal<ReportItem[]>([]);
+  metrics = signal<ReportAdminMetrics | null>(null);
   selectedReport = signal<ReportItem | null>(null);
   reportMapHybridMode = signal(false);
   totalReportCount = signal(0);
@@ -316,10 +327,10 @@ export class ReportListComponent implements OnInit, OnDestroy {
     'OTHER',
   ];
   readonly statusOptions: ReportStatus[] = ['PENDING', 'VALIDATED', 'IN_PROGRESS', 'RESOLVED', 'REJECTED', 'DUPLICATE'];
-  totalReports = computed(() => this.totalReportCount());
-  highRiskReports = computed(() => this.reports().filter((report) => report.riskLevel >= 4).length);
-  pendingReports = computed(() => this.reports().filter((report) => report.status === 'PENDING').length);
-  resolvedReports = computed(() => this.reports().filter((report) => report.status === 'RESOLVED').length);
+  totalReports = computed(() => this.metrics()?.total ?? this.totalReportCount());
+  highRiskReports = computed(() => this.metrics()?.highRisk ?? 0);
+  pendingReports = computed(() => this.metrics()?.pending ?? 0);
+  resolvedReports = computed(() => this.metrics()?.resolved ?? 0);
   private reportMap?: MapTilerMap;
   private reportMapMarker?: Marker;
   private reportMapResizeObserver?: ResizeObserver;
@@ -389,13 +400,17 @@ export class ReportListComponent implements OnInit, OnDestroy {
   }
 
   private loadPage() {
-    this.reportsService.list({
-      page: this.pageIndex() + 1,
-      limit: this.pageSize(),
+    const filters = {
       category: this.categoryFilter() === 'ALL' ? undefined : this.categoryFilter(),
       status: this.statusFilter() === 'ALL' ? undefined : this.statusFilter(),
       from: this.dateStartToIso(this.dateFrom()),
       to: this.dateEndToIso(this.dateTo()),
+    };
+
+    this.reportsService.list({
+      ...filters,
+      page: this.pageIndex() + 1,
+      limit: this.pageSize(),
     }).subscribe({
       next: (page) => {
         this.reports.set(page.data);
@@ -405,6 +420,11 @@ export class ReportListComponent implements OnInit, OnDestroy {
         this.reports.set([]);
         this.totalReportCount.set(0);
       },
+    });
+
+    this.reportsService.metrics(filters).subscribe({
+      next: (metrics) => this.metrics.set(metrics),
+      error: () => this.metrics.set(null),
     });
   }
 
@@ -487,10 +507,10 @@ export class ReportListComponent implements OnInit, OnDestroy {
 
   private createReportMapPin(report: ReportItem): HTMLElement {
     const marker = document.createElement('span');
-    marker.className = 'report-map-pin';
+    marker.className = 'korvi-map-pin report';
 
-    const icon = document.createElement('mat-icon');
-    icon.className = 'mat-icon material-icons';
+    const icon = document.createElement('span');
+    icon.className = 'material-icons';
     icon.setAttribute('aria-hidden', 'true');
     icon.textContent = this.categoryIcon(report.category);
 

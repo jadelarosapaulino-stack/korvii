@@ -9,7 +9,8 @@ export type RealtimeEventType =
   | 'report.status_changed'
   | 'report.assigned'
   | 'report.metrics_changed'
-  | 'weather.flood_zone_created';
+  | 'weather.flood_zone_created'
+  | 'traffic_light.report_created';
 
 export interface RealtimeEventPayload {
   type: RealtimeEventType;
@@ -42,16 +43,22 @@ export class RealtimeService {
   private connect(): Socket {
     if (this.socket?.connected || this.socket?.active) return this.socket;
 
-    const token = localStorage.getItem('ruta_segura_token');
     this.socket = io(REALTIME_URL, {
       path: '/socket.io',
       transports: ['websocket'],
-      auth: { token },
-      autoConnect: Boolean(token),
+      auth: (callback) => {
+        callback({ token: localStorage.getItem('ruta_segura_token') });
+      },
+      autoConnect: Boolean(localStorage.getItem('ruta_segura_token')),
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 800,
       reconnectionDelayMax: 8000,
+    });
+    this.socket.on('connect_error', (error) => {
+      if (['AUTH_REQUIRED', 'AUTH_INVALID'].includes(error.message)) {
+        this.socket?.disconnect();
+      }
     });
     return this.socket;
   }

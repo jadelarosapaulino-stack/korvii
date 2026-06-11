@@ -18,6 +18,7 @@ import { ReportPhoto } from "../modules/reports/entities/report-photo.entity";
 import { Report } from "../modules/reports/entities/report.entity";
 import { RoadTelemetryEvent } from "../modules/reports/entities/road-telemetry-event.entity";
 import { StatusHistory } from "../modules/reports/entities/status-history.entity";
+import { SystemConfigEntry } from "../modules/system-config/system-config.entity";
 import { TrafficLight } from "../modules/traffic-lights/entities/traffic-light.entity";
 import { User } from "../modules/users/user.entity";
 
@@ -35,6 +36,7 @@ export const databaseEntities = [
   RoadTelemetryEvent,
   StatusHistory,
   EmergencyCallLog,
+  SystemConfigEntry,
   TrafficLight,
 ];
 
@@ -61,7 +63,10 @@ export function buildTypeOrmOptions(): TypeOrmModuleOptions &
   const databaseUrl = process.env.DATABASE_URL;
   const ssl =
     process.env.DB_SSL === "true"
-      ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" }
+      ? {
+          rejectUnauthorized:
+            process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false",
+        }
       : undefined;
 
   return {

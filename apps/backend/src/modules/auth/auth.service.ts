@@ -198,7 +198,7 @@ export class AuthService {
 
   updateSocialAuthSettings(
     patch: Partial<SocialAuthSettings>,
-  ): SocialAuthSettings {
+  ): Promise<SocialAuthSettings> {
     return this.socialAuthSettings.update(patch);
   }
 

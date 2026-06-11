@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 class RiskPin extends StatelessWidget {
@@ -72,45 +73,26 @@ class _RiskPinPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final double r = size.width / 2;
+    final double c = size.width / 2;
+    final Rect rect = Rect.fromCircle(center: Offset(c, c), radius: r);
     final path = Path()
-      ..moveTo(size.width / 2, size.height - 1)
-      ..cubicTo(
-        size.width * 0.39,
-        size.height * 0.82,
-        size.width * 0.08,
-        size.height * 0.66,
-        size.width * 0.08,
-        size.height * 0.38,
-      )
-      ..cubicTo(
-        size.width * 0.08,
-        size.height * 0.15,
-        size.width * 0.25,
-        0,
-        size.width / 2,
-        0,
-      )
-      ..cubicTo(
-        size.width * 0.75,
-        0,
-        size.width * 0.92,
-        size.height * 0.15,
-        size.width * 0.92,
-        size.height * 0.38,
-      )
-      ..cubicTo(
-        size.width * 0.92,
-        size.height * 0.66,
-        size.width * 0.61,
-        size.height * 0.82,
-        size.width / 2,
-        size.height - 1,
-      )
+      ..arcTo(rect, 0.65 * pi, 1.7 * pi, true)
+      ..lineTo(c, size.height)
       ..close();
 
+    // Shadow
+    final shadowPath = path.shift(const Offset(0, 3));
+    final shadowPaint = Paint()
+      ..color = const Color(0x220F2F45)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawPath(shadowPath, shadowPaint);
+
+    // Fill
     final fill = Paint()..color = color;
     canvas.drawPath(path, fill);
 
+    // Border
     final border = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke

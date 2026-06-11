@@ -8,8 +8,10 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { API_URL } from '../../core/api.config';
 import { AuthService } from '../../core/auth.service';
 import { FeatureFlagsService } from '../../core/feature-flags.service';
+import { I18nService } from '../../core/i18n.service';
 import { RolePermissionsService } from '../../core/role-permissions.service';
 import { ReportsService, WeatherStatus } from '../../core/reports.service';
+import { SystemConfigService } from '../../core/system-config.service';
 
 @Component({
   selector: 'app-shell',
@@ -35,13 +37,13 @@ import { ReportsService, WeatherStatus } from '../../core/reports.service';
               </a>
             }
             @if (canShow('map', true)) {
-              <a routerLink="/mapa" routerLinkActive="active" title="Mapa de riesgo">
+              <a routerLink="/map" routerLinkActive="active" title="Mapa de riesgo">
               <mat-icon>travel_explore</mat-icon>
               <span>Mapa de riesgo</span>
               </a>
             }
             @if (canShow('reports', true)) {
-              <a routerLink="/reportes" routerLinkActive="active" title="Reportes">
+              <a routerLink="/reports" routerLinkActive="active" title="Reportes">
               <mat-icon>report_problem</mat-icon>
               <span>Reportes</span>
               </a>
@@ -53,7 +55,7 @@ import { ReportsService, WeatherStatus } from '../../core/reports.service';
               </a>
             }
             @if (canShow('education', true)) {
-              <a routerLink="/educacion" routerLinkActive="active" title="Educación vial">
+              <a routerLink="/education" routerLinkActive="active" title="Educación vial">
               <mat-icon>menu_book</mat-icon>
               <span>Educación vial</span>
               </a>
@@ -107,6 +109,16 @@ import { ReportsService, WeatherStatus } from '../../core/reports.service';
               <span>Reportes ciudadanos, mapa de riesgo y despacho institucional</span>
             </div>
             <div class="navbar-spacer"></div>
+            <div class="language-selector" role="group" aria-label="Selector de idioma">
+              <button type="button" [class.active]="i18n.language() === 'es'" title="Espanol" aria-label="Espanol" (click)="i18n.setLanguage('es')">
+                <img class="flag-icon" src="assets/flags/do.svg" alt="" aria-hidden="true" />
+                <span class="language-copy"><strong>ES</strong></span>
+              </button>
+              <button type="button" [class.active]="i18n.language() === 'en'" title="English" aria-label="English" (click)="i18n.setLanguage('en')">
+                <img class="flag-icon" src="assets/flags/us.svg" alt="" aria-hidden="true" />
+                <span class="language-copy"><strong>EN</strong></span>
+              </button>
+            </div>
             <div class="theme-toggle" title="Cambiar tema">
               <mat-icon>{{ darkTheme() ? 'dark_mode' : 'light_mode' }}</mat-icon>
               <mat-slide-toggle [checked]="darkTheme()" (change)="setDarkTheme($event.checked)">
@@ -161,11 +173,11 @@ import { ReportsService, WeatherStatus } from '../../core/reports.service';
                   <small>{{ auth.user()?.email }}</small>
                 </div>
               </div>
-              <a mat-menu-item routerLink="/perfil">
+              <a mat-menu-item routerLink="/profile">
                 <mat-icon>account_circle</mat-icon>
                 <span>Mi perfil</span>
               </a>
-              <a mat-menu-item routerLink="/perfil/cambiar-contrasena">
+              <a mat-menu-item routerLink="/profile/change-password">
                 <mat-icon>lock_reset</mat-icon>
                 <span>Cambiar contrasena</span>
               </a>
@@ -203,9 +215,12 @@ export class ShellComponent implements OnInit {
     private readonly featureFlags: FeatureFlagsService,
     private readonly rolePermissions: RolePermissionsService,
     private readonly reports: ReportsService,
+    private readonly systemConfig: SystemConfigService,
+    public readonly i18n: I18nService,
   ) {}
 
   ngOnInit() {
+    this.systemConfig.loadSharedConfig().subscribe();
     this.auth.refreshUser().subscribe();
     this.featureFlags.load().subscribe();
     this.rolePermissions.load().subscribe();
