@@ -12,6 +12,7 @@ import 'core/reports_repository.dart';
 import 'features/auth/login_screen.dart';
 import 'features/home/citizen_shell.dart';
 import 'shared/korvi_letter_loader.dart';
+import 'shared/motion.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -199,27 +200,48 @@ class _SessionGateState extends State<_SessionGate> {
       );
     }
 
-    if (!_authenticated) {
-      return LoginScreen(
-        auth: widget.auth,
-        onAuthenticated: () {
-          setState(() => _authenticated = true);
-          widget.activity
-              .track(
-                  eventType: 'auth', action: 'login_success', screen: 'login')
-              .catchError((_) {});
-        },
-      );
-    }
-
-    return CitizenShell(
-      auth: widget.auth,
-      activity: widget.activity,
-      reports: widget.reports,
-      education: widget.education,
-      location: widget.location,
-      notifications: widget.notifications,
-      onLogout: () => setState(() => _authenticated = false),
+    return AnimatedSwitcher(
+      duration: KorviMotion.slow,
+      switchInCurve: KorviMotion.curve,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: KorviMotion.curve,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.98, end: 1).animate(curved),
+            child: child,
+          ),
+        );
+      },
+      child: _authenticated
+          ? CitizenShell(
+              key: const ValueKey('shell'),
+              auth: widget.auth,
+              activity: widget.activity,
+              reports: widget.reports,
+              education: widget.education,
+              location: widget.location,
+              notifications: widget.notifications,
+              onLogout: () => setState(() => _authenticated = false),
+            )
+          : LoginScreen(
+              key: const ValueKey('login'),
+              auth: widget.auth,
+              onAuthenticated: () {
+                setState(() => _authenticated = true);
+                widget.activity
+                    .track(
+                      eventType: 'auth',
+                      action: 'login_success',
+                      screen: 'login',
+                    )
+                    .catchError((_) {});
+              },
+            ),
     );
   }
 

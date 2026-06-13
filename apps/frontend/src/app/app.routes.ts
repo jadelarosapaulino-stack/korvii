@@ -5,6 +5,7 @@ import { RegisterComponent } from './features/auth/register.component';
 import { ActivateAccountComponent } from './features/auth/activate-account.component';
 import { ForgotPasswordComponent } from './features/auth/forgot-password.component';
 import { ResetPasswordComponent } from './features/auth/reset-password.component';
+import { LandingPageComponent } from './features/public/landing-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { IntelligenceComponent } from './features/intelligence/intelligence.component';
 import { ReportCreateComponent } from './features/reports/report-create.component';
@@ -23,6 +24,7 @@ import { ChangePasswordComponent } from './features/profile/change-password.comp
 import { authGuard, executivePanelGuard, featureFlagGuard, guestGuard, permissionGuard, reportManagerGuard, superAdminGuard } from './core/auth.guard';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', component: LandingPageComponent, canActivate: [guestGuard] },
   { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
   { path: 'activate-account', component: ActivateAccountComponent, canActivate: [guestGuard] },

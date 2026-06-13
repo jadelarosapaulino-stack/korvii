@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
-import { catchError, of, tap } from 'rxjs';
+import { catchError, from, of, switchMap, tap } from 'rxjs';
 import { API_URL } from './api.config';
 
 export interface AuthUser {
@@ -76,6 +76,12 @@ interface AuthResponse {
   user: AuthUser;
 }
 
+interface LoginKeyResponse {
+  keyId: string;
+  algorithm: 'RSA-OAEP-256';
+  publicKey: string;
+}
+
 interface PendingActivationResponse {
   requiresActivation: true;
   email: string;
@@ -109,7 +115,11 @@ export class AuthService {
   constructor(private readonly http: HttpClient) {}
 
   login(email: string, password: string) {
-    return this.http.post<AuthResponse>(`${API_URL}/auth/login`, { email: email.trim(), password }).pipe(
+    return this.http.get<LoginKeyResponse>(`${API_URL}/auth/login-key`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    }).pipe(
+      switchMap((loginKey) => from(this.encryptLoginPayload(loginKey, email.trim(), password))),
+      switchMap((payload) => this.http.post<AuthResponse>(`${API_URL}/auth/login`, payload)),
       tap((response) => this.persist(response)),
     );
   }
@@ -223,5 +233,59 @@ export class AuthService {
       localStorage.removeItem(this.userKey);
       return null;
     }
+  }
+
+  private async encryptLoginPayload(loginKey: LoginKeyResponse, email: string, password: string) {
+    if (!globalThis.crypto?.subtle) {
+      throw new Error('El navegador no soporta cifrado seguro para iniciar sesion.');
+    }
+
+    const publicKey = await globalThis.crypto.subtle.importKey(
+      'spki',
+      this.pemToArrayBuffer(loginKey.publicKey),
+      {
+        name: 'RSA-OAEP',
+        hash: 'SHA-256',
+      },
+      false,
+      ['encrypt'],
+    );
+    const encodedPayload = new TextEncoder().encode(JSON.stringify({ email, password }));
+    const encryptedPayload = await globalThis.crypto.subtle.encrypt(
+      { name: 'RSA-OAEP' },
+      publicKey,
+      encodedPayload,
+    );
+
+    return {
+      keyId: loginKey.keyId,
+      encryptedPayload: this.arrayBufferToBase64(encryptedPayload),
+    };
+  }
+
+  private pemToArrayBuffer(pem: string): ArrayBuffer {
+    const base64 = pem
+      .replace(/-----BEGIN PUBLIC KEY-----/g, '')
+      .replace(/-----END PUBLIC KEY-----/g, '')
+      .replace(/\s/g, '');
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return bytes.buffer;
+  }
+
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+
+    for (let index = 0; index < bytes.byteLength; index += 1) {
+      binary += String.fromCharCode(bytes[index]);
+    }
+
+    return btoa(binary);
   }
 }

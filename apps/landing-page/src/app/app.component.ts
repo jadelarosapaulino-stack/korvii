@@ -1,0 +1,104 @@
+import { Component, inject } from '@angular/core';
+import { AutoTranslateDirective } from './auto-translate.directive';
+import { AppLanguage, I18nService } from './i18n.service';
+
+interface IconCard {
+  icon: string;
+  title: string;
+  text: string;
+}
+
+interface Metric {
+  value: string;
+  label: string;
+}
+
+@Component({
+  selector: 'landing-root',
+  standalone: true,
+  imports: [AutoTranslateDirective],
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss',
+})
+export class AppComponent {
+  private readonly i18n = inject(I18nService);
+  readonly language = this.i18n.language;
+  readonly systemLoginUrl = this.resolveSystemLoginUrl();
+
+  readonly metrics: Metric[] = [
+    { value: '24/7', label: 'avisos disponibles cuando aparece un riesgo' },
+    { value: '3 min', label: 'para crear un reporte con ubicacion y foto' },
+    { value: '360', label: 'mirada compartida entre comunidad e instituciones' },
+  ];
+
+  readonly userBenefits: IconCard[] = [
+    {
+      icon: 'report',
+      title: 'Reporta lo que ves',
+      text: 'Marca el punto del problema, agrega una foto y describe lo que viste en pocos pasos.',
+    },
+    {
+      icon: 'route',
+      title: 'Muevete con contexto',
+      text: 'Revisa calles con incidentes, lluvia, inundaciones o semaforos fuera de servicio antes de salir.',
+    },
+    {
+      icon: 'notifications_active',
+      title: 'Recibe respuesta coordinada',
+      text: 'Cada aviso puede pasar de la comunidad al equipo que debe revisar, priorizar o resolver.',
+    },
+  ];
+
+  readonly mainFeatures: IconCard[] = [
+    {
+      icon: 'add_location_alt',
+      title: 'Mapa de riesgos',
+      text: 'Visualiza reportes cercanos y entiende que zonas requieren mas cuidado antes de moverte.',
+    },
+    {
+      icon: 'photo_camera',
+      title: 'Evidencia sencilla',
+      text: 'Sube fotos del incidente para que otros usuarios e instituciones comprendan mejor la situacion.',
+    },
+    {
+      icon: 'campaign',
+      title: 'Alertas utiles',
+      text: 'Recibe informacion clara sobre riesgos recientes, clima o bloqueos que pueden cambiar tu trayecto.',
+    },
+    {
+      icon: 'task_alt',
+      title: 'Seguimiento visible',
+      text: 'Consulta si un reporte fue recibido, esta en revision o ya fue atendido por el equipo responsable.',
+    },
+  ];
+
+  readonly aboutCards: IconCard[] = [
+    {
+      icon: 'groups',
+      title: 'Para la ciudadania',
+      text: 'Una forma simple de avisar peligros de la calle sin depender de llamadas o mensajes dispersos.',
+    },
+    {
+      icon: 'traffic',
+      title: 'Para operadores',
+      text: 'Una vista clara de lo que esta ocurriendo para organizar mejor la respuesta diaria.',
+    },
+    {
+      icon: 'insights',
+      title: 'Para la ciudad',
+      text: 'Los reportes ayudan a identificar patrones y prevenir que los mismos riesgos se repitan.',
+    },
+  ];
+
+  setLanguage(language: AppLanguage) {
+    this.i18n.setLanguage(language);
+  }
+
+  private resolveSystemLoginUrl(): string {
+    if (typeof window === 'undefined') return '/login';
+
+    const { protocol, hostname } = window.location;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+    return isLocal ? `${protocol}//${hostname}:4200/login` : '/login';
+  }
+}

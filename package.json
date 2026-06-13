@@ -7,6 +7,7 @@
     "start:backend": "pnpm --filter @ruta-segura/backend start:dev",
     "start:realtime": "pnpm --filter @ruta-segura/realtime start:dev",
     "start:frontend": "pnpm --filter @ruta-segura/frontend start",
+    "start:landing": "pnpm --filter @ruta-segura/landing-page start",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "dev": "pnpm -r --parallel start:dev",

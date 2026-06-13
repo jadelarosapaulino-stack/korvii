@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import '../../core/notification_service.dart';
 import '../../core/road_telemetry_service.dart';
 import '../../core/reports_repository.dart';
 import '../../shared/korvi_letter_loader.dart';
+import '../../shared/motion.dart';
 import '../../shared/risk_pin.dart';
 
 class RiskMapScreen extends StatefulWidget {
@@ -38,8 +40,10 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
   bool _loading = true;
   bool _avoidRiskZones = false;
   bool _roadTelemetryEnabled = false;
+  bool _followUserLocation = false;
   String? _message;
   late final RoadTelemetryService _roadTelemetry;
+  StreamSubscription<Position>? _positionSubscription;
 
   @override
   void initState() {
@@ -50,6 +54,7 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
 
   @override
   void dispose() {
+    _positionSubscription?.cancel();
     _roadTelemetry.dispose();
     super.dispose();
   }
@@ -116,15 +121,18 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
             left: 18,
             right: 18,
             top: MediaQuery.paddingOf(context).top + 10,
-            child: _MapTopPanel(
-              reports: _reports.length,
-              riskZones: _riskZones.length,
-              avoidEnabled: _avoidRiskZones,
-              roadTelemetryEnabled: _roadTelemetryEnabled,
-              onRefresh: _load,
-              onToggleAvoid: () =>
-                  setState(() => _avoidRiskZones = !_avoidRiskZones),
-              onToggleTelemetry: _toggleRoadTelemetry,
+            child: MotionFadeSlide(
+              offset: const Offset(0, -18),
+              child: _MapTopPanel(
+                reports: _reports.length,
+                riskZones: _riskZones.length,
+                avoidEnabled: _avoidRiskZones,
+                roadTelemetryEnabled: _roadTelemetryEnabled,
+                onRefresh: _load,
+                onToggleAvoid: () =>
+                    setState(() => _avoidRiskZones = !_avoidRiskZones),
+                onToggleTelemetry: _toggleRoadTelemetry,
+              ),
             ),
           ),
           if (_loading)
@@ -138,29 +146,32 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
               left: 18,
               right: 18,
               top: MediaQuery.paddingOf(context).top + 110,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x14000000),
-                      blurRadius: 16,
-                      offset: Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, color: Color(0xFF00C2A8)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                          child: Text(_message!,
-                              style: Theme.of(context).textTheme.bodyMedium)),
+              child: MotionFadeSlide(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x14000000),
+                        blurRadius: 16,
+                        offset: Offset(0, 6),
+                      ),
                     ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline,
+                            color: Color(0xFF00C2A8)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: Text(_message!,
+                                style: Theme.of(context).textTheme.bodyMedium)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -168,23 +179,30 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
           Positioned(
             right: 18,
             top: MediaQuery.paddingOf(context).top + 186,
-            child: _MapControls(
-              onZoomIn: () => _zoomBy(1),
-              onZoomOut: () => _zoomBy(-1),
-              onLocate: _centerOnCurrentPosition,
+            child: MotionFadeSlide(
+              delay: const Duration(milliseconds: 120),
+              offset: const Offset(18, 0),
+              child: _MapControls(
+                onZoomIn: () => _zoomBy(1),
+                onZoomOut: () => _zoomBy(-1),
+                onLocate: _centerOnCurrentPosition,
+              ),
             ),
           ),
           Positioned(
             left: 18,
             right: 18,
             bottom: MediaQuery.paddingOf(context).bottom + 92,
-            child: _MapActionSheet(
-              reports: _reports.length,
-              riskZones: _riskZones.length,
-              avoidEnabled: _avoidRiskZones,
-              roadTelemetryEnabled: _roadTelemetryEnabled,
-              onCreateReport: widget.onCreateReport,
-              onToggleTelemetry: _toggleRoadTelemetry,
+            child: MotionFadeSlide(
+              delay: const Duration(milliseconds: 180),
+              child: _MapActionSheet(
+                reports: _reports.length,
+                riskZones: _riskZones.length,
+                avoidEnabled: _avoidRiskZones,
+                roadTelemetryEnabled: _roadTelemetryEnabled,
+                onCreateReport: widget.onCreateReport,
+                onToggleTelemetry: _toggleRoadTelemetry,
+              ),
             ),
           ),
         ],
@@ -252,6 +270,7 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
                 ? 'No hay reportes disponibles para mostrar.'
                 : null);
       });
+      _startLiveLocationTracking();
       final hasReports = reports.isNotEmpty;
       final shouldCenterOnPosition = !hasReports &&
           position != null &&
@@ -319,6 +338,35 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
     }
   }
 
+  Future<void> _startLiveLocationTracking() async {
+    if (_positionSubscription != null) return;
+
+    try {
+      final stream = await widget.location.positionStream(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilterMeters: 5,
+      );
+      _positionSubscription = stream.listen(
+        (position) {
+          if (!mounted || position.accuracy > 80) return;
+          setState(() => _position = position);
+          if (_followUserLocation) {
+            _map.move(
+              LatLng(position.latitude, position.longitude),
+              max(_map.camera.zoom, 16),
+            );
+          }
+        },
+        onError: (_) {
+          _positionSubscription?.cancel();
+          _positionSubscription = null;
+        },
+      );
+    } catch (_) {
+      // El mapa sigue funcionando aunque el usuario no habilite ubicacion en vivo.
+    }
+  }
+
   void _zoomBy(double delta) {
     final nextZoom = (_map.camera.zoom + delta).clamp(4.0, 18.0);
     _map.move(_map.camera.center, nextZoom);
@@ -330,7 +378,9 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
       _load();
       return;
     }
+    _followUserLocation = true;
     _map.move(LatLng(position.latitude, position.longitude), 16);
+    _startLiveLocationTracking();
   }
 
   IconData _iconFor(String category) {
@@ -361,15 +411,17 @@ class _CurrentLocationPin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: const Color(0xFF00C2A8),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 4),
+    return PulseHalo(
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: const Color(0xFF00C2A8),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 4),
+        ),
+        child: const Icon(Icons.navigation, color: Colors.white, size: 23),
       ),
-      child: const Icon(Icons.navigation, color: Colors.white, size: 23),
     );
   }
 }
@@ -690,7 +742,7 @@ class _RoundIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: InkWell(
+      child: MotionPressable(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Container(

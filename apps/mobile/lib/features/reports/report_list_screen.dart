@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/models.dart';
 import '../../core/reports_repository.dart';
 import '../../shared/korvi_letter_loader.dart';
+import '../../shared/motion.dart';
 
 class ReportListScreen extends StatefulWidget {
   const ReportListScreen({
@@ -85,38 +86,41 @@ class _ReportListScreenState extends State<ReportListScreen> {
             MediaQuery.paddingOf(context).bottom + 136,
           ),
           children: [
-            _FiltersPanel(
-              query: _query,
-              status: _status,
-              category: _category,
-              minRisk: _minRisk,
-              statuses: _statuses,
-              onStatusChanged: (value) {
-                setState(() {
-                  _status = value;
-                  _page = 1;
-                });
-                _load();
-              },
-              onCategoryChanged: (value) {
-                setState(() {
-                  _category = value;
-                  _page = 1;
-                });
-                _load();
-              },
-              onMinRiskChanged: (value) {
-                setState(() {
-                  _minRisk = value;
-                  _page = 1;
-                });
-                _load();
-              },
-              onSearch: () {
-                setState(() => _page = 1);
-                _load();
-              },
-              onClear: _clearFilters,
+            MotionFadeSlide(
+              offset: const Offset(0, 14),
+              child: _FiltersPanel(
+                query: _query,
+                status: _status,
+                category: _category,
+                minRisk: _minRisk,
+                statuses: _statuses,
+                onStatusChanged: (value) {
+                  setState(() {
+                    _status = value;
+                    _page = 1;
+                  });
+                  _load();
+                },
+                onCategoryChanged: (value) {
+                  setState(() {
+                    _category = value;
+                    _page = 1;
+                  });
+                  _load();
+                },
+                onMinRiskChanged: (value) {
+                  setState(() {
+                    _minRisk = value;
+                    _page = 1;
+                  });
+                  _load();
+                },
+                onSearch: () {
+                  setState(() => _page = 1);
+                  _load();
+                },
+                onClear: _clearFilters,
+              ),
             ),
             const SizedBox(height: 12),
             if (_loading)
@@ -141,17 +145,27 @@ class _ReportListScreenState extends State<ReportListScreen> {
                 onAction: widget.onCreateReport,
               )
             else ...[
-              _SummaryStrip(page: page),
-              const SizedBox(height: 10),
-              ...page.data.map(
-                (report) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ReportCard(
-                    report: report,
-                    onTap: () => _openDetails(report),
-                  ),
-                ),
+              MotionFadeSlide(
+                delay: const Duration(milliseconds: 80),
+                child: _SummaryStrip(page: page),
               ),
+              const SizedBox(height: 10),
+              ...page.data.asMap().entries.map(
+                    (entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: MotionFadeSlide(
+                        key: ValueKey(entry.value.id),
+                        delay: Duration(
+                          milliseconds: entry.key.clamp(0, 6) * 45,
+                        ),
+                        offset: const Offset(0, 16),
+                        child: _ReportCard(
+                          report: entry.value,
+                          onTap: () => _openDetails(entry.value),
+                        ),
+                      ),
+                    ),
+                  ),
               _PaginationBar(
                 page: page,
                 onPrevious: page.page > 1

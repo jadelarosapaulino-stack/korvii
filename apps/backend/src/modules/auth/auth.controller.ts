@@ -29,6 +29,7 @@ import { RequestCodeDto } from "./dto/request-code.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { SocialAuthDto } from "./dto/social-auth.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { LoginPayloadCryptoService } from "./login-payload-crypto.service";
 
 const allowedAvatarMimeTypes = new Set([
   "image/jpeg",
@@ -41,6 +42,7 @@ const allowedAvatarMimeTypes = new Set([
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly loginPayloadCrypto: LoginPayloadCryptoService,
     private readonly imageModeration: ImageModerationService,
     private readonly storage: StorageService,
   ) {}
@@ -53,6 +55,11 @@ export class AuthController {
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Get("login-key")
+  loginKey() {
+    return this.loginPayloadCrypto.publicKey();
   }
 
   @Post("social")

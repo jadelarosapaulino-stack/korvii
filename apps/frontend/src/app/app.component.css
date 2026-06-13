@@ -16,6 +16,10 @@
   backdrop-filter: blur(10px);
 }
 
+:host-context(body.rs-landing-page) .public-language-selector {
+  display: none;
+}
+
 .public-language-selector button {
   min-width: 52px;
   min-height: 30px;

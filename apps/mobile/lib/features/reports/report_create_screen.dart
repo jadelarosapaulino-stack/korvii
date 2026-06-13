@@ -12,6 +12,7 @@ import '../../core/app_config.dart';
 import '../../core/location_service.dart';
 import '../../core/models.dart';
 import '../../core/reports_repository.dart';
+import '../../shared/motion.dart';
 import '../../shared/risk_pin.dart';
 
 class ReportCreateScreen extends StatefulWidget {
@@ -150,11 +151,13 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
         padding: EdgeInsets.fromLTRB(
             16, 16, 16, MediaQuery.paddingOf(context).bottom + 120),
         children: [
-          _ReportHero(
-            category: _category.label,
-            riskLevel: _riskLevel,
-            reportsNearby: _nearbyReports.length,
-            color: _colorFor(_riskLevel),
+          MotionFadeSlide(
+            child: _ReportHero(
+              category: _category.label,
+              riskLevel: _riskLevel,
+              reportsNearby: _nearbyReports.length,
+              color: _colorFor(_riskLevel),
+            ),
           ),
           const SizedBox(height: 12),
           const _SectionHeader(
@@ -185,70 +188,75 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
               number: '02',
               title: 'Ubicacion y severidad',
               subtitle: _locationMessage),
-          Container(
-            height: 280,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFDDE4EA), width: 2),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: FlutterMap(
-                mapController: _map,
-                options: MapOptions(
-                  initialCenter: selected,
-                  initialZoom: _selectedLocation == null ? 12 : 16,
-                  onTap: (tapPosition, point) =>
-                      _setLocation(point, null, 'manual'),
+          MotionFadeSlide(
+            delay: const Duration(milliseconds: 120),
+            child: Container(
+              height: 280,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFDDE4EA), width: 2),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: FlutterMap(
+                  mapController: _map,
+                  options: MapOptions(
+                    initialCenter: selected,
+                    initialZoom: _selectedLocation == null ? 12 : 16,
+                    onTap: (tapPosition, point) =>
+                        _setLocation(point, null, 'manual'),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.korvi.mobile',
+                    ),
+                    CircleLayer(
+                      circles: [
+                        if (_selectedLocation != null)
+                          CircleMarker(
+                            point: _selectedLocation!,
+                            radius: _nearbyRadiusMeters,
+                            useRadiusInMeter: true,
+                            color: const Color(0x1F00C2A8),
+                            borderColor: const Color(0x6600C2A8),
+                            borderStrokeWidth: 2,
+                          ),
+                      ],
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        ..._nearbyReports.map(
+                          (report) => Marker(
+                            point: LatLng(report.latitude, report.longitude),
+                            width: 44,
+                            height: 54,
+                            child: RiskPin(
+                              icon: _iconFor(report.category),
+                              color: _colorFor(report.riskLevel),
+                              riskLevel: report.riskLevel,
+                            ),
+                          ),
+                        ),
+                        if (_selectedLocation != null)
+                          Marker(
+                            point: _selectedLocation!,
+                            width: 56,
+                            height: 66,
+                            child: PulseHalo(
+                              child: RiskPin(
+                                icon: Icons.add_location_alt,
+                                color: const Color(0xFF00C2A8),
+                                riskLevel: _riskLevel,
+                                selected: true,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.korvi.mobile',
-                  ),
-                  CircleLayer(
-                    circles: [
-                      if (_selectedLocation != null)
-                        CircleMarker(
-                          point: _selectedLocation!,
-                          radius: _nearbyRadiusMeters,
-                          useRadiusInMeter: true,
-                          color: const Color(0x1F00C2A8),
-                          borderColor: const Color(0x6600C2A8),
-                          borderStrokeWidth: 2,
-                        ),
-                    ],
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      ..._nearbyReports.map(
-                        (report) => Marker(
-                          point: LatLng(report.latitude, report.longitude),
-                          width: 44,
-                          height: 54,
-                          child: RiskPin(
-                            icon: _iconFor(report.category),
-                            color: _colorFor(report.riskLevel),
-                            riskLevel: report.riskLevel,
-                          ),
-                        ),
-                      ),
-                      if (_selectedLocation != null)
-                        Marker(
-                          point: _selectedLocation!,
-                          width: 50,
-                          height: 60,
-                          child: RiskPin(
-                            icon: Icons.add_location_alt,
-                            color: const Color(0xFF00C2A8),
-                            riskLevel: _riskLevel,
-                            selected: true,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
               ),
             ),
           ),
@@ -342,10 +350,14 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
               });
             },
           ),
-          _RiskReasonCard(
-              level: _riskLevel,
-              reason: _riskReason,
-              color: _colorFor(_riskLevel)),
+          AnimatedSwitcher(
+            duration: KorviMotion.normal,
+            child: _RiskReasonCard(
+                key: ValueKey(_riskReason),
+                level: _riskLevel,
+                reason: _riskReason,
+                color: _colorFor(_riskLevel)),
+          ),
           const SizedBox(height: 18),
           const _SectionHeader(
               number: '03',
@@ -378,33 +390,42 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
           ),
           if (_photos.isNotEmpty) ...[
             const SizedBox(height: 12),
-            SizedBox(
-              height: 110,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _photos.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(_photos[index],
-                            width: 120, height: 110, fit: BoxFit.cover),
+            AnimatedSize(
+              duration: KorviMotion.normal,
+              curve: KorviMotion.curve,
+              child: SizedBox(
+                height: 110,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _photos.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    return MotionFadeSlide(
+                      key: ValueKey(_photos[index].path),
+                      offset: const Offset(16, 0),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(_photos[index],
+                                width: 120, height: 110, fit: BoxFit.cover),
+                          ),
+                          Positioned(
+                            right: 4,
+                            top: 4,
+                            child: IconButton.filledTonal(
+                              onPressed: () =>
+                                  setState(() => _photos.removeAt(index)),
+                              icon: const Icon(Icons.close),
+                              tooltip: 'Quitar evidencia',
+                            ),
+                          ),
+                        ],
                       ),
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: IconButton.filledTonal(
-                          onPressed: () =>
-                              setState(() => _photos.removeAt(index)),
-                          icon: const Icon(Icons.close),
-                          tooltip: 'Quitar evidencia',
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -1058,7 +1079,10 @@ class _NearbyReportsCard extends StatelessWidget {
 
 class _RiskReasonCard extends StatelessWidget {
   const _RiskReasonCard(
-      {required this.level, required this.reason, required this.color});
+      {super.key,
+      required this.level,
+      required this.reason,
+      required this.color});
 
   final int level;
   final String reason;

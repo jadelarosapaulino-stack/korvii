@@ -89,6 +89,9 @@ type ScoredRoute = NonNullable<OsrmRouteResponse['routes']>[number] & {
           <button mat-icon-button type="button" title="Alejar mapa" aria-label="Alejar mapa" (click)="zoomOut()">
             <mat-icon>remove</mat-icon>
           </button>
+          <button mat-icon-button type="button" title="Seguir mi ubicacion" aria-label="Seguir mi ubicacion" (click)="centerOnLiveUserLocation()">
+            <mat-icon>near_me</mat-icon>
+          </button>
         </div>
 
         @if (loading()) {
@@ -303,6 +306,8 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   private routeMarkers: Marker[] = [];
   private realtimeSubscription?: Subscription;
   private userLocationMarker?: Marker;
+  private userLocationWatchId?: number;
+  private followUserLocation = false;
   private activeReportPopup?: Popup;
   private mapResizeObserver?: ResizeObserver;
   private dbReportLayerEventsRegistered = false;
@@ -339,6 +344,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     window.removeEventListener('rs-map-config-change', this.themeChangeHandler);
     window.removeEventListener('rs-map-provider-error', this.mapProviderErrorHandler);
     this.realtimeSubscription?.unsubscribe();
+    if (this.userLocationWatchId !== undefined) navigator.geolocation?.clearWatch(this.userLocationWatchId);
     this.clearReportDomMarkers();
     this.routeMarkers.forEach((marker) => marker.remove());
     this.userLocationMarker?.remove();
@@ -353,6 +359,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     this.initialized = true;
     this.initMap();
     this.locateUserForInitialCenter();
+    this.startLiveLocationTracking();
     this.loadMapReports();
     this.subscribeToRealtime();
   }
@@ -516,6 +523,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
+        this.startLiveLocationTracking();
         this.centerInitialUserLocation(this.userLocation);
       },
       () => {
@@ -538,6 +546,52 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     });
   }
 
+  centerOnLiveUserLocation() {
+    if (!navigator.geolocation) {
+      this.routeWarning.set('Este navegador no soporta geolocalizacion.');
+      return;
+    }
+
+    this.followUserLocation = true;
+    this.startLiveLocationTracking();
+
+    if (this.userLocation) {
+      this.drawUserLocation(this.userLocation);
+      this.fitToCurrentLocationRadius(this.userLocation);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => this.updateLiveUserLocation(position, true),
+      () => this.routeWarning.set('Permite la ubicacion del dispositivo para seguir tu posicion en el mapa.'),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 },
+    );
+  }
+
+  private startLiveLocationTracking() {
+    if (!navigator.geolocation || this.userLocationWatchId !== undefined) return;
+
+    this.userLocationWatchId = navigator.geolocation.watchPosition(
+      (position) => this.updateLiveUserLocation(position, this.followUserLocation),
+      () => undefined,
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 },
+    );
+  }
+
+  private updateLiveUserLocation(position: GeolocationPosition, centerMap = false) {
+    const next: LatLngPoint = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    };
+
+    if (this.userLocation && metersBetween(this.userLocation, next) < 3) return;
+
+    this.userLocation = next;
+    if (this.routeMode() && !this.destination) this.origin = next;
+    this.drawUserLocation(next);
+    if (centerMap) this.fitToCurrentLocationRadius(next);
+  }
+
   startAvoidRoute() {
     if (!navigator.geolocation) {
       this.routeWarning.set('Este navegador no soporta geolocalizacion para calcular rutas.');
@@ -555,6 +609,9 @@ export class ReportMapComponent implements OnInit, OnDestroy {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
+        this.userLocation = this.origin;
+        this.drawUserLocation(this.origin);
+        this.startLiveLocationTracking();
         this.destination = undefined;
         this.clearRoute();
         this.routeMode.set(true);

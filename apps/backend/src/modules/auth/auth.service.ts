@@ -19,6 +19,7 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { SocialAuthDto } from "./dto/social-auth.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { EmailService } from "./email.service";
+import { LoginPayloadCryptoService } from "./login-payload-crypto.service";
 import {
   SocialAuthSettings,
   SocialAuthSettingsService,
@@ -90,6 +91,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly featureFlags: FeatureFlagsService,
     private readonly socialAuthSettings: SocialAuthSettingsService,
+    private readonly loginPayloadCrypto: LoginPayloadCryptoService,
   ) {}
 
   async register(dto: RegisterDto): Promise<PendingActivationResponse> {
@@ -121,12 +123,19 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthSession> {
-    const user = await this.usersService.findByEmailWithPassword(dto.email);
+    const credentials = this.loginPayloadCrypto.decrypt(dto);
+    if (!credentials.email || !credentials.password) {
+      throw new UnauthorizedException("Credenciales invalidas");
+    }
+
+    const user = await this.usersService.findByEmailWithPassword(
+      credentials.email,
+    );
     if (!user) throw new UnauthorizedException("Credenciales invalidas");
     if (!user.isActive)
       throw new UnauthorizedException("La cuenta esta pendiente de activacion");
 
-    const valid = await bcrypt.compare(dto.password, user.passwordHash);
+    const valid = await bcrypt.compare(credentials.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException("Credenciales invalidas");
 
     return this.issueToken(user.id);

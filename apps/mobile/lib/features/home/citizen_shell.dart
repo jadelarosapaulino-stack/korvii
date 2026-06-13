@@ -12,6 +12,7 @@ import 'profile_screen.dart';
 import '../reports/report_create_screen.dart';
 import '../reports/report_list_screen.dart';
 import '../reports/risk_map_screen.dart';
+import '../../shared/motion.dart';
 
 class CitizenShell extends StatefulWidget {
   const CitizenShell({
@@ -75,7 +76,31 @@ class _CitizenShellState extends State<CitizenShell> {
 
     return Scaffold(
       extendBody: true,
-      body: screens[_index],
+      body: AnimatedSwitcher(
+        duration: KorviMotion.normal,
+        switchInCurve: KorviMotion.curve,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: KorviMotion.curve,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.04, 0),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey(_screenNames[_index]),
+          child: screens[_index],
+        ),
+      ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(18, 0, 18, 14),
         child: _FloatingNavigationBar(
@@ -190,11 +215,12 @@ class _FloatingNavigationItem extends StatelessWidget {
         button: true,
         selected: selected,
         label: label,
-        child: InkWell(
+        child: MotionPressable(
           onTap: onTap,
           borderRadius: BorderRadius.circular(22),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
+            curve: KorviMotion.curve,
             width: selected ? 54 : 46,
             height: 46,
             alignment: Alignment.center,
@@ -202,10 +228,15 @@ class _FloatingNavigationItem extends StatelessWidget {
               color: selected ? Colors.white : Colors.transparent,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: selected ? const Color(0xFF050505) : Colors.white,
-              size: selected ? 25 : 23,
+            child: AnimatedScale(
+              duration: KorviMotion.fast,
+              curve: KorviMotion.curve,
+              scale: selected ? 1.08 : 1,
+              child: Icon(
+                icon,
+                color: selected ? const Color(0xFF050505) : Colors.white,
+                size: selected ? 25 : 23,
+              ),
             ),
           ),
         ),

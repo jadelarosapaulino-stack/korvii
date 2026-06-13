@@ -8,6 +8,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { EmailService } from "./email.service";
 import { JwtStrategy } from "./jwt.strategy";
+import { LoginPayloadCryptoService } from "./login-payload-crypto.service";
 import { SocialAuthSettingsService } from "./social-auth-settings.service";
 
 type JwtExpiresIn = NonNullable<JwtModuleOptions["signOptions"]>["expiresIn"];
@@ -37,6 +38,7 @@ type JwtExpiresIn = NonNullable<JwtModuleOptions["signOptions"]>["expiresIn"];
     AuthService,
     EmailService,
     JwtStrategy,
+    LoginPayloadCryptoService,
     SocialAuthSettingsService,
   ],
   exports: [AuthService],

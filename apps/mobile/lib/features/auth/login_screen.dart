@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../core/auth_repository.dart';
 import '../../shared/korvi_letter_loader.dart';
+import '../../shared/motion.dart';
 
 const _korviNavy = Color(0xFF0B1F3A);
 const _korviTeal = Color(0xFF00C2A8);
@@ -57,39 +58,48 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
               children: [
                 const SizedBox(height: 14),
-                const _AuthBrandHeader(
-                  title: 'Iniciar sesion',
-                  subtitle:
-                      'Accede a KORVI Drive para reportar riesgos, consultar el mapa y usar el modo emergencia.',
+                const MotionFadeSlide(
+                  child: _AuthBrandHeader(
+                    title: 'Iniciar sesion',
+                    subtitle:
+                        'Accede a KORVI Drive para reportar riesgos, consultar el mapa y usar el modo emergencia.',
+                  ),
                 ),
                 const SizedBox(height: 36),
-                _AuthTextField(
-                  controller: _email,
-                  icon: Icons.mail_outline_rounded,
-                  hint: 'Correo',
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
+                MotionFadeSlide(
+                  delay: const Duration(milliseconds: 80),
+                  child: _AuthTextField(
+                    controller: _email,
+                    icon: Icons.mail_outline_rounded,
+                    hint: 'Correo',
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                  ),
                 ),
                 const SizedBox(height: 14),
-                _AuthTextField(
-                  controller: _password,
-                  icon: Icons.lock_outline_rounded,
-                  hint: 'Contrasena',
-                  obscureText: !_showPassword,
-                  suffix: IconButton(
-                    tooltip:
-                        _showPassword ? 'Ocultar contrasena' : 'Ver contrasena',
-                    onPressed: () =>
-                        setState(() => _showPassword = !_showPassword),
-                    icon: Icon(
-                      _showPassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+                MotionFadeSlide(
+                  delay: const Duration(milliseconds: 140),
+                  child: _AuthTextField(
+                    controller: _password,
+                    icon: Icons.lock_outline_rounded,
+                    hint: 'Contrasena',
+                    obscureText: !_showPassword,
+                    suffix: IconButton(
+                      tooltip: _showPassword
+                          ? 'Ocultar contrasena'
+                          : 'Ver contrasena',
+                      onPressed: () =>
+                          setState(() => _showPassword = !_showPassword),
+                      icon: Icon(
+                        _showPassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
                     ),
+                    onSubmitted: (_) {
+                      if (!_isBusy) _login();
+                    },
                   ),
-                  onSubmitted: (_) {
-                    if (!_isBusy) _login();
-                  },
                 ),
                 Align(
                   alignment: Alignment.centerRight,
@@ -98,41 +108,61 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text('Olvide mi contrasena'),
                   ),
                 ),
-                if (_error != null)
-                  _AuthMessage(message: _error!, isError: true),
+                AnimatedSwitcher(
+                  duration: KorviMotion.normal,
+                  child: _error == null
+                      ? const SizedBox.shrink()
+                      : _AuthMessage(
+                          key: ValueKey(_error),
+                          message: _error!,
+                          isError: true,
+                        ),
+                ),
                 const SizedBox(height: 12),
-                _AuthPrimaryButton(
-                  label: 'Entrar',
-                  icon: Icons.login_rounded,
-                  loading: _loading,
-                  onPressed: _isBusy ? null : _login,
+                MotionFadeSlide(
+                  delay: const Duration(milliseconds: 220),
+                  child: _AuthPrimaryButton(
+                    label: 'Entrar',
+                    icon: Icons.login_rounded,
+                    loading: _loading,
+                    onPressed: _isBusy ? null : _login,
+                  ),
                 ),
                 if (_googleEnabled || _facebookEnabled) ...[
                   const SizedBox(height: 18),
-                  const _AuthDivider(label: 'O'),
+                  const MotionFadeSlide(
+                    delay: Duration(milliseconds: 280),
+                    child: _AuthDivider(label: 'O'),
+                  ),
                   const SizedBox(height: 18),
                   if (_googleEnabled) ...[
-                    _AuthOutlineAction(
-                      leading: const _ProviderMark(
-                          label: 'G', color: Color(0xFF4285F4)),
-                      label: _socialLoading == 'google'
-                          ? 'Conectando con Google'
-                          : 'Continuar con Google',
-                      loading: _socialLoading == 'google',
-                      onPressed: _isBusy ? null : _loginWithGoogle,
+                    MotionFadeSlide(
+                      delay: const Duration(milliseconds: 340),
+                      child: _AuthOutlineAction(
+                        leading: const _ProviderMark(
+                            label: 'G', color: Color(0xFF4285F4)),
+                        label: _socialLoading == 'google'
+                            ? 'Conectando con Google'
+                            : 'Continuar con Google',
+                        loading: _socialLoading == 'google',
+                        onPressed: _isBusy ? null : _loginWithGoogle,
+                      ),
                     ),
                   ],
                   if (_googleEnabled && _facebookEnabled)
                     const SizedBox(height: 10),
                   if (_facebookEnabled)
-                    _AuthOutlineAction(
-                      leading: const _ProviderMark(
-                          label: 'f', color: Color(0xFF1877F2)),
-                      label: _socialLoading == 'facebook'
-                          ? 'Conectando con Facebook'
-                          : 'Continuar con Facebook',
-                      loading: _socialLoading == 'facebook',
-                      onPressed: _isBusy ? null : _loginWithFacebook,
+                    MotionFadeSlide(
+                      delay: const Duration(milliseconds: 400),
+                      child: _AuthOutlineAction(
+                        leading: const _ProviderMark(
+                            label: 'f', color: Color(0xFF1877F2)),
+                        label: _socialLoading == 'facebook'
+                            ? 'Conectando con Facebook'
+                            : 'Continuar con Facebook',
+                        loading: _socialLoading == 'facebook',
+                        onPressed: _isBusy ? null : _loginWithFacebook,
+                      ),
                     ),
                 ],
                 const SizedBox(height: 26),
@@ -879,7 +909,7 @@ class _AuthDivider extends StatelessWidget {
 }
 
 class _AuthMessage extends StatelessWidget {
-  const _AuthMessage({required this.message, this.isError = false});
+  const _AuthMessage({super.key, required this.message, this.isError = false});
 
   final String message;
   final bool isError;

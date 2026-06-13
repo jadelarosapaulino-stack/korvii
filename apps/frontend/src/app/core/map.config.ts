@@ -33,6 +33,7 @@ type KorviMapStyle = NonNullable<MapOptions['style']>;
 
 const mapModes = new WeakMap<Map, KorviMapMode>();
 const systemConfigStorageKey = 'ruta_segura_system_config';
+const languageStorageKey = 'korvi_language';
 
 type StoredSystemConfig = {
   integrations?: { mapProvider?: string; geocodingProvider?: string };
@@ -492,7 +493,7 @@ async function reverseGeocodeWithMapTiler(latitude: number, longitude: number): 
 
   const query = new URLSearchParams({
     key,
-    language: 'es',
+    language: currentKorviLanguage(),
     country: 'do',
   });
   const response = await fetch(`https://api.maptiler.com/geocoding/${longitude},${latitude}.json?${query.toString()}`);
@@ -509,7 +510,7 @@ async function reverseGeocodeWithNominatim(latitude: number, longitude: number):
     lon: String(longitude),
     zoom: '18',
     addressdetails: '1',
-    'accept-language': 'es',
+    'accept-language': currentKorviLanguage(),
   });
   const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${query.toString()}`);
   if (!response.ok) throw new Error('Nominatim reverse geocoding failed');
@@ -535,6 +536,15 @@ function extractMapTilerLocationDetails(features: ReverseGeocodeFeature[]): Reve
     municipality: byType(['municipality', 'place', 'locality', 'district', 'city']),
     address: cleanReverseGeocodeAddress(firstFeature?.place_name ?? firstFeature?.text),
   };
+}
+
+function currentKorviLanguage(): 'es' | 'en' {
+  const stored = localStorage.getItem(languageStorageKey);
+  if (stored === 'en' || stored === 'es') return stored;
+
+  const deviceLanguages = navigator.languages?.length ? navigator.languages : [navigator.language];
+  const preferredLanguage = deviceLanguages.find((language) => /^en|^es/i.test(language));
+  return preferredLanguage?.toLowerCase().startsWith('en') ? 'en' : 'es';
 }
 
 function cleanReverseGeocodeAddress(value: string | undefined): string {
