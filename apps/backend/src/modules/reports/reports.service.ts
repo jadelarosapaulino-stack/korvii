@@ -944,6 +944,56 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
     };
   }
 
+  async fetchMapTilerTile(
+    z: number,
+    x: number,
+    y: number,
+    style?: string,
+  ): Promise<GoogleMapsTileResponse> {
+    const apiKey = (
+      this.systemConfig.getSecretApiKey("maptiler") ||
+      this.config.get<string>("MAPTILER_API_KEY") ||
+      ""
+    ).trim();
+    if (!apiKey) {
+      throw new BadRequestException("API key de MapTiler requerida.");
+    }
+    if (![z, x, y].every((value) => Number.isInteger(value) && value >= 0)) {
+      throw new BadRequestException("Coordenadas de tile invalidas.");
+    }
+
+    const safeStyle = this.safeMapTilerStyle(style);
+    const response = await fetch(
+      `https://api.maptiler.com/maps/${safeStyle}/{z}/{x}/{y}.png`
+        .replace("{z}", String(z))
+        .replace("{x}", String(x))
+        .replace("{y}", String(y)) + `?key=${encodeURIComponent(apiKey)}`,
+    );
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      this.logger.warn(
+        `MapTiler tile fallo: ${response.status} ${detail.slice(0, 300)}`,
+      );
+      throw new ServiceUnavailableException(
+        "No se pudo cargar una tesela de MapTiler.",
+      );
+    }
+
+    return {
+      body: Buffer.from(await response.arrayBuffer()),
+      contentType: response.headers.get("content-type") || "image/png",
+      cacheControl:
+        response.headers.get("cache-control") ||
+        "public, max-age=86400, stale-while-revalidate=86400",
+    };
+  }
+
+  private safeMapTilerStyle(style?: string): string {
+    const value = String(style || "streets-v2").trim();
+    return /^[a-z0-9-]+$/i.test(value) ? value : "streets-v2";
+  }
+
   private applyReportDateFilters(
     qb: ReturnType<Repository<Report>["createQueryBuilder"]>,
     query: QueryReportsDto,

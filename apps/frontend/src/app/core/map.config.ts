@@ -152,16 +152,11 @@ export function currentKorviMapProvider(): KorviMapProvider {
   const provider = readStoredSystemConfig()?.integrations?.mapProvider ?? readStoredSystemConfig()?.libraries?.mapProvider;
   if (provider === 'Google Maps') return 'Google Maps';
   if (provider === 'OpenStreetMap') return 'OpenStreetMap';
-  return 'MapTiler';
+  return currentKorviMaptilerKey() ? 'MapTiler' : 'OpenStreetMap';
 }
 
 export function currentKorviMaptilerKey(): string {
-  const stored = readStoredSystemConfig();
-  return (stored?.apiKeys?.maptiler || stored?.libraries?.maptilerApiKey || MAPTILER_KEY).trim();
-}
-
-export function currentKorviGoogleMapsKey(): string {
-  return (readStoredSystemConfig()?.apiKeys?.googleMaps ?? '').trim();
+  return MAPTILER_KEY;
 }
 
 export function getKorviMapMode(map?: Map): KorviMapMode {
@@ -474,9 +469,8 @@ function openStreetMapRasterStyle(): KorviMapStyle {
 async function applyGoogleMapsTileStyle(map: Map, mode: KorviMapMode): Promise<void> {
   map.setStyle(googleMapsPendingStyle());
   try {
-    const key = currentKorviGoogleMapsKey();
     const mapType = googleMapsMapType(mode);
-    const session = await googleMapsTileSession(mapType, key);
+    const session = await googleMapsTileSession(mapType);
     map.setStyle(googleMapsRasterStyle(session.session, mapType));
   } catch {
     dispatchGoogleMapsProviderError('No se pudo cargar Google Maps. Verifica GOOGLE_MAPS_API_KEY, billing, Map Tiles API y permisos para este origen.');
@@ -557,9 +551,9 @@ function cleanReverseGeocodeAddress(value: string | undefined): string {
     .join(', ');
 }
 
-async function googleMapsTileSession(mapType: string, key: string): Promise<GoogleMapsTileSession> {
-  const cacheKey = `${mapType}:${key}`;
-  const cached = googleMapsTileSessions.get(cacheKey) ?? (!key ? [...googleMapsTileSessions.entries()].find(([entryKey]) => entryKey.startsWith(`${mapType}:`))?.[1] : undefined);
+async function googleMapsTileSession(mapType: string): Promise<GoogleMapsTileSession> {
+  const cacheKey = mapType;
+  const cached = googleMapsTileSessions.get(cacheKey);
   if (cached && cached.expiresAt > Date.now() + 60000) return cached;
 
   const token = localStorage.getItem('ruta_segura_token');
@@ -570,7 +564,7 @@ async function googleMapsTileSession(mapType: string, key: string): Promise<Goog
       'X-Ruta-Platform': 'web',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ apiKey: key || undefined, mapType }),
+    body: JSON.stringify({ mapType }),
   });
   if (!response.ok) throw new Error('Google Maps Tile API session failed');
 
@@ -582,7 +576,7 @@ async function googleMapsTileSession(mapType: string, key: string): Promise<Goog
     session: payload.session,
     expiresAt: Number.isFinite(expiry) ? expiry * 1000 : Date.now() + 13 * 24 * 60 * 60 * 1000,
   };
-  googleMapsTileSessions.set(`${mapType}:${key}`, session);
+  googleMapsTileSessions.set(cacheKey, session);
   return session;
 }
 
@@ -630,10 +624,8 @@ function googleMapsRasterStyle(session: string, mapType: string): KorviMapStyle 
 }
 
 function googleMapsRasterStyleFromCachedSession(mode: KorviMapMode): KorviMapStyle | null {
-  const key = currentKorviGoogleMapsKey();
-  if (!key && !googleMapsTileSessions.size) return null;
   const mapType = googleMapsMapType(mode);
-  const cached = googleMapsTileSessions.get(`${mapType}:${key}`) ?? [...googleMapsTileSessions.entries()].find(([cacheKey]) => cacheKey.startsWith(`${mapType}:`))?.[1];
+  const cached = googleMapsTileSessions.get(mapType);
   if (!cached || cached.expiresAt <= Date.now() + 60000) return null;
   return googleMapsRasterStyle(cached.session, mapType);
 }

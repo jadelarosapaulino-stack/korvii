@@ -15,6 +15,47 @@ enum ReportCategory {
   final String label;
 }
 
+class SystemMapConfig {
+  const SystemMapConfig({
+    required this.provider,
+    required this.style,
+  });
+
+  factory SystemMapConfig.fromJson(Map<String, dynamic> json) {
+    final integrations =
+        json['integrations'] as Map<String, dynamic>? ?? const {};
+    final libraries = json['libraries'] as Map<String, dynamic>? ?? const {};
+    return SystemMapConfig(
+      provider: (integrations['mapProvider'] as String? ??
+              libraries['mapProvider'] as String? ??
+              'OpenStreetMap')
+          .trim(),
+      style: (libraries['mapStyleLight'] as String? ?? 'streets-v2').trim(),
+    );
+  }
+
+  final String provider;
+  final String style;
+}
+
+class MapTileSource {
+  const MapTileSource({
+    required this.provider,
+    required this.urlTemplate,
+    required this.attribution,
+  });
+
+  factory MapTileSource.openStreetMap() => const MapTileSource(
+        provider: 'OpenStreetMap',
+        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: 'OpenStreetMap contributors',
+      );
+
+  final String provider;
+  final String urlTemplate;
+  final String attribution;
+}
+
 class AuthUser {
   AuthUser({
     required this.id,
@@ -24,6 +65,14 @@ class AuthUser {
     this.province,
     this.municipality,
     this.vehicleType,
+    this.phone,
+    this.occupation,
+    this.mobilityMode,
+    this.drivingFrequency,
+    this.emergencyContactName,
+    this.emergencyContactPhone,
+    this.preferredContactChannel,
+    this.decisionInsightsConsent,
     this.notificationsEnabled,
     this.contributions,
     this.education,
@@ -38,7 +87,15 @@ class AuthUser {
         province: json['province'] as String?,
         municipality: json['municipality'] as String?,
         vehicleType: json['vehicleType'] as String?,
+        phone: json['phone'] as String?,
+        occupation: json['occupation'] as String?,
+        mobilityMode: json['mobilityMode'] as String?,
+        drivingFrequency: json['drivingFrequency'] as String?,
+        emergencyContactName: json['emergencyContactName'] as String?,
+        emergencyContactPhone: json['emergencyContactPhone'] as String?,
+        preferredContactChannel: json['preferredContactChannel'] as String?,
         notificationsEnabled: json['notificationsEnabled'] as bool?,
+        decisionInsightsConsent: json['decisionInsightsConsent'] as bool?,
         contributions: UserContributions.fromJson(
             json['contributions'] as Map<String, dynamic>? ?? const {}),
         education: UserEducation.fromJson(
@@ -54,7 +111,15 @@ class AuthUser {
   final String? province;
   final String? municipality;
   final String? vehicleType;
+  final String? phone;
+  final String? occupation;
+  final String? mobilityMode;
+  final String? drivingFrequency;
+  final String? emergencyContactName;
+  final String? emergencyContactPhone;
+  final String? preferredContactChannel;
   final bool? notificationsEnabled;
+  final bool? decisionInsightsConsent;
   final UserContributions? contributions;
   final UserEducation? education;
   final UserGamification? gamification;
@@ -316,6 +381,8 @@ class Lesson {
     required this.content,
     required this.durationMinutes,
     required this.points,
+    this.courseTitle,
+    this.videoUrl,
     this.thumbnailUrl,
   });
 
@@ -324,6 +391,8 @@ class Lesson {
         title: json['title'] as String,
         category: json['category'] as String? ?? 'General',
         content: json['content'] as String? ?? '',
+        courseTitle: json['courseTitle'] as String?,
+        videoUrl: json['videoUrl'] as String?,
         durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 0,
         points: (json['points'] as num?)?.toInt() ?? 0,
         thumbnailUrl: json['thumbnailUrl'] as String?,
@@ -333,7 +402,39 @@ class Lesson {
   final String title;
   final String category;
   final String content;
+  final String? courseTitle;
+  final String? videoUrl;
   final int durationMinutes;
   final int points;
   final String? thumbnailUrl;
+}
+
+class LessonProgress {
+  LessonProgress({
+    required this.id,
+    required this.completed,
+    required this.progressPercent,
+    required this.score,
+    required this.lesson,
+    this.completedAt,
+    this.lastAccessedAt,
+  });
+
+  factory LessonProgress.fromJson(Map<String, dynamic> json) => LessonProgress(
+        id: json['id'] as String? ?? '',
+        completed: json['completed'] as bool? ?? false,
+        progressPercent: (json['progressPercent'] as num?)?.toInt() ?? 0,
+        score: (json['score'] as num?)?.toInt() ?? 0,
+        completedAt: json['completedAt'] as String?,
+        lastAccessedAt: json['lastAccessedAt'] as String?,
+        lesson: Lesson.fromJson(json['lesson'] as Map<String, dynamic>),
+      );
+
+  final String id;
+  final bool completed;
+  final int progressPercent;
+  final int score;
+  final String? completedAt;
+  final String? lastAccessedAt;
+  final Lesson lesson;
 }

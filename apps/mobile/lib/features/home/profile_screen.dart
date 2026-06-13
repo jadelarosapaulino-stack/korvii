@@ -60,7 +60,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _MetricsCharts(
                     contributions: contributions, education: education),
                 const SizedBox(height: 12),
-                _AccountInfoPanel(user: user, auth: widget.auth),
+                _AccountInfoPanel(
+                  user: user,
+                  auth: widget.auth,
+                  onProfileUpdated: () =>
+                      setState(() => _user = widget.auth.me()),
+                ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -440,10 +445,15 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _AccountInfoPanel extends StatelessWidget {
-  const _AccountInfoPanel({required this.user, required this.auth});
+  const _AccountInfoPanel({
+    required this.user,
+    required this.auth,
+    required this.onProfileUpdated,
+  });
 
   final AuthUser user;
   final AuthRepository auth;
+  final VoidCallback onProfileUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -476,12 +486,33 @@ class _AccountInfoPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
+              onPressed: () => _showEditProfileSheet(context),
+              icon: const Icon(Icons.edit),
+              label: const Text('Editar perfil'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
               onPressed: () => _showPasswordChangeSheet(context),
               icon: const Icon(Icons.lock_reset),
-              label: const Text('Cambiar contrasena con codigo'),
+              label: const Text('Cambiar contraseña'),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showEditProfileSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _EditProfileSheet(
+        auth: auth,
+        user: user,
+        onProfileUpdated: onProfileUpdated,
       ),
     );
   }
@@ -492,6 +523,165 @@ class _AccountInfoPanel extends StatelessWidget {
       isScrollControlled: true,
       builder: (_) => _PasswordChangeSheet(auth: auth, email: user.email),
     );
+  }
+}
+
+class _EditProfileSheet extends StatefulWidget {
+  const _EditProfileSheet({
+    required this.auth,
+    required this.user,
+    required this.onProfileUpdated,
+  });
+
+  final AuthRepository auth;
+  final AuthUser user;
+  final VoidCallback onProfileUpdated;
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  late final _fullName = TextEditingController(text: widget.user.fullName);
+  late final _phone = TextEditingController(text: widget.user.phone ?? '');
+  late final _province =
+      TextEditingController(text: widget.user.province ?? '');
+  late final _municipality =
+      TextEditingController(text: widget.user.municipality ?? '');
+  late final _occupation =
+      TextEditingController(text: widget.user.occupation ?? '');
+  late final _vehicleType =
+      TextEditingController(text: widget.user.vehicleType ?? '');
+  late final _mobilityMode =
+      TextEditingController(text: widget.user.mobilityMode ?? '');
+  late final _drivingFrequency =
+      TextEditingController(text: widget.user.drivingFrequency ?? '');
+  late final _emergencyContactName =
+      TextEditingController(text: widget.user.emergencyContactName ?? '');
+  late final _emergencyContactPhone =
+      TextEditingController(text: widget.user.emergencyContactPhone ?? '');
+  late bool _notifications = widget.user.notificationsEnabled ?? true;
+  late bool _insights = widget.user.decisionInsightsConsent ?? false;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _fullName.dispose();
+    _phone.dispose();
+    _province.dispose();
+    _municipality.dispose();
+    _occupation.dispose();
+    _vehicleType.dispose();
+    _mobilityMode.dispose();
+    _drivingFrequency.dispose();
+    _emergencyContactName.dispose();
+    _emergencyContactPhone.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          20, 20, 20, MediaQuery.viewInsetsOf(context).bottom + 20),
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          Text('Editar perfil',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 14),
+          _profileField(_fullName, 'Nombre completo', Icons.person),
+          _profileField(_phone, 'Teléfono', Icons.phone),
+          _profileField(_province, 'Provincia', Icons.location_city),
+          _profileField(_municipality, 'Municipio', Icons.map),
+          _profileField(_occupation, 'Ocupación', Icons.work_outline),
+          _profileField(_vehicleType, 'Tipo de vehículo', Icons.two_wheeler),
+          _profileField(_mobilityMode, 'Modo de movilidad', Icons.route),
+          _profileField(
+              _drivingFrequency, 'Frecuencia de conducción', Icons.speed),
+          _profileField(_emergencyContactName, 'Contacto de emergencia',
+              Icons.contact_emergency),
+          _profileField(_emergencyContactPhone, 'Teléfono de emergencia',
+              Icons.phone_in_talk),
+          SwitchListTile(
+            value: _notifications,
+            onChanged: (value) => setState(() => _notifications = value),
+            title: const Text('Notificaciones'),
+            subtitle: const Text('Recibir alertas y novedades del sistema.'),
+          ),
+          SwitchListTile(
+            value: _insights,
+            onChanged: (value) => setState(() => _insights = value),
+            title: const Text('Uso para decisiones'),
+            subtitle: const Text('Permitir analítica agregada del perfil.'),
+          ),
+          if (_error != null)
+            Text(_error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: _saving ? null : _save,
+            icon: _saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save),
+            label: const Text('Guardar cambios'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileField(
+      TextEditingController controller, String label, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    if (_fullName.text.trim().length < 2) {
+      setState(() => _error = 'El nombre es requerido.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.auth.updateProfile(
+        fullName: _fullName.text,
+        phone: _phone.text,
+        province: _province.text,
+        municipality: _municipality.text,
+        occupation: _occupation.text,
+        vehicleType: _vehicleType.text,
+        mobilityMode: _mobilityMode.text,
+        drivingFrequency: _drivingFrequency.text,
+        emergencyContactName: _emergencyContactName.text,
+        emergencyContactPhone: _emergencyContactPhone.text,
+        notificationsEnabled: _notifications,
+        decisionInsightsConsent: _insights,
+      );
+      if (!mounted) return;
+      widget.onProfileUpdated();
+      Navigator.of(context).pop();
+    } catch (_) {
+      setState(() => _error = 'No fue posible actualizar el perfil.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }
 
@@ -506,8 +696,9 @@ class _PasswordChangeSheet extends StatefulWidget {
 }
 
 class _PasswordChangeSheetState extends State<_PasswordChangeSheet> {
-  final _code = TextEditingController();
+  final _currentPassword = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   bool _loading = false;
   String? _message;
   String? _error;
@@ -526,23 +717,24 @@ class _PasswordChangeSheetState extends State<_PasswordChangeSheet> {
                   .titleLarge
                   ?.copyWith(fontWeight: FontWeight.w900)),
           const SizedBox(height: 6),
-          Text('El codigo temporal se enviara a ${widget.email}.'),
+          Text('Actualiza la contraseña de ${widget.email}.'),
           const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _loading ? null : _sendCode,
-            icon: const Icon(Icons.mark_email_read),
-            label: const Text('Enviar codigo'),
-          ),
           TextField(
-            controller: _code,
-            keyboardType: TextInputType.number,
+            controller: _currentPassword,
+            obscureText: true,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'Codigo recibido'),
+            decoration: const InputDecoration(labelText: 'Contraseña actual'),
           ),
           TextField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Nueva contrasena'),
+            decoration: const InputDecoration(labelText: 'Nueva contraseña'),
+          ),
+          TextField(
+            controller: _confirmPassword,
+            obscureText: true,
+            decoration:
+                const InputDecoration(labelText: 'Confirmar nueva contraseña'),
           ),
           if (_message != null)
             Padding(
@@ -564,33 +756,21 @@ class _PasswordChangeSheetState extends State<_PasswordChangeSheet> {
     );
   }
 
-  Future<void> _sendCode() async {
-    setState(() {
-      _loading = true;
-      _message = null;
-      _error = null;
-    });
-    try {
-      await widget.auth.requestPasswordReset(widget.email);
-      setState(() => _message = 'Codigo enviado. Revisa tu correo.');
-    } catch (_) {
-      setState(() => _error = 'No fue posible enviar el codigo.');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _changePassword() async {
+    if (_password.text != _confirmPassword.text) {
+      setState(() => _error = 'Las contraseñas deben coincidir.');
+      return;
+    }
     setState(() {
       _loading = true;
       _message = null;
       _error = null;
     });
     try {
-      await widget.auth.resetPassword(widget.email, _code.text, _password.text);
-      setState(() => _message = 'Contrasena actualizada correctamente.');
+      await widget.auth.changePassword(_currentPassword.text, _password.text);
+      setState(() => _message = 'Contraseña actualizada correctamente.');
     } catch (_) {
-      setState(() => _error = 'No fue posible cambiar la contrasena.');
+      setState(() => _error = 'Verifica tu contraseña actual.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

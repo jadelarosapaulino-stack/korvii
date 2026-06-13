@@ -511,29 +511,7 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
 
                 <mat-card class="library-section">
                   <h3>Credenciales</h3>
-                  <div class="field-grid three">
-                    <mat-form-field appearance="outline">
-                      <mat-label>API key MapTiler</mat-label>
-                      <input matInput [type]="apiKeyInputType('maptiler')" [ngModel]="config.config().apiKeys.maptiler || config.config().libraries.maptilerApiKey" (ngModelChange)="updateApiKey('maptiler', $event)" />
-                      <button mat-icon-button matSuffix type="button" [attr.aria-label]="apiKeyVisible('maptiler') ? 'Ocultar API key MapTiler' : 'Mostrar API key MapTiler'" (click)="toggleApiKeyVisibility('maptiler')">
-                        <mat-icon>{{ apiKeyVisible('maptiler') ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                    </mat-form-field>
-                    <mat-form-field appearance="outline">
-                      <mat-label>API key Google Maps</mat-label>
-                      <input matInput [type]="apiKeyInputType('googleMaps')" [ngModel]="config.config().apiKeys.googleMaps" (ngModelChange)="updateApiKey('googleMaps', $event)" />
-                      <button mat-icon-button matSuffix type="button" [attr.aria-label]="apiKeyVisible('googleMaps') ? 'Ocultar API key Google Maps' : 'Mostrar API key Google Maps'" (click)="toggleApiKeyVisibility('googleMaps')">
-                        <mat-icon>{{ apiKeyVisible('googleMaps') ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                    </mat-form-field>
-                    <mat-form-field appearance="outline">
-                      <mat-label>API key OpenRouteService</mat-label>
-                      <input matInput [type]="apiKeyInputType('openRouteService')" [ngModel]="config.config().apiKeys.openRouteService" (ngModelChange)="updateApiKey('openRouteService', $event)" />
-                      <button mat-icon-button matSuffix type="button" [attr.aria-label]="apiKeyVisible('openRouteService') ? 'Ocultar API key OpenRouteService' : 'Mostrar API key OpenRouteService'" (click)="toggleApiKeyVisibility('openRouteService')">
-                        <mat-icon>{{ apiKeyVisible('openRouteService') ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                    </mat-form-field>
-                  </div>
+                  <p class="hint">Las claves de MapTiler, Google Maps y OpenRouteService deben vivir en variables de entorno del backend. El frontend no las guarda ni las envia.</p>
                 </mat-card>
 
                 <mat-card class="library-section">
@@ -730,10 +708,10 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
             @case ('integrations') {
               <div class="section-title">
                 <div>
-                  <h2>API keys e integraciones</h2>
-                  <p>Selecciona el proveedor activo por servicio y administra credenciales independientes sin reemplazar otras API keys.</p>
+                  <h2>Integraciones</h2>
+                  <p>Selecciona el proveedor activo por servicio. Las credenciales se administran solo en el backend.</p>
                 </div>
-                <mat-chip>{{ configuredApiKeyCount() }} configuradas</mat-chip>
+                <mat-chip>Backend</mat-chip>
               </div>
 
               <mat-card class="library-section">
@@ -811,22 +789,10 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                         @if (apiKeyServiceActive(service.key)) {
                           <small class="active">Activo</small>
                         }
-                        <small [class.ready]="apiKeyConfigured(service.key)">{{ apiKeyConfigured(service.key) ? 'Configurada' : 'Pendiente' }}</small>
+                        <small>Backend</small>
                       </div>
                     </div>
-
-                    <mat-form-field appearance="outline">
-                      <mat-label>{{ service.label }} API key</mat-label>
-                      <input
-                        matInput
-                        autocomplete="off"
-                        [type]="apiKeyInputType(service.key)"
-                        [ngModel]="config.config().apiKeys[service.key]"
-                        (ngModelChange)="updateApiKey(service.key, $event)" />
-                      <button mat-icon-button matSuffix type="button" [attr.aria-label]="apiKeyVisible(service.key) ? 'Ocultar API key' : 'Mostrar API key'" (click)="toggleApiKeyVisibility(service.key)">
-                        <mat-icon>{{ apiKeyVisible(service.key) ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                    </mat-form-field>
+                    <p class="hint">Configurar solo en backend.</p>
                   </mat-card>
                 }
               </div>
@@ -870,13 +836,7 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                       </mat-select>
                     </mat-form-field>
                     @if (config.config().weather.premiumProvider !== 'Ninguno') {
-                    <mat-form-field appearance="outline" class="wide-field">
-                      <mat-label>API key proveedor premium</mat-label>
-                      <input matInput [type]="apiKeyInputType(weatherPremiumApiKeyName())" [ngModel]="weatherPremiumApiKeyValue()" (ngModelChange)="updateWeatherPremiumApiKey($event)" />
-                      <button mat-icon-button matSuffix type="button" [attr.aria-label]="apiKeyVisible(weatherPremiumApiKeyName()) ? 'Ocultar API key proveedor premium' : 'Mostrar API key proveedor premium'" (click)="toggleApiKeyVisibility(weatherPremiumApiKeyName())">
-                        <mat-icon>{{ apiKeyVisible(weatherPremiumApiKeyName()) ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                    </mat-form-field>
+                    <p class="hint wide-field">La API key del proveedor premium se configura en el backend; Angular solo guarda el proveedor seleccionado.</p>
                     }
                   </div>
                   <div class="recommendation-list">
@@ -1027,7 +987,7 @@ export class SystemAdminComponent implements OnInit {
     { id: 'storage', label: 'Almacenamiento', description: 'Evidencias y retencion', icon: 'folder_managed' },
     { id: 'maps', label: 'Mapas', description: 'Proveedores y rutas', icon: 'map' },
     { id: 'libraries', label: 'Librerias', description: 'Graficos y UI', icon: 'extension' },
-    { id: 'integrations', label: 'Integraciones', description: 'API keys por servicio', icon: 'key' },
+    { id: 'integrations', label: 'Integraciones', description: 'Proveedores y estado', icon: 'key' },
     { id: 'weather', label: 'Clima', description: 'Inundaciones y pronosticos', icon: 'waves' },
   ];
   readonly riskLevels = [1, 2, 3, 4, 5];

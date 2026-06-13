@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
+import 'app_config.dart';
 import 'api_client.dart';
 import 'models.dart';
 
@@ -35,6 +36,51 @@ class ReportsRepository {
     return (response.data as List<dynamic>)
         .map((item) => ReportPoint.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<MapTileSource> mapTileSource() async {
+    try {
+      final response = await _api.dio.get('/system/config');
+      final config =
+          SystemMapConfig.fromJson(response.data as Map<String, dynamic>);
+      final provider = config.provider.toLowerCase();
+
+      if (provider == 'google maps') {
+        final session = await _googleMapsTileSession();
+        return MapTileSource(
+          provider: 'Google Maps',
+          urlTemplate:
+              '${AppConfig.apiBaseUrl}/reports/maps/google/tiles/{z}/{x}/{y}?session=${Uri.encodeQueryComponent(session)}',
+          attribution: 'Google Maps',
+        );
+      }
+
+      if (provider == 'maptiler') {
+        return MapTileSource(
+          provider: 'MapTiler',
+          urlTemplate:
+              '${AppConfig.apiBaseUrl}/reports/maps/maptiler/tiles/{z}/{x}/{y}?style=${Uri.encodeQueryComponent(config.style.isEmpty ? 'streets-v2' : config.style)}',
+          attribution: 'MapTiler, OpenStreetMap contributors',
+        );
+      }
+    } catch (_) {
+      // El mapa debe seguir disponible aun si la configuracion remota falla.
+    }
+
+    return MapTileSource.openStreetMap();
+  }
+
+  Future<String> _googleMapsTileSession() async {
+    final response = await _api.dio.post(
+      '/reports/maps/google/tile-session',
+      data: {'mapType': 'roadmap'},
+    );
+    final data = response.data as Map<String, dynamic>;
+    final session = data['session'] as String? ?? '';
+    if (session.trim().isEmpty) {
+      throw StateError('Google Maps tile session missing');
+    }
+    return session;
   }
 
   Future<CreateReportResult> createReport({

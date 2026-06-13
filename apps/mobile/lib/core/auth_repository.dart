@@ -84,6 +84,39 @@ class AuthRepository {
     }).then((_) {});
   }
 
+  Future<AuthUser> updateProfile({
+    required String fullName,
+    String? phone,
+    String? province,
+    String? municipality,
+    String? occupation,
+    String? vehicleType,
+    String? mobilityMode,
+    String? drivingFrequency,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    String? preferredContactChannel,
+    bool? notificationsEnabled,
+    bool? decisionInsightsConsent,
+  }) async {
+    final response = await _api.dio.patch('/auth/me', data: {
+      'fullName': fullName.trim(),
+      'phone': phone?.trim(),
+      'province': province?.trim(),
+      'municipality': municipality?.trim(),
+      'occupation': occupation?.trim(),
+      'vehicleType': vehicleType?.trim(),
+      'mobilityMode': mobilityMode?.trim(),
+      'drivingFrequency': drivingFrequency?.trim(),
+      'emergencyContactName': emergencyContactName?.trim(),
+      'emergencyContactPhone': emergencyContactPhone?.trim(),
+      'preferredContactChannel': preferredContactChannel?.trim(),
+      'notificationsEnabled': notificationsEnabled,
+      'decisionInsightsConsent': decisionInsightsConsent,
+    });
+    return AuthUser.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<AuthUser> me() async {
     final response = await _api.dio.get('/auth/me');
     return AuthUser.fromJson(response.data as Map<String, dynamic>);

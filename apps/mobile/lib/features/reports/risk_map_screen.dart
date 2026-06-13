@@ -36,6 +36,7 @@ class RiskMapScreen extends StatefulWidget {
 class _RiskMapScreenState extends State<RiskMapScreen> {
   final _map = MapController();
   List<ReportPoint> _reports = [];
+  MapTileSource _tileSource = MapTileSource.openStreetMap();
   Position? _position;
   bool _loading = true;
   bool _avoidRiskZones = false;
@@ -72,7 +73,8 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
             options: MapOptions(initialCenter: center, initialZoom: 13),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                key: ValueKey(_tileSource.urlTemplate),
+                urlTemplate: _tileSource.urlTemplate,
                 userAgentPackageName: 'com.korvi.mobile',
               ),
               if (_avoidRiskZones)
@@ -227,6 +229,7 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
     });
     try {
       final reports = await widget.reports.mapPoints();
+      final tileSource = await widget.reports.mapTileSource();
       Position? position;
       String? message;
 
@@ -265,6 +268,7 @@ class _RiskMapScreenState extends State<RiskMapScreen> {
       setState(() {
         _position = position;
         _reports = reports;
+        _tileSource = tileSource;
         _message = message ??
             (reports.isEmpty
                 ? 'No hay reportes disponibles para mostrar.'

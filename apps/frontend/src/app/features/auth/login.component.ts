@@ -54,20 +54,22 @@ declare global {
           <mat-card-content>
             <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
               <div class="field-stack">
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Correo</mat-label>
-                  <input matInput formControlName="email" placeholder="ciudadano@demo.com" />
-                  <mat-error *ngIf="form.controls.email.invalid">Ingresa un correo valido.</mat-error>
-                </mat-form-field>
+                <label class="auth-input-field" [class.invalid]="form.controls.email.invalid && form.controls.email.touched">
+                  <span>Correo*</span>
+                  <input formControlName="email" placeholder="ciudadano@demo.com" autocomplete="email" />
+                  <small *ngIf="form.controls.email.invalid && form.controls.email.touched">Ingresa un correo valido.</small>
+                </label>
 
-                <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                  <mat-label>Contrasena</mat-label>
-                  <input matInput [type]="passwordVisible() ? 'text' : 'password'" formControlName="password" placeholder="Demo12345" />
-                  <button mat-icon-button matSuffix type="button" [attr.aria-label]="passwordVisible() ? 'Ocultar contrasena' : 'Mostrar contrasena'" (click)="passwordVisible.update(value => !value)">
-                    <mat-icon>{{ passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
-                  </button>
-                  <mat-error *ngIf="form.controls.password.invalid">La contrasena debe tener al menos 8 caracteres.</mat-error>
-                </mat-form-field>
+                <label class="auth-input-field" [class.invalid]="form.controls.password.invalid && form.controls.password.touched">
+                  <span>Contrasena*</span>
+                  <div class="password-input-shell">
+                    <input [type]="passwordVisible() ? 'text' : 'password'" formControlName="password" placeholder="Demo12345" autocomplete="current-password" />
+                    <button mat-icon-button type="button" [attr.aria-label]="passwordVisible() ? 'Ocultar contrasena' : 'Mostrar contrasena'" (click)="passwordVisible.update(value => !value)">
+                      <mat-icon>{{ passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
+                  </div>
+                  <small *ngIf="form.controls.password.invalid && form.controls.password.touched">La contrasena debe tener al menos 8 caracteres.</small>
+                </label>
               </div>
 
               <div class="form-actions">

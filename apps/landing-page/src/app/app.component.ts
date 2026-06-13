@@ -27,7 +27,7 @@ export class AppComponent {
 
   readonly metrics: Metric[] = [
     { value: '24/7', label: 'avisos disponibles cuando aparece un riesgo' },
-    { value: '3 min', label: 'para crear un reporte con ubicacion y foto' },
+    { value: '3 min', label: 'para crear un reporte con ubicación y foto' },
     { value: '360', label: 'mirada compartida entre comunidad e instituciones' },
   ];
 
@@ -39,8 +39,8 @@ export class AppComponent {
     },
     {
       icon: 'route',
-      title: 'Muevete con contexto',
-      text: 'Revisa calles con incidentes, lluvia, inundaciones o semaforos fuera de servicio antes de salir.',
+      title: 'Muévete con contexto',
+      text: 'Revisa calles con incidentes, lluvia, inundaciones o semáforos fuera de servicio antes de salir.',
     },
     {
       icon: 'notifications_active',
@@ -53,35 +53,35 @@ export class AppComponent {
     {
       icon: 'add_location_alt',
       title: 'Mapa de riesgos',
-      text: 'Visualiza reportes cercanos y entiende que zonas requieren mas cuidado antes de moverte.',
+      text: 'Visualiza reportes cercanos y entiende qué zonas requieren más cuidado antes de moverte.',
     },
     {
       icon: 'photo_camera',
       title: 'Evidencia sencilla',
-      text: 'Sube fotos del incidente para que otros usuarios e instituciones comprendan mejor la situacion.',
+      text: 'Sube fotos del incidente para que otros usuarios e instituciones comprendan mejor la situación.',
     },
     {
       icon: 'campaign',
-      title: 'Alertas utiles',
-      text: 'Recibe informacion clara sobre riesgos recientes, clima o bloqueos que pueden cambiar tu trayecto.',
+      title: 'Alertas útiles',
+      text: 'Recibe información clara sobre riesgos recientes, clima o bloqueos que pueden cambiar tu trayecto.',
     },
     {
       icon: 'task_alt',
       title: 'Seguimiento visible',
-      text: 'Consulta si un reporte fue recibido, esta en revision o ya fue atendido por el equipo responsable.',
+      text: 'Consulta si un reporte fue recibido, está en revisión o ya fue atendido por el equipo responsable.',
     },
   ];
 
   readonly aboutCards: IconCard[] = [
     {
       icon: 'groups',
-      title: 'Para la ciudadania',
+      title: 'Para la ciudadanía',
       text: 'Una forma simple de avisar peligros de la calle sin depender de llamadas o mensajes dispersos.',
     },
     {
       icon: 'traffic',
       title: 'Para operadores',
-      text: 'Una vista clara de lo que esta ocurriendo para organizar mejor la respuesta diaria.',
+      text: 'Una vista clara de lo que está ocurriendo para organizar mejor la respuesta diaria.',
     },
     {
       icon: 'insights',

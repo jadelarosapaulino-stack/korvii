@@ -361,8 +361,6 @@ export class ReportsService {
     options: {
       provider?: string;
       endpoint?: string;
-      openRouteServiceApiKey?: string;
-      googleMapsApiKey?: string;
     } = {},
   ) {
     return this.http.post<OptimizedRiskRoute>(`${API_URL}/reports/routes/optimize-risk`, { origin, destination, ...options });
@@ -375,9 +373,8 @@ export class ReportsService {
       minLongitude: number;
       maxLongitude: number;
     },
-    options: { googleMapsApiKey?: string } = {},
   ) {
-    return this.http.post<HighFlowTraffic>(`${API_URL}/reports/routes/high-flow`, { bounds, ...options });
+    return this.http.post<HighFlowTraffic>(`${API_URL}/reports/routes/high-flow`, { bounds });
   }
 
   institutions(filters: Record<string, string | undefined> = {}) {

@@ -214,22 +214,22 @@ export class SystemConfigService {
   }
 
   updateWeather(patch: Partial<SystemWeatherConfig>) {
-    const optimistic = { ...this.config().weather, ...patch };
+    const optimistic = { ...this.config().weather, ...patch, premiumApiKey: '' };
     this.update({ ...this.config(), weather: optimistic });
   }
 
-  updateApiKeys(patch: Partial<SystemApiKeysConfig>) {
-    const apiKeys = { ...this.config().apiKeys, ...patch };
+  updateApiKeys(_patch: Partial<SystemApiKeysConfig>) {
+    const apiKeys = this.emptyApiKeys();
     this.update({
       ...this.config(),
       apiKeys,
       libraries: {
         ...this.config().libraries,
-        maptilerApiKey: patch.maptiler ?? this.config().libraries.maptilerApiKey,
+        maptilerApiKey: '',
       },
       weather: {
         ...this.config().weather,
-        premiumApiKey: patch.googleForecast ?? patch.tomorrowIo ?? patch.meteomatics ?? this.config().weather.premiumApiKey,
+        premiumApiKey: '',
       },
     });
   }
@@ -264,9 +264,8 @@ export class SystemConfigService {
   saveSharedConfig(config = this.config()): Observable<Partial<SystemConfig>> {
     const payload: Partial<SystemConfig> = {
       categories: config.categories,
-      libraries: config.libraries,
+      libraries: { ...config.libraries, maptilerApiKey: '' },
       integrations: config.integrations,
-      apiKeys: config.apiKeys,
       storage: config.storage,
       subscriptions: config.subscriptions,
     };
@@ -285,7 +284,7 @@ export class SystemConfigService {
     };
     return forkJoin({
       shared: this.saveSharedConfig(config),
-      weather: this.http.patch<SystemWeatherConfig>(`${API_URL}/reports/weather/config`, config.weather),
+      weather: this.http.patch<SystemWeatherConfig>(`${API_URL}/reports/weather/config`, { ...config.weather, premiumApiKey: '' }),
       socialAuth: this.http.patch<SystemSocialAuthConfig>(`${API_URL}/auth/social/settings`, socialAuth),
     }).pipe(
       map((result) => {
@@ -297,13 +296,14 @@ export class SystemConfigService {
   }
 
   private update(next: SystemConfig) {
-    this.config.set(next);
-    localStorage.setItem(this.storageKey, JSON.stringify(next));
-    window.dispatchEvent(new CustomEvent('rs-map-config-change', { detail: next.libraries }));
+    const sanitized = this.sanitizeFrontendConfig(next);
+    this.config.set(sanitized);
+    localStorage.setItem(this.storageKey, JSON.stringify(sanitized));
+    window.dispatchEvent(new CustomEvent('rs-map-config-change', { detail: sanitized.libraries }));
   }
 
   private applyWeatherConfig(weather: SystemWeatherConfig) {
-    this.update({ ...this.config(), weather: { ...this.defaultConfig().weather, ...weather } });
+    this.update({ ...this.config(), weather: { ...this.defaultConfig().weather, ...weather, premiumApiKey: '' } });
   }
 
   private applySocialAuthConfig(socialAuth: SystemSocialAuthConfig) {
@@ -330,22 +330,7 @@ export class SystemConfigService {
   }
 
   private mergeConfig(stored: Partial<SystemConfig>, base = this.defaultConfig()): SystemConfig {
-      const apiKeys = {
-        ...base.apiKeys,
-        ...stored.apiKeys,
-        maptiler: stored.apiKeys?.maptiler ?? stored.libraries?.maptilerApiKey ?? base.apiKeys.maptiler,
-        googleMaps: stored.apiKeys?.googleMaps ?? base.apiKeys.googleMaps,
-        googleForecast:
-          stored.apiKeys?.googleForecast ??
-          (stored.weather?.weatherProvider === 'Google Weather Forecast API' || stored.weather?.premiumProvider === 'Google Forecast' ? stored.weather?.premiumApiKey : '') ??
-          base.apiKeys.googleForecast,
-        tomorrowIo: stored.apiKeys?.tomorrowIo ?? (stored.weather?.premiumProvider === 'Tomorrow.io' ? stored.weather?.premiumApiKey : '') ?? base.apiKeys.tomorrowIo,
-        meteomatics: stored.apiKeys?.meteomatics ?? (stored.weather?.premiumProvider === 'Meteomatics' ? stored.weather?.premiumApiKey : '') ?? base.apiKeys.meteomatics,
-        googleFloodForecasting:
-          stored.apiKeys?.googleFloodForecasting ??
-          (stored.weather?.floodProvider === 'Google Flood Forecasting API' ? stored.weather?.premiumApiKey : '') ??
-          base.apiKeys.googleFloodForecasting,
-      };
+      const apiKeys = this.emptyApiKeys();
       const integrations = {
         ...base.integrations,
         ...stored.integrations,
@@ -363,6 +348,7 @@ export class SystemConfigService {
         libraries: {
           ...base.libraries,
           ...stored.libraries,
+          maptilerApiKey: '',
           mapProvider: integrations.mapProvider,
           routingProvider: integrations.routingProvider,
           mapThemeLight: { ...base.libraries.mapThemeLight, ...stored.libraries?.mapThemeLight },
@@ -373,6 +359,7 @@ export class SystemConfigService {
         weather: {
           ...base.weather,
           ...stored.weather,
+          premiumApiKey: '',
           weatherProvider: integrations.weatherProvider,
           floodProvider: integrations.floodProvider,
           floodMonitorCountries: stored.weather?.floodMonitorCountries?.length
@@ -382,6 +369,42 @@ export class SystemConfigService {
         apiKeys,
         integrations,
       };
+  }
+
+  private sanitizeFrontendConfig(config: SystemConfig): SystemConfig {
+    return {
+      ...config,
+      apiKeys: this.emptyApiKeys(),
+      libraries: {
+        ...config.libraries,
+        maptilerApiKey: '',
+      },
+      weather: {
+        ...config.weather,
+        premiumApiKey: '',
+      },
+    };
+  }
+
+  private emptyApiKeys(): SystemApiKeysConfig {
+    return {
+      maptiler: '',
+      googleMaps: '',
+      openRouteService: '',
+      openAi: '',
+      accuWeather: '',
+      openWeatherMap: '',
+      weatherApi: '',
+      visualCrossing: '',
+      weatherbit: '',
+      windy: '',
+      ibmWeather: '',
+      googleForecast: '',
+      tomorrowIo: '',
+      meteomatics: '',
+      googleFloodForecasting: '',
+      localWeatherAuthority: '',
+    };
   }
 
   private mergeCategories(stored: SystemConfig['categories'] | undefined, base = this.defaultConfig().categories): ReportCategoryConfig[] {
@@ -424,7 +447,7 @@ export class SystemConfigService {
         azureCdnBaseUrl: '',
       },
       libraries: {
-        mapProvider: 'MapTiler',
+        mapProvider: 'OpenStreetMap',
         maptilerApiKey: '',
         mapStyleLight: 'streets-v2',
         mapStyleDark: 'streets-v2-dark',
@@ -496,8 +519,8 @@ export class SystemConfigService {
         localWeatherAuthority: '',
       },
       integrations: {
-        mapProvider: 'MapTiler',
-        geocodingProvider: 'MapTiler Geocoding',
+        mapProvider: 'OpenStreetMap',
+        geocodingProvider: 'OpenStreetMap Nominatim',
         routingProvider: 'OSRM publico',
         aiProvider: 'OpenAI',
         weatherProvider: 'Open-Meteo Forecast',

@@ -128,15 +128,15 @@ export class SystemConfigService implements OnModuleInit {
   private defaultConfig(): SystemConfig {
     return {
       libraries: {
-        mapProvider: this.config.get<string>("MAP_PROVIDER", "MapTiler"),
+        mapProvider: this.config.get<string>("MAP_PROVIDER", "OpenStreetMap"),
         maptilerApiKey: this.config.get<string>("MAPTILER_API_KEY", ""),
         mapRenderer: "MapLibre GL",
         routingProvider: "OSRM publico",
         routingEndpoint: "https://router.project-osrm.org/route/v1/driving",
       },
       integrations: {
-        mapProvider: this.config.get<string>("MAP_PROVIDER", "MapTiler"),
-        geocodingProvider: "MapTiler Geocoding",
+        mapProvider: this.config.get<string>("MAP_PROVIDER", "OpenStreetMap"),
+        geocodingProvider: "OpenStreetMap Nominatim",
         routingProvider: "OSRM publico",
       },
       apiKeys: {

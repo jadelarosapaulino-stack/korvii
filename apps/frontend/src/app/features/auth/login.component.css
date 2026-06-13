@@ -8,6 +8,85 @@
   margin-top: 1rem;
 }
 
+.auth-input-field {
+  display: grid;
+  gap: .38rem;
+  color: var(--rs-text-muted);
+  font-size: .9rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.auth-input-field span {
+  padding-left: .85rem;
+}
+
+.auth-input-field input {
+  width: 100%;
+  height: 56px;
+  border: 1px solid var(--rs-border);
+  border-radius: 4px;
+  outline: none;
+  background: #ffffff;
+  color: var(--rs-text);
+  padding: 0 1rem;
+  font: inherit;
+  font-size: .98rem;
+  font-weight: 500;
+  box-shadow: none;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.auth-input-field input::placeholder {
+  color: transparent;
+}
+
+.auth-input-field:focus-within {
+  color: var(--rs-secondary);
+}
+
+.auth-input-field:focus-within input,
+.auth-input-field:focus-within .password-input-shell {
+  border-color: var(--rs-secondary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rs-secondary) 18%, transparent);
+}
+
+.auth-input-field.invalid input,
+.auth-input-field.invalid .password-input-shell {
+  border-color: #d83b2d;
+}
+
+.auth-input-field small {
+  padding-left: .85rem;
+  color: #d83b2d;
+  font-size: .76rem;
+  font-weight: 750;
+}
+
+.password-input-shell {
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  align-items: center;
+  height: 56px;
+  border: 1px solid var(--rs-border);
+  border-radius: 4px;
+  background: #ffffff;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.password-input-shell input {
+  height: 54px;
+  border: 0;
+  border-radius: 4px 0 0 4px;
+  box-shadow: none !important;
+}
+
+.password-input-shell button {
+  width: 44px;
+  height: 44px;
+  color: #3d4956;
+}
+
 .form-actions,
 .primary-actions {
   display: grid;

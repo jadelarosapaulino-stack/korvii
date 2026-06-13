@@ -82,6 +82,7 @@ class ApiClient {
 
   Duration? _ttlFor(String path) {
     if (path == '/auth/social/config') return const Duration(minutes: 5);
+    if (path == '/system/config') return const Duration(minutes: 2);
     if (path == '/education/categories') return const Duration(minutes: 10);
     if (path == '/education/lessons') return const Duration(minutes: 3);
     if (RegExp(r'^/education/lessons/[^/]+$').hasMatch(path)) {

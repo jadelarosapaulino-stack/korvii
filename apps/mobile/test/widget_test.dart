@@ -93,4 +93,22 @@ class _FakeAuthRepository implements AuthRepository {
   @override
   Future<void> changePassword(String currentPassword, String newPassword) =>
       throw UnimplementedError();
+
+  @override
+  Future<AuthUser> updateProfile({
+    required String fullName,
+    String? phone,
+    String? province,
+    String? municipality,
+    String? occupation,
+    String? vehicleType,
+    String? mobilityMode,
+    String? drivingFrequency,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    String? preferredContactChannel,
+    bool? notificationsEnabled,
+    bool? decisionInsightsConsent,
+  }) =>
+      throw UnimplementedError();
 }

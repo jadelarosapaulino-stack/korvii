@@ -673,8 +673,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     this.highFlowTrafficSegments = [];
     this.drawHighFlowZones();
 
-    const config = this.systemConfig.config();
-    this.reportsService.highFlowTraffic(bounds, { googleMapsApiKey: config.apiKeys.googleMaps }).subscribe({
+    this.reportsService.highFlowTraffic(bounds).subscribe({
       next: (traffic) => {
         this.recordingTrafficFlow.set(false);
         this.highFlowTrafficSegments = traffic.segments;
@@ -715,8 +714,6 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     this.reportsService.optimizeRiskRoute(this.origin, this.destination, {
       provider: config.integrations.routingProvider,
       endpoint: config.libraries.routingEndpoint,
-      openRouteServiceApiKey: config.apiKeys.openRouteService,
-      googleMapsApiKey: config.apiKeys.googleMaps,
     })
       .subscribe({
         next: (route) => {

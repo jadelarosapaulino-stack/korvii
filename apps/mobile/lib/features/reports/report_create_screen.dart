@@ -51,6 +51,7 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
   String? _message;
   String _locationMessage = 'Usa GPS o toca el mapa para ubicar el reporte.';
   String _riskReason = 'Nivel 4/5 calculado por categoria y descripcion.';
+  MapTileSource _tileSource = MapTileSource.openStreetMap();
   LatLng? _selectedLocation;
   double? _locationAccuracy;
   List<File> _photos = [];
@@ -117,6 +118,7 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
     _applyCategorySuggestion(_category);
     _title.addListener(_onTitleChanged);
     _description.addListener(_onDescriptionChanged);
+    _loadMapTileSource();
     _loadExistingReports();
     _useGps();
   }
@@ -208,8 +210,8 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      key: ValueKey(_tileSource.urlTemplate),
+                      urlTemplate: _tileSource.urlTemplate,
                       userAgentPackageName: 'com.korvi.mobile',
                     ),
                     CircleLayer(
@@ -578,6 +580,12 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
     } finally {
       if (mounted) setState(() => _loadingNearby = false);
     }
+  }
+
+  Future<void> _loadMapTileSource() async {
+    final tileSource = await widget.reports.mapTileSource();
+    if (!mounted) return;
+    setState(() => _tileSource = tileSource);
   }
 
   Future<void> _useGps() async {

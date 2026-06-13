@@ -1,6 +1,6 @@
 <main class="landing" landingAutoTranslate>
   <div class="public-language-selector" role="group" aria-label="Selector de idioma">
-    <button type="button" [class.active]="language() === 'es'" title="Espanol" aria-label="Espanol" (click)="setLanguage('es')">
+    <button type="button" [class.active]="language() === 'es'" title="Español" aria-label="Español" (click)="setLanguage('es')">
       <img class="flag-icon" src="assets/flags/do.svg" alt="" aria-hidden="true">
       <span class="language-copy"><strong>ES</strong></span>
     </button>
@@ -33,7 +33,7 @@
           <span>Entra para ver reportes, rutas con contexto y seguimiento de tu comunidad.</span>
           <a [href]="systemLoginUrl" role="menuitem">
             <span class="material-icons-outlined" aria-hidden="true">login</span>
-            Iniciar sesion
+            Iniciar sesión
           </a>
         </div>
       </div>
@@ -44,15 +44,15 @@
     <div class="hero__content">
       <div class="hero__copy">
         <p class="eyebrow">Movilidad segura para personas reales</p>
-        <h1>Reporta riesgos viales y muevete con mas confianza.</h1>
+        <h1>Reporta riesgos viales y muévete con más confianza.</h1>
         <p class="hero__lead">
-          Korvi te ayuda a avisar lo que pasa en la via, ver puntos de cuidado antes
+          Korvi te ayuda a avisar lo que pasa en la vía, ver puntos de cuidado antes
           de salir y dar seguimiento a los reportes que protegen a tu comunidad.
         </p>
         <div class="hero__actions">
           <a class="button button--primary" href="#producto">
             <span class="material-icons-outlined" aria-hidden="true">explore</span>
-            Conocer como ayuda
+            Conocer cómo ayuda
           </a>
           <a class="button button--secondary" [href]="systemLoginUrl">
             <span class="material-icons-outlined" aria-hidden="true">login</span>
@@ -78,7 +78,7 @@
             <strong>Lluvia moderada</strong>
           </div>
           <div>
-            <span>Semaforos</span>
+            <span>Semáforos</span>
             <strong>12 activos</strong>
           </div>
           <div>
@@ -95,8 +95,8 @@
       <p class="eyebrow">Para usuarios</p>
       <h2>Funciones simples para viajar mejor y cuidar tu entorno.</h2>
       <p>
-        El landing explica lo esencial: como reportar un peligro, consultar una zona,
-        recibir avisos utiles y conectar el caso con quien puede atenderlo.
+        El landing explica lo esencial: cómo reportar un peligro, consultar una zona,
+        recibir avisos útiles y conectar el caso con quien puede atenderlo.
       </p>
     </div>
     <div class="benefits">
@@ -112,19 +112,19 @@
 
   <section class="section image-story" aria-label="Funciones destacadas">
     <figure>
-      <img src="assets/landing/driver-navigation.jpg" alt="Persona conduciendo en ciudad con atencion a la ruta">
+      <img src="assets/landing/driver-navigation.jpg" alt="Persona conduciendo en ciudad con atención a la ruta">
       <figcaption>Consulta alertas antes de moverte.</figcaption>
     </figure>
     <figure>
-      <img src="assets/landing/community-road.jpg" alt="Carretera abierta para planificar viajes con mas contexto">
-      <figcaption>Elige trayectos con mejor informacion.</figcaption>
+      <img src="assets/landing/community-road.jpg" alt="Carretera abierta para planificar viajes con más contexto">
+      <figcaption>Elige trayectos con mejor información.</figcaption>
     </figure>
   </section>
 
   <section class="section split-section" id="funciones">
     <div class="visual-panel response-visual" aria-hidden="true">
       <span class="material-icons-outlined">support_agent</span>
-      <strong>Del reporte a la accion</strong>
+      <strong>Del reporte a la acción</strong>
       <p>Korvi muestra el aviso correcto a la persona correcta para que el problema no se pierda.</p>
     </div>
 
@@ -132,8 +132,8 @@
       <p class="eyebrow">Funciones principales</p>
       <h2>Todo gira alrededor de informar, prevenir y resolver.</h2>
       <p>
-        La plataforma acompana situaciones reales: un semaforo danado, una calle
-        inundada, un accidente, un obstaculo o una ruta que conviene evitar.
+        La plataforma acompaña situaciones reales: un semáforo dañado, una calle
+        inundada, un accidente, un obstáculo o una ruta que conviene evitar.
       </p>
       <div class="policy-grid">
         @for (policy of mainFeatures; track policy.title) {
@@ -153,7 +153,7 @@
     <div class="impact__panel">
       <div>
         <p class="eyebrow">Impacto</p>
-        <h2>Disenado para que cada aviso tenga seguimiento y valor publico.</h2>
+        <h2>Diseñado para que cada aviso tenga seguimiento y valor público.</h2>
       </div>
       <div class="metrics">
         @for (metric of metrics; track metric.label) {
@@ -169,7 +169,7 @@
   <section class="section about" id="nosotros">
     <div class="section__heading">
       <p class="eyebrow">Sobre nosotros</p>
-      <h2>Construimos una forma mas cercana de cuidar las vias que usamos todos los dias.</h2>
+      <h2>Construimos una forma más cercana de cuidar las vías que usamos todos los días.</h2>
     </div>
     <div class="about-grid">
       @for (card of aboutCards; track card.title) {
@@ -185,7 +185,7 @@
   <section class="section contact" id="contacto">
     <div>
       <p class="eyebrow">Contacto</p>
-      <h2>Presenta Korvi a tu comunidad o institucion con una historia clara y facil de entender.</h2>
+      <h2>Presenta Korvi a tu comunidad o institución con una historia clara y fácil de entender.</h2>
     </div>
     <div class="contact__actions">
       <a class="button button--primary" href="mailto:contacto@korvi.local">
@@ -198,4 +198,41 @@
       </a>
     </div>
   </section>
+
+  <div class="city-silhouette" aria-hidden="true">
+    <span class="building building--1"></span>
+    <span class="building building--2"></span>
+    <span class="building building--3"></span>
+    <span class="building building--4"></span>
+    <span class="building building--5"></span>
+    <span class="building building--6"></span>
+    <span class="building building--7"></span>
+    <span class="building building--8"></span>
+    <span class="building building--9"></span>
+    <span class="building building--10"></span>
+    <span class="building building--11"></span>
+    <span class="building building--12"></span>
+    <span class="building building--13"></span>
+    <span class="building building--14"></span>
+    <span class="building building--15"></span>
+    <span class="building building--16"></span>
+    <span class="building building--17"></span>
+    <span class="building building--18"></span>
+  </div>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <a class="footer__brand" href="#inicio" aria-label="Korvi inicio">
+        <img src="assets/brand/korvi-wordmark-dark.svg" alt="Korvi">
+      </a>
+      <p>Movilidad segura, reportes ciudadanos y seguimiento vial para comunidades más informadas.</p>
+      <nav class="footer__links" aria-label="Enlaces del pie de pagina">
+        <a href="#producto">Usuarios</a>
+        <a href="#funciones">Funciones</a>
+        <a href="#nosotros">Sobre nosotros</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+      <span class="footer__copy">© 2026 Korvi. Todos los derechos reservados.</span>
+    </div>
+  </footer>
 </main>
