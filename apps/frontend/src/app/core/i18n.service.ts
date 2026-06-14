@@ -95,8 +95,31 @@ const EN_DICTIONARY: Record<string, string> = {
   'Todas': 'All',
   'Todos': 'All',
   'Actualizar': 'Refresh',
+  'Inventario operacional': 'Operational inventory',
   'Nuevo reporte': 'New report',
+  'Ver mapa': 'View map',
   'Evitar riesgos': 'Avoid risks',
+  'Resumen de reportes': 'Reports summary',
+  'Total': 'Total',
+  'incidentes registrados': 'registered incidents',
+  'requieren prioridad': 'require priority',
+  'Pendientes': 'Pending',
+  'por verificar': 'to verify',
+  'Resueltos': 'Resolved',
+  'cerrados': 'closed',
+  'Vista territorial': 'Territorial view',
+  'Distribucion de reportes activos': 'Active reports distribution',
+  'Distribución de reportes activos': 'Active reports distribution',
+  'Leyenda de riesgo': 'Risk legend',
+  'Bajo Â· 1-2': 'Low · 1-2',
+  'Bajo · 1-2': 'Low · 1-2',
+  'Medio Â· 3': 'Medium · 3',
+  'Medio · 3': 'Medium · 3',
+  'Alto Â· 4': 'High · 4',
+  'Alto · 4': 'High · 4',
+  'CrÃ­tico Â· 5': 'Critical · 5',
+  'Crítico · 5': 'Critical · 5',
+  'Filtro por fecha y hora': 'Date and time filter',
   'Bandeja de incidentes': 'Incident inbox',
   'Tipo': 'Type',
   'Estado': 'Status',
@@ -124,6 +147,36 @@ const EN_DICTIONARY: Record<string, string> = {
   'Riesgo alto': 'High risk',
   'Riesgo medio': 'Medium risk',
   'Riesgo bajo': 'Low risk',
+  'Ver en el mapa': 'View on map',
+  'Ubicacion del reporte': 'Report location',
+  'Ubicación del reporte': 'Report location',
+  'Cerrar mapa del reporte': 'Close report map',
+  'Mapa con ubicacion del reporte': 'Map with report location',
+  'Mapa con ubicación del reporte': 'Map with report location',
+  'Controles de zoom del mapa': 'Map zoom controls',
+  'Ver mapa estandar': 'View standard map',
+  'Ver mapa estándar': 'View standard map',
+  'Ver mapa hibrido': 'View hybrid map',
+  'Ver mapa híbrido': 'View hybrid map',
+  'Acercar mapa': 'Zoom in',
+  'Alejar mapa': 'Zoom out',
+  'Fuente': 'Source',
+  'Coordenadas': 'Coordinates',
+  'Confirmaciones': 'Confirmations',
+  'Autoridad': 'Authority',
+  'Sin mencionar': 'Not mentioned',
+  'Sin confirmar': 'Unconfirmed',
+  'Sin provincia': 'No province',
+  'Sin municipio': 'No municipality',
+  'No hay reportes registrados': 'No reports registered',
+  'Ajusta los filtros o crea un nuevo incidente para iniciar el seguimiento operativo.': 'Adjust filters or create a new incident to start operational follow-up.',
+  'Parcialmente nublado': 'Partly cloudy',
+  'Tormenta': 'Storm',
+  'Lluvia': 'Rain',
+  'Consultando clima': 'Checking weather',
+  'Consultando clima...': 'Checking weather...',
+  'Clima no configurado': 'Weather not configured',
+  'Clima actual': 'Current weather',
   'Accidente': 'Accident',
   'Semáforo dañado': 'Damaged traffic light',
   'Semaforo dañado': 'Damaged traffic light',
@@ -276,6 +329,7 @@ const EN_DICTIONARY: Record<string, string> = {
   'Mapa base': 'Base map',
   'Configurada': 'Configured',
   'Pendiente': 'Pending',
+  'Administrador': 'Administrator',
   'Credenciales completas': 'Credentials complete',
   'Credenciales pendientes': 'Credentials pending',
   'Configurado en .env': 'Configured in .env',
@@ -457,20 +511,38 @@ const EN_REPLACEMENTS: Array<[RegExp, string]> = [
   [/^(\d+) de (\d+) reportes$/i, '$1 of $2 reports'],
   [/^(\d+) visibles en esta pagina$/i, '$1 visible on this page'],
   [/^(\d+) visibles en esta página$/i, '$1 visible on this page'],
+  [/^(\d+) alto riesgo$/i, '$1 high risk'],
   [/^(\d+) criticos$/i, '$1 critical'],
   [/^(\d+) críticos$/i, '$1 critical'],
   [/^(\d+) confirmaciones$/i, '$1 confirmations'],
   [/^Confirmado por:/i, 'Confirmed by:'],
+  [/^Zona de posible inundacion - (.+) - zona urbana$/i, 'Potential flood zone - $1 - urban area'],
+  [/^Zona de posible inundación - (.+) - zona urbana$/i, 'Potential flood zone - $1 - urban area'],
+  [/^Activacion automatica por estado del tiempo\. Condicion actual: (.+)\. Probabilidad de lluvia 24h: (.+)\. Lluvia intensa prevista: (.+) desde (.+)\. Caudal fluvial GloFAS: (.+)\.$/i, 'Automatic activation by weather status. Current condition: $1. 24h rain probability: $2. Expected heavy rain: $3 from $4. GloFAS river flow: $5.'],
+  [/^Activación automática por estado del tiempo\. Condición actual: (.+)\. Probabilidad de lluvia 24h: (.+)\. Lluvia intensa prevista: (.+) desde (.+)\. Caudal fluvial GloFAS: (.+)\.$/i, 'Automatic activation by weather status. Current condition: $1. 24h rain probability: $2. Expected heavy rain: $3 from $4. GloFAS river flow: $5.'],
   [/^Reportes a (\d+) m$/i, 'Reports within $1 m'],
   [/^(\d+) puntos de alto riesgo/i, '$1 high-risk points'],
   [/^(\d+) reportes abiertos/i, '$1 open reports'],
   [/^(\d+) semaforos$/i, '$1 traffic lights'],
   [/^(\d+) semaforo danado$/i, '$1 damaged traffic light'],
+  [/^(.+) · Humedad (\d+)%$/i, '$1 · Humidity $2%'],
   [/^Se mencionara a (.+)$/i, 'Will mention $1'],
   [/^Contacto: (.+)$/i, 'Contact: $1'],
   [/^Tel\. (.+)$/i, 'Phone $1'],
   [/^Emergencia (.+)$/i, 'Emergency $1'],
 ];
+
+const EN_INLINE_TERMS: Array<[RegExp, string]> = [
+  [/\bTormenta\b/gi, 'Storm'],
+  [/\bParcialmente nublado\b/gi, 'Partly cloudy'],
+  [/\bLluvia moderada\b/gi, 'Moderate rain'],
+  [/\bLluvia intensa\b/gi, 'Heavy rain'],
+  [/\bLluvia\b/gi, 'Rain'],
+];
+
+function translateInlineTerms(value: string): string {
+  return EN_INLINE_TERMS.reduce((next, [pattern, replacement]) => next.replace(pattern, replacement), value);
+}
 
 @Injectable({ providedIn: 'root' })
 export class I18nService {
@@ -498,10 +570,10 @@ export class I18nService {
     const leading = value.match(/^\s*/)?.[0] ?? '';
     const trailing = value.match(/\s*$/)?.[0] ?? '';
     const exact = EN_DICTIONARY[trimmed];
-    if (exact) return `${leading}${exact}${trailing}`;
+    if (exact) return `${leading}${translateInlineTerms(exact)}${trailing}`;
 
     for (const [pattern, replacement] of EN_REPLACEMENTS) {
-      if (pattern.test(trimmed)) return `${leading}${trimmed.replace(pattern, replacement)}${trailing}`;
+      if (pattern.test(trimmed)) return `${leading}${translateInlineTerms(trimmed.replace(pattern, replacement))}${trailing}`;
     }
 
     return value;

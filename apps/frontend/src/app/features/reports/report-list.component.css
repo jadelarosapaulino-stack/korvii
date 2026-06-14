@@ -37,12 +37,38 @@
 .panel-toolbar strong { display: block; color: var(--rs-text); font-size: 1rem; letter-spacing: 0; }
 .panel-toolbar span { display: block; margin-top: .15rem; color: var(--rs-text-muted); font-size: .8rem; }
 .date-filter-bar { display: grid; grid-template-columns: minmax(160px, .8fr) minmax(160px, .8fr) minmax(260px, 1.2fr) auto auto; gap: .7rem; align-items: end; padding: .85rem 1rem; border-bottom: 1px solid var(--rs-border); background: var(--rs-surface); }
-.date-filter-bar mat-form-field { width: 100%; }
+.date-filter-bar mat-form-field { width: 100%; padding-top: 1.15rem !important; }
 .date-filter-bar > button { min-height: 48px; height: 48px; align-self: end; margin-bottom: 0; }
 .date-filter-bar > button mat-icon { margin-right: .35rem; }
-:host ::ng-deep .date-filter-bar .mat-mdc-text-field-wrapper { height: 48px; align-items: center; }
+:host ::ng-deep .date-filter-bar .mat-mdc-text-field-wrapper { height: 48px; align-items: center; border-radius: var(--rs-radius); background: var(--rs-surface) !important; }
 :host ::ng-deep .date-filter-bar .mat-mdc-form-field-flex { height: 48px; align-items: center; }
 :host ::ng-deep .date-filter-bar .mat-mdc-form-field-infix { min-height: 48px; padding-top: 12px; padding-bottom: 8px; }
+:host ::ng-deep .date-filter-bar .mdc-floating-label,
+:host ::ng-deep .date-filter-bar .mdc-floating-label--float-above {
+  top: 0 !important;
+  left: 0 !important;
+  padding: 0;
+  background: transparent !important;
+  transform: translate(0, -1.15rem) scale(1) !important;
+}
+:host ::ng-deep .date-filter-bar .mdc-notched-outline__notch {
+  border-top: 1px solid var(--rs-border) !important;
+}
+:host ::ng-deep .date-filter-bar .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch {
+  border-top-color: var(--rs-secondary) !important;
+}
+:host ::ng-deep .date-filter-bar .mat-mdc-select-trigger,
+:host ::ng-deep .date-filter-bar .mat-date-range-input-container {
+  min-height: 24px;
+  align-items: center;
+}
+:host ::ng-deep .date-filter-bar .mat-date-range-input-container {
+  display: flex;
+  width: 100%;
+}
+:host ::ng-deep .date-filter-bar .mat-date-range-input-wrapper {
+  min-width: 0;
+}
 :host ::ng-deep .date-filter-bar .mat-mdc-icon-button { width: 40px; height: 40px; padding: 8px; }
 mat-paginator { justify-self: end; color: var(--rs-text); }
 .table-head { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(210px, .85fr) 128px 86px; gap: 1rem; padding: .8rem 1rem; border-bottom: 1px solid var(--rs-border); background: var(--rs-surface-soft); color: var(--rs-text-muted); font-size: .72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0; }
