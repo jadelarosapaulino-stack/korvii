@@ -11,6 +11,7 @@ RUN API_URL="$API_URL" REALTIME_URL="$REALTIME_URL" node -e "const fs=require('f
 RUN pnpm --filter @ruta-segura/frontend build --configuration production
 
 FROM nginx:1.27-alpine AS runner
+ENV PORT=80
 ENV API_UPSTREAM=https://korvii-api-prod.up.railway.app
 ENV REALTIME_UPSTREAM=https://korvii-realtime-prod.up.railway.app
 COPY --from=build /app/apps/frontend/dist/ruta-segura-frontend/browser /usr/share/nginx/html
