@@ -18,5 +18,7 @@ COPY --from=build /app/apps/backend/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/uploads ./uploads
 COPY --from=build /app/apps/backend/uploads ./uploads
+COPY --from=build /app/apps/backend/scripts ./scripts
+RUN node scripts/check-uploads.js
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

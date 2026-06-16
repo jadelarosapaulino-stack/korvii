@@ -17,6 +17,7 @@ export interface TrafficLightItem {
   status: TrafficLightStatus;
   source: TrafficLightSource;
   lastObservedAt?: string | null;
+  locationDetailsRefreshedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,6 +72,7 @@ export interface RefreshLocationDetailsJob {
   finishedAt?: string;
   source: 'osm' | 'all';
   limit: number;
+  skipRecentlyUpdatedHours: number;
   progress: RefreshLocationDetailsProgress;
   error?: string;
 }
@@ -142,7 +144,7 @@ export class TrafficLightsService {
     return this.http.post<{ imported: number; created: number; updated: number }>(`${API_URL}/traffic-lights/import/osm`, payload);
   }
 
-  refreshLocationDetails(payload: { source?: 'osm' | 'all'; limit?: number } = {}) {
+  refreshLocationDetails(payload: { source?: 'osm' | 'all'; limit?: number; skipRecentlyUpdatedHours?: number } = {}) {
     return this.http.post<RefreshLocationDetailsStartResponse>(
       `${API_URL}/traffic-lights/refresh-location-details`,
       payload,

@@ -47,6 +47,9 @@ export class TrafficLight {
   @Column({ type: "timestamp", nullable: true })
   lastObservedAt?: Date | null;
 
+  @Column({ type: "timestamp", nullable: true })
+  locationDetailsRefreshedAt?: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

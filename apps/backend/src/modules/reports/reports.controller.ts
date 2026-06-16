@@ -17,6 +17,7 @@ import type { Express } from "express";
 import { memoryStorage } from "multer";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { FeatureFlag } from "../../common/decorators/feature-flag.decorator";
+import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { UserRole } from "../../common/enums/user-role.enum";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -104,6 +105,7 @@ export class ReportsController {
   }
 
   @Get("map")
+  @Public()
   findMapPoints(@Query() query: QueryReportsDto) {
     return this.reportsService.findMapPoints(query);
   }

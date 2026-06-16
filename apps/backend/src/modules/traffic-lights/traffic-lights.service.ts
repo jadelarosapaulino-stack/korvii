@@ -77,6 +77,7 @@ export interface RefreshLocationDetailsJob {
   finishedAt?: string;
   source: "osm" | "all";
   limit: number;
+  skipRecentlyUpdatedHours: number;
   progress: RefreshLocationDetailsResult & { total: number };
   error?: string;
 }
@@ -402,6 +403,13 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
     if (!trafficLight) throw new NotFoundException("Semaforo no encontrado");
 
     Object.assign(trafficLight, dto);
+    if (
+      dto.province !== undefined ||
+      dto.municipality !== undefined ||
+      dto.intersection !== undefined
+    ) {
+      trafficLight.locationDetailsRefreshedAt = new Date();
+    }
     trafficLight.lastObservedAt = new Date();
     const saved = await this.trafficLightsRepo.save(trafficLight);
     if (saved.status === "offline") {
@@ -444,7 +452,11 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
   }
 
   startRefreshLocationDetails(
-    dto: { source?: "osm" | "all"; limit?: number } = {},
+    dto: {
+      source?: "osm" | "all";
+      limit?: number;
+      skipRecentlyUpdatedHours?: number;
+    } = {},
   ) {
     const currentJob = this.refreshLocationDetailsJob;
     if (currentJob && ["queued", "running"].includes(currentJob.status)) {
@@ -456,12 +468,17 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
 
     const limit = Math.min(1000, Math.max(1, Number(dto.limit ?? 500)));
     const source = dto.source === "all" ? "all" : "osm";
+    const skipRecentlyUpdatedHours = Math.min(
+      720,
+      Math.max(0, Number(dto.skipRecentlyUpdatedHours ?? 24)),
+    );
     const job: RefreshLocationDetailsJob = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       status: "queued",
       requestedAt: new Date().toISOString(),
       source,
       limit,
+      skipRecentlyUpdatedHours,
       progress: { scanned: 0, total: 0, updated: 0, skipped: 0, failed: 0 },
     };
 
@@ -477,15 +494,33 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async refreshLocationDetails(
-    dto: { source?: "osm" | "all"; limit?: number } = {},
+    dto: {
+      source?: "osm" | "all";
+      limit?: number;
+      skipRecentlyUpdatedHours?: number;
+    } = {},
     onProgress?: (progress: RefreshLocationDetailsJob["progress"]) => void,
   ): Promise<RefreshLocationDetailsResult> {
     const limit = Math.min(1000, Math.max(1, Number(dto.limit ?? 500)));
+    const skipRecentlyUpdatedHours = Math.min(
+      720,
+      Math.max(0, Number(dto.skipRecentlyUpdatedHours ?? 24)),
+    );
+    const refreshCutoff = new Date(
+      Date.now() - skipRecentlyUpdatedHours * 60 * 60 * 1000,
+    );
     const qb = this.trafficLightsRepo
       .createQueryBuilder("trafficLight")
       .where("trafficLight.latitude IS NOT NULL")
       .andWhere("trafficLight.longitude IS NOT NULL")
-      .orderBy("trafficLight.updatedAt", "DESC")
+      .andWhere(
+        skipRecentlyUpdatedHours > 0
+          ? "(trafficLight.locationDetailsRefreshedAt IS NULL OR trafficLight.locationDetailsRefreshedAt < :refreshCutoff)"
+          : "1 = 1",
+        { refreshCutoff },
+      )
+      .orderBy("trafficLight.locationDetailsRefreshedAt", "ASC", "NULLS FIRST")
+      .addOrderBy("trafficLight.updatedAt", "ASC")
       .take(limit);
 
     if (dto.source !== "all") {
@@ -516,6 +551,7 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
         continue;
       }
 
+      const refreshedAt = new Date();
       const patch = {
         province: details.province || trafficLight.province,
         municipality: details.municipality || trafficLight.municipality,
@@ -527,6 +563,8 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
         patch.intersection !== trafficLight.intersection;
 
       if (!hasChanges) {
+        trafficLight.locationDetailsRefreshedAt = refreshedAt;
+        await this.trafficLightsRepo.save(trafficLight);
         skipped += 1;
         onProgress?.({
           scanned,
@@ -538,7 +576,10 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
         continue;
       }
 
-      Object.assign(trafficLight, patch, { lastObservedAt: new Date() });
+      Object.assign(trafficLight, patch, {
+        lastObservedAt: refreshedAt,
+        locationDetailsRefreshedAt: refreshedAt,
+      });
       await this.trafficLightsRepo.save(trafficLight);
       updated += 1;
       onProgress?.({
@@ -551,7 +592,7 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.log(
-      `Actualizacion masiva de ubicacion semaforos: ${updated} actualizados, ${skipped} sin cambios, ${failed} fallidos.`,
+      `Actualizacion masiva de ubicacion semaforos: ${updated} actualizados, ${skipped} omitidos/sin cambios, ${failed} fallidos. Ventana reciente: ${skipRecentlyUpdatedHours}h.`,
     );
     return { scanned: trafficLights.length, updated, skipped, failed };
   }
@@ -562,7 +603,11 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const result = await this.refreshLocationDetails(
-        { source: job.source, limit: job.limit },
+        {
+          source: job.source,
+          limit: job.limit,
+          skipRecentlyUpdatedHours: job.skipRecentlyUpdatedHours,
+        },
         (progress) => {
           job.progress = progress;
         },
@@ -1335,6 +1380,7 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
       province: details.province || trafficLight.province,
       municipality: details.municipality || trafficLight.municipality,
       intersection: details.intersection || trafficLight.intersection,
+      locationDetailsRefreshedAt: new Date(),
     };
   }
 
@@ -1391,7 +1437,7 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
     longitude: number,
   ): ReverseGeocodeDetails {
     const address = data.address ?? {};
-    const province = this.cleanAdministrativeName(
+    const detectedProvince = this.cleanAdministrativeName(
       address.state || address.province || address.region,
     );
     const inferredMunicipality = this.inferMunicipalityFromCoordinates(
@@ -1407,6 +1453,11 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
           address.village ||
           address.county,
       );
+    const province = inferredMunicipality
+      ? inferredMunicipality === "Santo Domingo de Guzman"
+        ? "Distrito Nacional"
+        : "Santo Domingo"
+      : detectedProvince;
     const road =
       address.road || address.pedestrian || address.footway || address.cycleway;
     const place = address.neighbourhood || address.suburb || address.quarter;
@@ -1425,6 +1476,13 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
     longitude: number,
   ): string | null {
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+    if (
+      latitude >= 18.4 &&
+      latitude <= 18.52 &&
+      longitude >= -69.99 &&
+      longitude <= -69.86
+    )
+      return "Santo Domingo de Guzman";
     if (
       latitude >= 18.42 &&
       latitude <= 18.6 &&
@@ -1446,13 +1504,6 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
       longitude < -69.98
     )
       return "Santo Domingo Oeste";
-    if (
-      latitude >= 18.4 &&
-      latitude <= 18.52 &&
-      longitude >= -69.99 &&
-      longitude <= -69.86
-    )
-      return "Santo Domingo de Guzman";
     if (
       latitude >= 18.37 &&
       latitude <= 18.56 &&

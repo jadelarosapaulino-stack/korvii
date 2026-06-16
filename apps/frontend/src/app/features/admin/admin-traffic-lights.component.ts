@@ -14,6 +14,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Map as MapTilerMap, Marker } from '@maptiler/sdk';
 import { ToastrService } from 'ngx-toastr';
+import { firstValueFrom } from 'rxjs';
 import { ReverseGeocodeDetails, createKorviMap, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
 import { RefreshLocationDetailsJob, TrafficLightItem, TrafficLightsService, TrafficLightsSettings, TrafficLightStatus } from '../../core/traffic-lights.service';
 
@@ -147,21 +148,25 @@ interface TrafficLightLocationDetails {
           </div>
 
           <div class="config-actions">
-            <mat-slide-toggle [checked]="replaceExisting()" (change)="replaceExisting.set($event.checked)">
-              Reemplazar estado existente al importar
-            </mat-slide-toggle>
-            <button mat-flat-button color="primary" type="button" (click)="saveSettings()">
-              <mat-icon>save</mat-icon>
-              Guardar configuracion
-            </button>
-            <button mat-stroked-button type="button" (click)="importOsm()" [disabled]="importing()">
-              <mat-icon>download</mat-icon>
-              {{ importing() ? 'Importando...' : 'Importar OSM' }}
-            </button>
-            <button mat-stroked-button type="button" (click)="refreshImportedLocationDetails()" [disabled]="refreshingLocations()">
-              <mat-icon>travel_explore</mat-icon>
-              {{ refreshingLocations() ? 'Actualizando en background' : 'Actualizar ubicaciones' }}
-            </button>
+            <div class="config-option">
+              <mat-slide-toggle [checked]="replaceExisting()" (change)="replaceExisting.set($event.checked)">
+                Reemplazar estado existente al importar
+              </mat-slide-toggle>
+            </div>
+            <div class="config-action-buttons">
+              <button mat-flat-button color="primary" type="button" (click)="saveSettings()">
+                <mat-icon>save</mat-icon>
+                Guardar configuracion
+              </button>
+              <button mat-stroked-button type="button" (click)="importOsm()" [disabled]="importing()">
+                <mat-icon>download</mat-icon>
+                {{ importing() ? 'Importando...' : 'Importar OSM' }}
+              </button>
+              <button mat-stroked-button type="button" (click)="refreshImportedLocationDetails()" [disabled]="refreshingLocations()">
+                <mat-icon>travel_explore</mat-icon>
+                {{ refreshingLocations() ? 'Actualizando' : 'Actualizar ubicaciones' }}
+              </button>
+            </div>
             @if (refreshLocationStatus()) {
               <span class="background-status">{{ refreshLocationStatus() }}</span>
             }
@@ -708,7 +713,7 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
   refreshImportedLocationDetails() {
     this.refreshingLocations.set(true);
     this.refreshLocationStatus.set('Preparando actualizacion...');
-    this.trafficLightsService.refreshLocationDetails({ source: 'osm', limit: 1000 }).subscribe({
+    this.trafficLightsService.refreshLocationDetails({ source: 'osm', limit: 1000, skipRecentlyUpdatedHours: 24 }).subscribe({
       next: (response) => {
         this.applyRefreshLocationJob(response.job);
         this.toastr.info(
@@ -814,17 +819,19 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
           const patch = { ...basePatch, ...details };
           if (target === 'edit') {
             this.updateEditDraft(patch);
+            await this.persistDetectedEditLocation(patch);
           } else {
             this.updateDraft(patch);
           }
-          this.toastr.success('Ubicacion, provincia, municipio e interseccion actualizados.', 'GPS');
+          this.toastr.success(target === 'edit' ? 'Ubicacion guardada con provincia, municipio e interseccion.' : 'Ubicacion, provincia, municipio e interseccion actualizados.', 'GPS');
         } catch {
           if (target === 'edit') {
             this.updateEditDraft(basePatch);
+            await this.persistDetectedEditLocation(basePatch);
           } else {
             this.updateDraft(basePatch);
           }
-          this.toastr.warning('Coordenadas aplicadas. No se pudo detectar provincia, municipio e interseccion.', 'GPS');
+          this.toastr.warning(target === 'edit' ? 'Coordenadas guardadas. No se pudo detectar provincia, municipio e interseccion.' : 'Coordenadas aplicadas. No se pudo detectar provincia, municipio e interseccion.', 'GPS');
         } finally {
           this.locating.set(false);
         }
@@ -851,10 +858,11 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
       const details = await this.fetchReverseGeocode(latitude, longitude);
       if (target === 'edit') {
         this.updateEditDraft(details);
+        await this.persistDetectedEditLocation(details);
       } else {
         this.updateDraft(details);
       }
-      this.toastr.success('Provincia, municipio e interseccion actualizados.', 'Coordenadas');
+      this.toastr.success(target === 'edit' ? 'Provincia, municipio e interseccion guardados.' : 'Provincia, municipio e interseccion actualizados.', 'Coordenadas');
     } catch {
       this.toastr.error('No se pudo detectar la ubicacion con esas coordenadas.', 'Coordenadas');
     } finally {
@@ -894,6 +902,33 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
       },
       error: () => this.toastr.error('No se pudo crear el semaforo.', 'Semaforos'),
     });
+  }
+
+  private async persistDetectedEditLocation(patch: Partial<TrafficLightItem>) {
+    const item = this.editingTrafficLight();
+    if (!item) return;
+
+    const draft = { ...this.editDraft(), ...patch };
+    const updated = await firstValueFrom(
+      this.trafficLightsService.update(item.id, {
+        latitude: Number(draft.latitude),
+        longitude: Number(draft.longitude),
+        province: draft.province,
+        municipality: draft.municipality,
+        intersection: draft.intersection,
+      }),
+    );
+
+    this.editingTrafficLight.set(updated);
+    this.editDraft.set({
+      ...this.editDraft(),
+      latitude: Number(updated.latitude),
+      longitude: Number(updated.longitude),
+      province: updated.province ?? '',
+      municipality: updated.municipality ?? '',
+      intersection: updated.intersection ?? '',
+    });
+    this.trafficLights.set(this.trafficLights().map((trafficLight) => (trafficLight.id === updated.id ? updated : trafficLight)));
   }
 
   updateStatus(item: TrafficLightItem, status: TrafficLightStatus) {
@@ -1076,10 +1111,10 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
   }
 
   private inferMunicipalityFromCoordinates(latitude: number, longitude: number): string | null {
+    if (latitude >= 18.40 && latitude <= 18.52 && longitude >= -69.99 && longitude <= -69.86) return 'Santo Domingo de Guzman';
     if (latitude >= 18.42 && latitude <= 18.60 && longitude >= -69.92 && longitude <= -69.72) return 'Santo Domingo Este';
     if (latitude >= 18.48 && latitude <= 18.66 && longitude >= -70.05 && longitude < -69.88) return 'Santo Domingo Norte';
     if (latitude >= 18.38 && latitude <= 18.56 && longitude >= -70.10 && longitude < -69.98) return 'Santo Domingo Oeste';
-    if (latitude >= 18.40 && latitude <= 18.52 && longitude >= -69.99 && longitude <= -69.86) return 'Santo Domingo de Guzman';
     if (latitude >= 18.37 && latitude <= 18.56 && longitude >= -70.15 && longitude < -70.03) return 'Los Alcarrizos';
     if (latitude >= 18.35 && latitude <= 18.50 && longitude >= -69.72 && longitude <= -69.55) return 'Boca Chica';
     if (latitude >= 18.45 && latitude <= 18.68 && longitude >= -69.78 && longitude <= -69.55) return 'San Antonio de Guerra';

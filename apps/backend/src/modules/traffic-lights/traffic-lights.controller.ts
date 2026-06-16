@@ -72,7 +72,12 @@ export class TrafficLightsController {
   @Post("refresh-location-details")
   @Roles(UserRole.SUPER_ADMIN)
   refreshLocationDetails(
-    @Body() dto: { source?: "osm" | "all"; limit?: number },
+    @Body()
+    dto: {
+      source?: "osm" | "all";
+      limit?: number;
+      skipRecentlyUpdatedHours?: number;
+    },
   ) {
     return this.trafficLightsService.startRefreshLocationDetails(dto);
   }
