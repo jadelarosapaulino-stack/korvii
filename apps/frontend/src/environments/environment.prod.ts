@@ -1,5 +1,5 @@
 export const environment = {
-  apiUrl: 'https://korvii-api-prod.up.railway.app/api',
-  realtimeUrl: 'https://korvii-realtime-prod.up.railway.app',
-  maptilerKey: '',
+  apiUrl: process.env['NG_APP_API_URL'] || 'http://localhost:3000/api',
+  realtimeUrl: process.env['REALTIME_URL'] || 'http://localhost:3001',
+  maptilerKey: process.env['MAPTILER_KEY'] || '',
 };
