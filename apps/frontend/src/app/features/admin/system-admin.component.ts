@@ -11,6 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ToastrService } from 'ngx-toastr';
+import { API_URL } from '../../core/api.config';
 import { ReportCategory, ReportsService } from '../../core/reports.service';
 import { FeatureFlag, FeatureFlagsService } from '../../core/feature-flags.service';
 import { GamificationService } from '../../core/gamification.service';
@@ -89,6 +90,15 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                 @for (category of config.config().categories; track category.id) {
                   <article class="category-card" [class.disabled]="!category.enabled" [class.emergency]="category.requiresEmergencyCall">
                     <div class="category-card-header">
+                      <div class="category-photo-preview">
+                        <mat-icon>image</mat-icon>
+                        <img
+                          [src]="categoryPhotoUrl(category.defaultPhotoUrl)"
+                          alt=""
+                          loading="lazy"
+                          (error)="hideBrokenImage($event)" />
+                      </div>
+
                       <div class="category-main">
                         <span class="category-icon">
                           <mat-icon>{{ categoryIcon(category.id) }}</mat-icon>
@@ -103,6 +113,21 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                         <span class="category-status" [class.enabled]="category.enabled">
                           {{ category.enabled ? 'Activa' : 'Inactiva' }}
                         </span>
+                        <input
+                          #categoryPhotoInput
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          hidden
+                          (change)="uploadCategoryDefaultPhoto(category.id, $event)" />
+                        <button
+                          mat-icon-button
+                          type="button"
+                          class="category-icon-button"
+                          (click)="categoryPhotoInput.click()"
+                          [disabled]="uploadingCategoryPhoto === category.id"
+                          aria-label="Cargar imagen por defecto">
+                          <mat-icon>{{ uploadingCategoryPhoto === category.id ? 'sync' : 'upload' }}</mat-icon>
+                        </button>
                         <mat-slide-toggle
                           [checked]="category.enabled"
                           (change)="updateCategory(category.id, { enabled: $event.checked })"
@@ -973,6 +998,7 @@ export class SystemAdminComponent implements OnInit {
   activeSection: AdminSettingsSection = 'categories';
   weatherFloodScanRunning = false;
   savingMapSettings = false;
+  uploadingCategoryPhoto: ReportCategory | null = null;
   visibleSocialCredentials: Partial<Record<keyof SystemSocialAuthConfig, boolean>> = {};
   readonly storageProviders = [
     { id: 'Local uploads', label: 'Local uploads', description: 'Archivos en disco del servidor', icon: 'folder' },
@@ -1168,6 +1194,36 @@ export class SystemAdminComponent implements OnInit {
   updateCategory(category: ReportCategory, patch: Parameters<SystemConfigService['updateCategory']>[1]) {
     this.config.updateCategory(category, patch);
     this.toastr.success('Configuracion de categoria actualizada.', 'Sistema');
+  }
+
+  uploadCategoryDefaultPhoto(category: ReportCategory, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    this.uploadingCategoryPhoto = category;
+    this.config.uploadCategoryDefaultPhoto(category, file).subscribe({
+      next: () => {
+        this.uploadingCategoryPhoto = null;
+        this.toastr.success('Imagen por defecto actualizada.', 'Categorias');
+      },
+      error: (error) => {
+        this.uploadingCategoryPhoto = null;
+        this.toastr.error(error?.error?.message || 'No se pudo cargar la imagen.', 'Categorias');
+      },
+    });
+  }
+
+  categoryPhotoUrl(url: string | null | undefined): string {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    return url.startsWith('/uploads') ? `${API_URL.replace(/\/api\/?$/, '')}${url}` : url;
+  }
+
+  hideBrokenImage(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.style.display = 'none';
   }
 
   clampRisk(value: string | number): number {

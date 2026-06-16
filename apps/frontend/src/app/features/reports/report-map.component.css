@@ -106,9 +106,11 @@
 .category-pill:hover { background: var(--rs-primary-soft) !important; color: var(--rs-primary) !important; }
 .category-pill.active { border-color: color-mix(in srgb, var(--category-color, var(--rs-primary)) 42%, var(--rs-border)) !important; background: color-mix(in srgb, var(--category-color, var(--rs-primary)) 13%, #fff) !important; color: var(--rs-text) !important; }
 .detail-panel { height: 100%; min-height: 0; border-left: 1px solid var(--rs-border); background: #fff; overflow-y: auto; overflow-x: hidden; }
-.detail-visual { height: 196px; padding: .9rem; position: relative; overflow: hidden; background: var(--rs-secondary-soft); display: flex; justify-content: flex-end; align-items: flex-end; }
+.detail-visual { height: 196px; max-height: 196px; aspect-ratio: 386 / 196; padding: .9rem; position: relative; overflow: hidden; background: var(--rs-secondary-soft); display: flex; justify-content: flex-end; align-items: flex-end; }
 .detail-visual::before { content: ''; position: absolute; left: 8%; right: 8%; top: 48%; height: 18px; background: rgba(15,47,69,.18); transform: rotate(-9deg); box-shadow: 0 44px 0 rgba(0,140,149,.16); }
-.detail-visual img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #f7fafb; }
+.detail-visual-placeholder { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(135deg, color-mix(in srgb, var(--rs-secondary-soft) 76%, #fff), #f7fafb); color: color-mix(in srgb, var(--rs-primary) 58%, transparent); }
+.detail-visual-placeholder mat-icon { width: 64px; height: 64px; font-size: 64px; line-height: 64px; opacity: .42; }
+.detail-visual img { position: absolute; inset: 0; width: 100%; min-width: 100%; max-width: 100%; height: 196px; min-height: 196px; max-height: 196px; object-fit: cover; object-position: center; background: #f7fafb; }
 .detail-visual img ~ .risk-tile { z-index: 1; }
 .risk-tile { width: 128px; padding: .85rem; border-radius: var(--rs-radius); background: #fff; box-shadow: var(--rs-shadow-sm); z-index: 1; }
 .risk-tile span { display: block; color: var(--rs-text-muted); font-size: .76rem; font-weight: 700; }

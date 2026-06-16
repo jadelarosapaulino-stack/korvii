@@ -8,6 +8,7 @@ import { UserRole } from "../../common/enums/user-role.enum";
 import { SystemConfigEntry } from "./system-config.entity";
 
 type SystemConfig = Record<string, unknown> & {
+  categories?: Array<Record<string, unknown>>;
   libraries?: Record<string, unknown>;
   integrations?: Record<string, unknown>;
   apiKeys?: Record<string, unknown>;
@@ -48,10 +49,35 @@ export class SystemConfigService implements OnModuleInit {
     return typeof value === "string" ? value.trim() : "";
   }
 
+  categoryDefaultPhotoUrl(category: string): string {
+    const value = this.current.categories?.find(
+      (item) => item.id === category,
+    )?.defaultPhotoUrl;
+    return typeof value === "string" ? value.trim() : "";
+  }
+
   async update(patch: Partial<SystemConfig>): Promise<SystemConfig> {
     this.current = this.merge(await this.load(), patch);
     await this.persist();
     return this.get(UserRole.SUPER_ADMIN);
+  }
+
+  async updateCategoryDefaultPhoto(
+    category: string,
+    defaultPhotoUrl: string,
+  ): Promise<SystemConfig> {
+    const current = await this.load();
+    const categories = Array.isArray(current.categories)
+      ? current.categories
+      : [];
+    const found = categories.some((item) => item.id === category);
+    const nextCategories = found
+      ? categories.map((item) =>
+          item.id === category ? { ...item, defaultPhotoUrl } : item,
+        )
+      : [...categories, { id: category, defaultPhotoUrl }];
+
+    return this.update({ categories: nextCategories });
   }
 
   async loadValue<T>(key: string, defaults: T, filePath?: string): Promise<T> {
@@ -165,6 +191,7 @@ export class SystemConfigService implements OnModuleInit {
     return {
       ...base,
       ...patch,
+      categories: this.mergeCategories(base.categories, patch.categories),
       libraries: { ...(base.libraries ?? {}), ...(patch.libraries ?? {}) },
       integrations: {
         ...(base.integrations ?? {}),
@@ -176,5 +203,18 @@ export class SystemConfigService implements OnModuleInit {
 
   private canSeeSecrets(role?: string): boolean {
     return role === UserRole.SUPER_ADMIN;
+  }
+
+  private mergeCategories(
+    base: SystemConfig["categories"],
+    patch: SystemConfig["categories"],
+  ) {
+    if (!patch) return base;
+    const byId = new Map((base ?? []).map((item) => [item.id, item]));
+    for (const category of patch) {
+      if (!category?.id) continue;
+      byId.set(category.id, { ...(byId.get(category.id) ?? {}), ...category });
+    }
+    return Array.from(byId.values());
   }
 }

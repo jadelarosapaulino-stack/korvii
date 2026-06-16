@@ -2036,17 +2036,23 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
   }
 
   private defaultReportPhotoUrl(category: ReportCategory) {
+    const configuredUrl = this.systemConfig.categoryDefaultPhotoUrl(category);
     return (
-      defaultReportPhotoByCategory[category] ??
+      configuredUrl ||
+      defaultReportPhotoByCategory[category] ||
       defaultReportPhotoByCategory[ReportCategory.OTHER]
     );
   }
 
   private realReportPhotoUrls(report: Report) {
+    const defaultPhotoUrl = this.defaultReportPhotoUrl(report.category);
     return (
       report.photos
         ?.map((photo) => photo.url)
-        .filter((url) => !url.startsWith(defaultReportPhotoPrefix)) ?? []
+        .filter(
+          (url) =>
+            !url.startsWith(defaultReportPhotoPrefix) && url !== defaultPhotoUrl,
+        ) ?? []
     );
   }
 

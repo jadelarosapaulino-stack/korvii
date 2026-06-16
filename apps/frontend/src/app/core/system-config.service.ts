@@ -9,6 +9,7 @@ export interface ReportCategoryConfig {
   label: string;
   enabled: boolean;
   defaultRiskLevel: number;
+  defaultPhotoUrl?: string;
   requiresEmergencyCall: boolean;
   emergencyInstructions: string;
 }
@@ -194,6 +195,17 @@ export class SystemConfigService {
       ...this.config(),
       categories: this.config().categories.map((item) => (item.id === category ? { ...item, ...patch } : item)),
     });
+  }
+
+  uploadCategoryDefaultPhoto(category: ReportCategory, file: File): Observable<Partial<SystemConfig>> {
+    const data = new FormData();
+    data.append('image', file);
+    return this.http.post<Partial<SystemConfig>>(`${API_URL}/system/config/categories/${category}/default-photo`, data).pipe(
+      map((shared) => {
+        this.applySharedConfig(shared);
+        return shared;
+      }),
+    );
   }
 
   updateStorage(patch: Partial<SystemStorageConfig>) {
@@ -418,6 +430,7 @@ export class SystemConfigService {
       label: REPORT_CATEGORY_LABELS[id],
       enabled: true,
       defaultRiskLevel: this.defaultRiskLevel(id),
+      defaultPhotoUrl: this.defaultReportPhotoUrl(id),
       requiresEmergencyCall: ['ACCIDENT'].includes(id),
       emergencyInstructions: 'Si hay personas heridas, peligro inmediato o bloqueo crítico de la vía, contacta al 911 y comparte tu ubicación.',
     }));
@@ -544,6 +557,22 @@ export class SystemConfigService {
       OTHER: 2,
     };
     return risk[category];
+  }
+
+  private defaultReportPhotoUrl(category: ReportCategory): string {
+    const files: Record<ReportCategory, string> = {
+      ACCIDENT: 'accident.png',
+      TRAFFIC_LIGHT_DAMAGED: 'traffic-light-damaged.png',
+      ROAD_DAMAGE: 'road-damage.png',
+      ROAD_OBSTRUCTION: 'road-obstruction.png',
+      POOR_LIGHTING: 'poor-lighting.png',
+      MISSING_SIGNAGE: 'missing-signage.png',
+      RECKLESS_DRIVING: 'reckless-driving.png',
+      DANGEROUS_CROSSING: 'dangerous-crossing.png',
+      FLOOD_ZONE: 'flood-zone.png',
+      OTHER: 'other.png',
+    };
+    return `/uploads/default-reports/${files[category]}`;
   }
 
   private defaultMapThemeLight(): SystemMapThemeConfig {

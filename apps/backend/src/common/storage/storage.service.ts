@@ -11,7 +11,11 @@ import { existsSync, mkdirSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 
-export type UploadFolder = "avatars" | "education" | "reports";
+export type UploadFolder =
+  | "avatars"
+  | "education"
+  | "reports"
+  | "default-reports";
 
 @Injectable()
 export class StorageService {

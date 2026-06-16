@@ -162,8 +162,15 @@ type ScoredRoute = NonNullable<OsrmRouteResponse['routes']>[number] & {
       @if (selected()) {
         <aside class="detail-panel">
           <div class="detail-visual">
+            <div class="detail-visual-placeholder">
+              <mat-icon>{{ categoryIcon(selected()?.category ?? 'OTHER') }}</mat-icon>
+            </div>
             @if (selected()?.photoUrls?.length) {
-              <img [src]="photoUrl(selected()?.photoUrls?.[0] ?? '')" [alt]="selected()?.title ?? 'Evidencia del reporte'" />
+              <img
+                [src]="photoUrl(selected()?.photoUrls?.[0] ?? '')"
+                alt=""
+                (load)="showReportImage($event)"
+                (error)="hideReportImage($event)" />
             }
             <div class="risk-tile">
               <span>Nivel de riesgo</span>
@@ -480,6 +487,16 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   photoUrl(url: string): string {
     if (!url || url.startsWith('http')) return url;
     return `${API_URL.replace(/\/api$/, '')}${url}`;
+  }
+
+  showReportImage(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.style.display = 'block';
+  }
+
+  hideReportImage(event: Event) {
+    const image = event.target as HTMLImageElement;
+    image.style.display = 'none';
   }
 
   confirmersLabel(report: ReportMapPoint | null): string {
