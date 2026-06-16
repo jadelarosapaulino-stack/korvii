@@ -16,18 +16,20 @@ async function bootstrap() {
   const nodeEnv = config.get<string>("NODE_ENV", "development");
   const isProduction = nodeEnv === "production";
   const apiPrefix = config.get<string>("API_PREFIX", "api");
-  const frontendUrl = config.get<string>(
-    "FRONTEND_URL",
-    "http://localhost:4200",
-  );
   const corsOrigins = [
-    frontendUrl,
+    // Local development
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    // Frontend — Railway internal network
+    "http://@ruta-segura/frontend.railway.internal",
+    // Frontend — public Railway URL
+    "https://korvii.up.railway.app",
+    // Additional origins from env (comma-separated)
     ...config
       .get<string>("CORS_ORIGINS", "")
       .split(",")
       .map((origin) => origin.trim())
       .filter(Boolean),
-    ...(isProduction ? [] : ["http://localhost:5174", "http://127.0.0.1:5174"]),
   ];
   const uploadsPath = join(process.cwd(), "uploads");
   const workspaceUploadsPath = join(__dirname, "..", "..", "..", "uploads");
@@ -46,9 +48,7 @@ async function bootstrap() {
     }),
   );
   app.enableCors({
-    origin: Array.from(new Set(corsOrigins)).filter((origin) =>
-      isProduction ? !origin.includes("localhost") : true,
-    ),
+    origin: Array.from(new Set(corsOrigins)),
     credentials: true,
   });
   app.useGlobalPipes(
@@ -83,6 +83,14 @@ async function bootstrap() {
   const port = config.get<number>("PORT", 3000);
   await app.listen(port);
   console.log(`Korvi API running on http://localhost:${port}/${apiPrefix}`);
+  if (isProduction) {
+    console.log(
+      `Public URL:    https://korvii-api-prod.up.railway.app/${apiPrefix}`,
+    );
+    console.log(
+      `Internal URL:  http://@ruta-segura/backend.railway.internal:${port}/${apiPrefix}`,
+    );
+  }
 }
 
 bootstrap();
