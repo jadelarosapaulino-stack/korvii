@@ -20,6 +20,13 @@ interface LandingMetric {
   template: `
     <main class="landing">
       <section class="hero" id="inicio">
+        <img
+          class="hero__background"
+          src="assets/auth/korvi-auth-background.png"
+          alt=""
+          aria-hidden="true"
+          fetchpriority="high" />
+
         <nav class="nav" aria-label="Principal">
           <a class="brand" href="#inicio" aria-label="Korvi inicio">
             <img src="assets/brand/korvi-wordmark-dark.svg" alt="Korvi" />
