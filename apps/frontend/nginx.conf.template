@@ -2,6 +2,17 @@ server {
   listen ${PORT};
   server_name _;
 
+  # Enable dynamic DNS resolution so nginx resolves upstream hostnames at
+  # request time rather than startup time. This prevents the
+  # "host not found in upstream" error when Railway's internal DNS names
+  # are not yet resolvable when nginx starts.
+  resolver 127.0.0.11:53 valid=10s;
+  resolver_timeout 5s;
+
+  # Store upstream URLs in variables to force runtime DNS resolution.
+  set $api_upstream "${API_UPSTREAM}";
+  set $realtime_upstream "${REALTIME_UPSTREAM}";
+
   root /usr/share/nginx/html;
   index index.html;
 
@@ -11,7 +22,7 @@ server {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_pass ${API_UPSTREAM};
+    proxy_pass $api_upstream;
   }
 
   location /uploads/ {
@@ -20,7 +31,7 @@ server {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_pass ${API_UPSTREAM};
+    proxy_pass $api_upstream;
   }
 
   location /socket.io/ {
@@ -31,7 +42,7 @@ server {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_pass ${REALTIME_UPSTREAM};
+    proxy_pass $realtime_upstream;
   }
 
   location / {
