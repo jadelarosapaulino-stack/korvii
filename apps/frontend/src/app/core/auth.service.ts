@@ -118,7 +118,7 @@ export class AuthService {
     return this.http.get<LoginKeyResponse>(`${API_URL}/auth/login-key`, {
       headers: { 'Cache-Control': 'no-cache' },
     }).pipe(
-      switchMap((loginKey) => from(this.encryptLoginPayload(loginKey, email.trim(), password))),
+      switchMap((loginKey) => from(this.encryptAuthPayload(loginKey, { email: email.trim(), password }))),
       switchMap((payload) => this.http.post<AuthResponse>(`${API_URL}/auth/login`, payload)),
       tap((response) => this.persist(response)),
     );
@@ -137,7 +137,12 @@ export class AuthService {
   }
 
   register(payload: RegisterPayload) {
-    return this.http.post<PendingActivationResponse>(`${API_URL}/auth/register`, payload);
+    return this.http.get<LoginKeyResponse>(`${API_URL}/auth/login-key`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    }).pipe(
+      switchMap((loginKey) => from(this.encryptAuthPayload(loginKey, payload))),
+      switchMap((encryptedPayload) => this.http.post<PendingActivationResponse>(`${API_URL}/auth/register`, encryptedPayload)),
+    );
   }
 
   activateAccount(email: string, code: string) {
@@ -235,9 +240,9 @@ export class AuthService {
     }
   }
 
-  private async encryptLoginPayload(loginKey: LoginKeyResponse, email: string, password: string) {
+  private async encryptAuthPayload(loginKey: LoginKeyResponse, payload: object) {
     if (!globalThis.crypto?.subtle) {
-      throw new Error('El navegador no soporta cifrado seguro para iniciar sesion.');
+      throw new Error('El navegador no soporta cifrado seguro.');
     }
 
     const publicKey = await globalThis.crypto.subtle.importKey(
@@ -250,7 +255,7 @@ export class AuthService {
       false,
       ['encrypt'],
     );
-    const encodedPayload = new TextEncoder().encode(JSON.stringify({ email, password }));
+    const encodedPayload = new TextEncoder().encode(JSON.stringify(payload));
     const encryptedPayload = await globalThis.crypto.subtle.encrypt(
       { name: 'RSA-OAEP' },
       publicKey,

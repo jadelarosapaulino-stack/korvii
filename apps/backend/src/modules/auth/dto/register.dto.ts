@@ -11,22 +11,25 @@ import {
 export class RegisterDto {
   @ApiProperty({ example: "Usuario Demo" })
   @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
+  @IsOptional()
   @IsNotEmpty()
   @IsString()
-  fullName: string;
+  fullName?: string;
 
   @ApiProperty({ example: "ciudadano@demo.com" })
   @Transform(({ value }) =>
     typeof value === "string" ? value.trim().toLowerCase() : value,
   )
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
   @ApiProperty({ example: "Demo12345" })
+  @IsOptional()
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
-  password: string;
+  password?: string;
 
   @ApiPropertyOptional({ example: "Distrito Nacional" })
   @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
@@ -45,4 +48,14 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   vehicleType?: string;
+
+  @ApiPropertyOptional({ required: false })
+  @IsOptional()
+  @IsString()
+  keyId?: string;
+
+  @ApiPropertyOptional({ required: false })
+  @IsOptional()
+  @IsString()
+  encryptedPayload?: string;
 }

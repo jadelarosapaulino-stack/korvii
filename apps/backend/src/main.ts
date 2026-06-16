@@ -8,6 +8,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { AppModule } from "./app.module";
 import { HttpCacheHeadersInterceptor } from "./common/cache/http-cache-headers.interceptor";
+import { BackendErrorLoggingInterceptor } from "./common/logging/backend-error-logging.interceptor";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -57,7 +58,10 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.useGlobalInterceptors(new HttpCacheHeadersInterceptor(config));
+  app.useGlobalInterceptors(
+    new BackendErrorLoggingInterceptor(),
+    new HttpCacheHeadersInterceptor(config),
+  );
 
   if (
     config.get<string>("SWAGGER_ENABLED", isProduction ? "false" : "true") ===

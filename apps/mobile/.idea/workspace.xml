@@ -5,8 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1296f635-c302-468e-abee-01d3263ed092" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../.dockerignore" beforeDir="false" afterPath="$PROJECT_DIR$/../../.dockerignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../../.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/modules/auth/auth.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/modules/auth/auth.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/modules/auth/dto/register.dto.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/modules/auth/dto/register.dto.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/modules/auth/login-payload-crypto.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/modules/auth/login-payload-crypto.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/angular.json" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/angular.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/app/core/api.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/app/core/api.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/app/core/auth.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/app/core/auth.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/app/core/map.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/src/app/core/map.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/environments/environment.prod.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/src/environments/environment.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/tsconfig.app.json" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/tsconfig.app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../landing-page/tsconfig.app.json" beforeDir="false" afterPath="$PROJECT_DIR$/../landing-page/tsconfig.app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../landing-page/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/../landing-page/tsconfig.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -1,4 +1,4 @@
-import { environment } from '../../environments/environment';
+import { buildEnv } from './build-env';
 
-export const API_URL = environment.apiUrl;
-export const REALTIME_URL = environment.realtimeUrl || window.location.origin;
+export const API_URL = buildEnv.apiUrl;
+export const REALTIME_URL = buildEnv.realtimeUrl || window.location.origin;

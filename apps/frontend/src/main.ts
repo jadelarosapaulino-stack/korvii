@@ -1,4 +1,4 @@
-import { inject, provideAppInitializer } from '@angular/core';
+import { ErrorHandler, inject, provideAppInitializer } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -10,8 +10,12 @@ import { routes } from './app/app.routes';
 import { AuthService } from './app/core/auth.service';
 import { authInterceptor } from './app/core/auth.interceptor';
 import { cacheInterceptor } from './app/core/cache.interceptor';
+import { errorLoggingInterceptor } from './app/core/error-logging.interceptor';
+import { GlobalErrorHandler, registerGlobalErrorLogging } from './app/core/global-error.handler';
 import { loadingInterceptor } from './app/core/loading.interceptor';
 import { SystemConfigService } from './app/core/system-config.service';
+
+registerGlobalErrorLogging();
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -24,11 +28,12 @@ bootstrapApplication(AppComponent, {
       preventDuplicates: true,
       timeOut: 3500,
     }),
-    provideHttpClient(withInterceptors([loadingInterceptor, authInterceptor, cacheInterceptor])),
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    provideHttpClient(withInterceptors([errorLoggingInterceptor, loadingInterceptor, authInterceptor, cacheInterceptor])),
     provideAppInitializer(() => {
       const auth = inject(AuthService);
       const systemConfig = inject(SystemConfigService);
       return auth.isAuthenticated() ? firstValueFrom(systemConfig.loadSharedConfig()).then(() => firstValueFrom(auth.refreshUser())) : undefined;
     }),
   ],
-}).catch((err) => console.error(err));
+}).catch((err) => console.error('[Bootstrap error]', err));

@@ -95,19 +95,31 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<PendingActivationResponse> {
-    const existing = await this.usersService.findByEmailWithPassword(dto.email);
+    const registration = this.loginPayloadCrypto.decryptRegister(dto);
+    if (
+      !registration.fullName?.trim() ||
+      !registration.email?.trim() ||
+      !registration.password ||
+      registration.password.length < 8
+    ) {
+      throw new BadRequestException("Datos de registro invalidos");
+    }
+
+    const existing = await this.usersService.findByEmailWithPassword(
+      registration.email,
+    );
     if (existing) throw new ConflictException("El correo ya esta registrado");
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const passwordHash = await bcrypt.hash(registration.password, 12);
     const activationCode = this.generateCode();
     const user = await this.usersService.create({
-      fullName: dto.fullName,
-      email: dto.email,
+      fullName: registration.fullName,
+      email: registration.email,
       passwordHash,
       role: UserRole.CITIZEN,
-      province: dto.province,
-      municipality: dto.municipality,
-      vehicleType: dto.vehicleType,
+      province: registration.province,
+      municipality: registration.municipality,
+      vehicleType: registration.vehicleType,
       isActive: false,
       activationCodeHash: await bcrypt.hash(activationCode, 12),
       activationCodeExpiresAt: this.codeExpiration(),

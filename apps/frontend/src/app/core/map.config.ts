@@ -1,8 +1,8 @@
 import { Map, MapOptions, MapStyle, config as maptilerConfig } from '@maptiler/sdk';
-import { environment } from '../../environments/environment';
 import { API_URL } from './api.config';
+import { buildEnv } from './build-env';
 
-export const MAPTILER_KEY = environment.maptilerKey.trim();
+export const MAPTILER_KEY = buildEnv.maptilerKey.trim();
 export const MAPTILER_STYLE = MapStyle.STREETS;
 export const MAPTILER_DARK_STYLE = MapStyle.STREETS.DARK;
 export const MAPTILER_HYBRID_STYLE = MapStyle.HYBRID;

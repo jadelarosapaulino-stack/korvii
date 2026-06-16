@@ -7,5 +7,6 @@ coverage
 .angular
 .tmp
 uploads
+apps/frontend/src/app/core/build-env.ts
 *.log
 *.tsbuildinfo
