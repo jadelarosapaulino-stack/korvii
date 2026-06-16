@@ -14,6 +14,7 @@ export type ReportCategory =
   | 'RECKLESS_DRIVING'
   | 'DANGEROUS_CROSSING'
   | 'FLOOD_ZONE'
+  | 'POLICE_ON_ROAD'
   | 'OTHER';
 
 export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
@@ -26,6 +27,7 @@ export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
   RECKLESS_DRIVING: 'Conducción imprudente',
   DANGEROUS_CROSSING: 'Cruce peligroso',
   FLOOD_ZONE: 'Zona de posible inundacion',
+  POLICE_ON_ROAD: 'Policias en la via',
   OTHER: 'Otro riesgo',
 };
 
@@ -39,6 +41,7 @@ export const REPORT_CATEGORY_ICONS: Record<ReportCategory, string> = {
   RECKLESS_DRIVING: 'speed',
   DANGEROUS_CROSSING: 'directions_walk',
   FLOOD_ZONE: 'waves',
+  POLICE_ON_ROAD: 'local_police',
   OTHER: 'warning',
 };
 
@@ -168,6 +171,17 @@ export interface CreateReportResult {
   report: ReportItem;
   reused: boolean;
   confirmationAdded: boolean;
+}
+
+export interface ReportImageSuggestion {
+  title: string;
+  description: string;
+  summary: string;
+  suggestedCategory: ReportCategory;
+  riskScore: number;
+  confidence: number;
+  rationale: string;
+  needsUserConfirmation: boolean;
 }
 
 export interface EmergencyCallLogPayload {
@@ -308,6 +322,12 @@ export class ReportsService {
 
   create(payload: Record<string, unknown> | FormData) {
     return this.http.post<CreateReportResult>(`${API_URL}/reports`, payload);
+  }
+
+  suggestFromImage(file: File) {
+    const data = new FormData();
+    data.append('image', file, file.name);
+    return this.http.post<ReportImageSuggestion>(`${API_URL}/reports/ai/image-suggestion`, data);
   }
 
   mapPoints(filters: Record<string, string | number | undefined> = {}) {

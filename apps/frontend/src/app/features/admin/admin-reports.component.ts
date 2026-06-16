@@ -394,6 +394,7 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     'RECKLESS_DRIVING',
     'DANGEROUS_CROSSING',
     'FLOOD_ZONE',
+    'POLICE_ON_ROAD',
     'OTHER',
   ];
   readonly sourceOptions: Array<{ value: 'web' | 'mobile' | 'system'; label: string }> = [

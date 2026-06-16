@@ -1253,6 +1253,8 @@ export class SystemAdminComponent implements OnInit {
       ['light', 'lightbulb'],
       ['senal', 'wrong_location'],
       ['signal', 'wrong_location'],
+      ['policia', 'local_police'],
+      ['police', 'local_police'],
     ];
     return icons.find(([key]) => normalized.includes(key))?.[1] ?? 'report_problem';
   }

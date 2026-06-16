@@ -6,12 +6,16 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
   Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
-import { FilesInterceptor } from "@nestjs/platform-express";
+import {
+  FileInterceptor,
+  FilesInterceptor,
+} from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import type { Express } from "express";
 import { memoryStorage } from "multer";
@@ -57,6 +61,34 @@ export class ReportsController {
     private readonly imageModeration: ImageModerationService,
     private readonly storage: StorageService,
   ) {}
+
+  @Post("ai/image-suggestion")
+  @FeatureFlag("new-report")
+  @ApiConsumes("multipart/form-data")
+  @UseInterceptors(
+    FileInterceptor("image", {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        if (!allowedImageMimeTypes.has(file.mimetype)) {
+          callback(
+            new BadRequestException(
+              "Solo se permiten imagenes JPG, PNG o WebP",
+            ),
+            false,
+          );
+          return;
+        }
+
+        callback(null, true);
+      },
+    }),
+  )
+  async suggestFromImage(@UploadedFile() image: Express.Multer.File) {
+    if (!image) throw new BadRequestException("La imagen es requerida.");
+    await this.imageModeration.assertAllowed(image, "report");
+    return this.reportsService.suggestReportFromImage(image);
+  }
 
   @Post()
   @FeatureFlag("new-report")

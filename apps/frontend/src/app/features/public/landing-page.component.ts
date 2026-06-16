@@ -8,11 +8,6 @@ interface LandingCard {
   text: string;
 }
 
-interface LandingMetric {
-  value: string;
-  label: string;
-}
-
 @Component({
   selector: 'app-landing-page',
   standalone: true,
@@ -20,23 +15,18 @@ interface LandingMetric {
   template: `
     <main class="landing">
       <section class="hero" id="inicio">
-        <img
-          class="hero__background"
-          src="assets/auth/korvi-auth-background.png"
-          alt=""
-          aria-hidden="true"
-          fetchpriority="high" />
+        <img class="hero__background" src="assets/auth/korvi-auth-background.png" alt="" aria-hidden="true" fetchpriority="high" />
 
-        <nav class="nav" aria-label="Principal">
-          <a class="brand" href="#inicio" aria-label="Korvi inicio">
-            <img src="assets/brand/korvi-wordmark-dark.svg" alt="Korvi" />
+        <nav class="nav" aria-label="Primary">
+          <a class="brand" href="#inicio" aria-label="Korvi home">
+            <img src="assets/brand/korvi-wordmark-light.svg" alt="Korvi" />
           </a>
 
           <div class="nav__links">
-            <a href="#producto">Usuarios</a>
-            <a href="#funciones">Funciones</a>
-            <a href="#nosotros">Sobre nosotros</a>
-            <a href="#contacto">Contacto</a>
+            <a href="#producto">Users</a>
+            <a href="#producto">Features</a>
+            <a href="#contacto">About us</a>
+            <a href="#contacto">Contact</a>
           </div>
 
           <div class="nav__login">
@@ -45,111 +35,81 @@ interface LandingMetric {
               <span class="material-icons-outlined" aria-hidden="true">keyboard_arrow_down</span>
             </button>
             <div class="login-popover" role="menu">
-              <strong>Accede al sistema Korvi</strong>
-              <span>Entra para ver reportes, rutas con contexto y seguimiento de tu comunidad.</span>
+              <strong>Access Korvi</strong>
+              <span>Enter to view reports, routes with context, and community follow-up.</span>
               <a routerLink="/login" role="menuitem">
                 <span class="material-icons-outlined" aria-hidden="true">login</span>
-                Iniciar sesion
+                Sign in
               </a>
             </div>
           </div>
 
-          <a class="nav__cta" href="mailto:contacto@korvi.local">Solicitar demo</a>
+          <a class="nav__cta" href="mailto:contacto@korvi.local">Request demo</a>
         </nav>
 
         <div class="hero__content">
           <div class="hero__copy">
-            <p class="eyebrow">Movilidad segura para personas reales</p>
-            <h1>Reporta riesgos viales y muevete con mas confianza.</h1>
+            <p class="eyebrow">Safe mobility for real people</p>
+            <h1>Report road risks and move with more confidence.</h1>
             <p class="hero__lead">
-              Korvi te ayuda a avisar lo que pasa en la via, ver puntos de cuidado antes
-              de salir y dar seguimiento a los reportes que protegen a tu comunidad.
+              Korvi helps you report what is happening on the road, check caution points
+              before leaving, and follow reports that protect your community.
             </p>
             <div class="hero__actions">
               <a class="button button--primary" href="#producto">
                 <span class="material-icons-outlined" aria-hidden="true">explore</span>
-                Conocer como ayuda
+                See how it helps
               </a>
               <a class="button button--secondary" routerLink="/login">
                 <span class="material-icons-outlined" aria-hidden="true">login</span>
-                Entrar al sistema
+                Enter the system
               </a>
             </div>
           </div>
 
-          <aside class="product-shot" aria-label="Vista previa operativa de Korvi">
+          <aside class="product-shot" aria-label="Korvi operational preview">
             <div class="product-shot__header">
-              <span>Mapa de seguridad vial</span>
-              <strong>En vivo</strong>
+              <span>Road safety map</span>
+              <strong>Live</strong>
             </div>
             <div class="map-preview">
               <span class="map-preview__route"></span>
-              <span class="risk-pin risk-pin--high">Alto</span>
-              <span class="risk-pin risk-pin--medium">Medio</span>
-              <span class="risk-pin risk-pin--low">Bajo</span>
+              <span class="risk-pin risk-pin--high">High</span>
+              <span class="risk-pin risk-pin--medium">Medium</span>
+              <span class="risk-pin risk-pin--low">Low</span>
             </div>
             <div class="signal-grid">
               <div>
-                <span>Clima</span>
-                <strong>Lluvia moderada</strong>
+                <span>Weather</span>
+                <strong>Moderate rain</strong>
               </div>
               <div>
-                <span>Semaforos</span>
-                <strong>12 activos</strong>
+                <span>Traffic lights</span>
+                <strong>12 active</strong>
               </div>
               <div>
-                <span>Reportes</span>
-                <strong>38 hoy</strong>
+                <span>Reports</span>
+                <strong>38 today</strong>
               </div>
             </div>
           </aside>
         </div>
       </section>
 
-      <section class="section intro" id="producto">
-        <div class="section__heading">
-          <p class="eyebrow">Para usuarios</p>
-          <h2>Funciones simples para viajar mejor y cuidar tu entorno.</h2>
-          <p>
-            El landing explica lo esencial: como reportar un peligro, consultar una zona,
-            recibir avisos utiles y conectar el caso con quien puede atenderlo.
-          </p>
-        </div>
-        <div class="benefits">
-          @for (benefit of userBenefits; track benefit.title) {
-            <article class="benefit-card">
-              <span class="material-icons-outlined" aria-hidden="true">{{ benefit.icon }}</span>
-              <h3>{{ benefit.title }}</h3>
-              <p>{{ benefit.text }}</p>
-            </article>
-          }
-        </div>
-      </section>
-
-      <section class="section image-story" aria-label="Funciones destacadas">
-        <figure>
-          <img src="assets/landing/driver-navigation.jpg" alt="Persona conduciendo en ciudad con atencion a la ruta" />
-          <figcaption>Consulta alertas antes de moverte.</figcaption>
-        </figure>
-        <figure>
-          <img src="assets/landing/community-road.jpg" alt="Carretera abierta para planificar viajes con mas contexto" />
-          <figcaption>Elige trayectos con mejor informacion.</figcaption>
-        </figure>
-      </section>
-
-      <section class="section split-section" id="funciones">
+      <section class="section split-section" id="producto">
         <div class="visual-panel response-visual" aria-hidden="true">
+          <img class="visual-panel__image" src="assets/landing/driver-navigation.jpg" alt="" loading="lazy" />
           <span class="material-icons-outlined">support_agent</span>
-          <strong>Del reporte a la accion</strong>
-          <p>Korvi muestra el aviso correcto a la persona correcta para que el problema no se pierda.</p>
+          <strong>From report to action</strong>
+          <p>Korvi shows the right alert to the right person so the problem is not missed.</p>
         </div>
 
         <div class="section__heading">
-          <p class="eyebrow">Funciones principales</p>
-          <h2>Todo gira alrededor de informar, prevenir y resolver.</h2>
+          <p class="eyebrow">Main features</p>
+          <h2>Everything centers on informing, preventing, and resolving.</h2>
           <p>
-            La plataforma acompana situaciones reales: un semaforo danado, una calle
-            inundada, un accidente, un obstaculo o una ruta que conviene evitar.
+            The platform supports real situations: a damaged traffic light, a flooded street,
+            an accident, an obstacle, or a route worth avoiding.
           </p>
           <div class="policy-grid">
             @for (policy of mainFeatures; track policy.title) {
@@ -165,122 +125,66 @@ interface LandingMetric {
         </div>
       </section>
 
-      <section class="section impact" id="impacto">
-        <div class="impact__panel">
-          <div>
-            <p class="eyebrow">Impacto</p>
-            <h2>Disenado para que cada aviso tenga seguimiento y valor publico.</h2>
-          </div>
-          <div class="metrics">
-            @for (metric of metrics; track metric.label) {
-              <div class="metric">
-                <strong>{{ metric.value }}</strong>
-                <span>{{ metric.label }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      </section>
-
-      <section class="section about" id="nosotros">
-        <div class="section__heading">
-          <p class="eyebrow">Sobre nosotros</p>
-          <h2>Construimos una forma mas cercana de cuidar las vias que usamos todos los dias.</h2>
-        </div>
-        <div class="about-grid">
-          @for (card of aboutCards; track card.title) {
-            <article class="about-card">
-              <span class="material-icons-outlined" aria-hidden="true">{{ card.icon }}</span>
-              <h3>{{ card.title }}</h3>
-              <p>{{ card.text }}</p>
-            </article>
-          }
-        </div>
-      </section>
-
       <section class="section contact" id="contacto">
         <div>
-          <p class="eyebrow">Contacto</p>
-          <h2>Presenta Korvi a tu comunidad o institucion con una historia clara y facil de entender.</h2>
+          <p class="eyebrow">Contact</p>
+          <h2>Present Korvi to your community or institution with a clear, easy-to-understand story.</h2>
         </div>
         <div class="contact__actions">
           <a class="button button--primary" href="mailto:contacto@korvi.local">
             <span class="material-icons-outlined" aria-hidden="true">mail</span>
-            Contactar equipo
+            Contact team
           </a>
           <a class="button button--light" routerLink="/login">
             <span class="material-icons-outlined" aria-hidden="true">login</span>
-            Acceder
+            Access
           </a>
         </div>
       </section>
+
+      <section class="city-skyline" aria-hidden="true">
+        <span></span>
+      </section>
+
+      <footer class="landing-footer">
+        <a class="footer-brand" href="#inicio" aria-label="Korvi home">
+          <img src="assets/brand/korvi-wordmark-light.svg" alt="Korvi" />
+        </a>
+        <p>Movilidad segura, reportes ciudadanos y seguimiento vial para comunidades mas informadas.</p>
+        <nav aria-label="Landing links">
+          <a href="#producto">Users</a>
+          <a href="#producto">Features</a>
+          <a href="#contacto">About us</a>
+          <a href="#contacto">Contact</a>
+          <a routerLink="/privacy-policy">Privacy</a>
+        </nav>
+        <span>© 2026 Korvi. Todos los derechos reservados.</span>
+      </footer>
     </main>
   `,
   styleUrls: ['./landing-page.component.css'],
 })
 export class LandingPageComponent implements OnInit, OnDestroy {
-  readonly metrics: LandingMetric[] = [
-    { value: '24/7', label: 'avisos disponibles cuando aparece un riesgo' },
-    { value: '3 min', label: 'para crear un reporte con ubicacion y foto' },
-    { value: '360', label: 'mirada compartida entre comunidad e instituciones' },
-  ];
-
-  readonly userBenefits: LandingCard[] = [
-    {
-      icon: 'report',
-      title: 'Reporta lo que ves',
-      text: 'Marca el punto del problema, agrega una foto y describe lo que viste en pocos pasos.',
-    },
-    {
-      icon: 'route',
-      title: 'Muevete con contexto',
-      text: 'Revisa calles con incidentes, lluvia, inundaciones o semaforos fuera de servicio antes de salir.',
-    },
-    {
-      icon: 'notifications_active',
-      title: 'Recibe respuesta coordinada',
-      text: 'Cada aviso puede pasar de la comunidad al equipo que debe revisar, priorizar o resolver.',
-    },
-  ];
-
   readonly mainFeatures: LandingCard[] = [
     {
       icon: 'add_location_alt',
-      title: 'Mapa de riesgos',
-      text: 'Visualiza reportes cercanos y entiende que zonas requieren mas cuidado antes de moverte.',
+      title: 'Risk map',
+      text: 'View nearby reports and understand which areas need more caution before moving.',
     },
     {
       icon: 'photo_camera',
-      title: 'Evidencia sencilla',
-      text: 'Sube fotos del incidente para que otros usuarios e instituciones comprendan mejor la situacion.',
+      title: 'Simple evidence',
+      text: 'Upload incident photos so other users and institutions can better understand the situation.',
     },
     {
       icon: 'campaign',
-      title: 'Alertas utiles',
-      text: 'Recibe informacion clara sobre riesgos recientes, clima o bloqueos que pueden cambiar tu trayecto.',
+      title: 'Useful alerts',
+      text: 'Receive clear information about recent risks, weather, or closures that can change your route.',
     },
     {
       icon: 'task_alt',
-      title: 'Seguimiento visible',
-      text: 'Consulta si un reporte fue recibido, esta en revision o ya fue atendido por el equipo responsable.',
-    },
-  ];
-
-  readonly aboutCards: LandingCard[] = [
-    {
-      icon: 'groups',
-      title: 'Para la ciudadania',
-      text: 'Una forma simple de avisar peligros de la calle sin depender de llamadas o mensajes dispersos.',
-    },
-    {
-      icon: 'traffic',
-      title: 'Para operadores',
-      text: 'Una vista clara de lo que esta ocurriendo para organizar mejor la respuesta diaria.',
-    },
-    {
-      icon: 'insights',
-      title: 'Para la ciudad',
-      text: 'Los reportes ayudan a identificar patrones y prevenir que los mismos riesgos se repitan.',
+      title: 'Visible follow-up',
+      text: 'Check whether a report was received, is under review, or has already been handled by the responsible team.',
     },
   ];
 

@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
+import type { Express } from "express";
 import { Repository } from "typeorm";
 import { ReportCategory } from "../../common/enums/report-category.enum";
 import { ReportStatus } from "../../common/enums/report-status.enum";
@@ -55,6 +56,7 @@ const defaultReportPhotoByCategory: Record<ReportCategory, string> = {
   [ReportCategory.RECKLESS_DRIVING]: `${defaultReportPhotoPrefix}reckless-driving.png`,
   [ReportCategory.DANGEROUS_CROSSING]: `${defaultReportPhotoPrefix}dangerous-crossing.png`,
   [ReportCategory.FLOOD_ZONE]: `${defaultReportPhotoPrefix}flood-zone.png`,
+  [ReportCategory.POLICE_ON_ROAD]: `${defaultReportPhotoPrefix}other.png`,
   [ReportCategory.OTHER]: `${defaultReportPhotoPrefix}other.png`,
 };
 
@@ -268,6 +270,16 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
       reused: false,
       confirmationAdded: false,
     };
+  }
+
+  async suggestReportFromImage(image: Express.Multer.File) {
+    const suggestion = await this.aiService.suggestReportFromImage(image);
+    if (!suggestion) {
+      throw new ServiceUnavailableException(
+        "La clasificacion por imagen con IA no esta disponible.",
+      );
+    }
+    return suggestion;
   }
 
   async findAll(query: QueryReportsDto) {

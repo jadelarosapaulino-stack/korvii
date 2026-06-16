@@ -554,6 +554,7 @@ export class SystemConfigService {
       RECKLESS_DRIVING: 5,
       DANGEROUS_CROSSING: 4,
       FLOOD_ZONE: 5,
+      POLICE_ON_ROAD: 3,
       OTHER: 2,
     };
     return risk[category];
@@ -570,6 +571,7 @@ export class SystemConfigService {
       RECKLESS_DRIVING: 'reckless-driving.png',
       DANGEROUS_CROSSING: 'dangerous-crossing.png',
       FLOOD_ZONE: 'flood-zone.png',
+      POLICE_ON_ROAD: 'other.png',
       OTHER: 'other.png',
     };
     return `/uploads/default-reports/${files[category]}`;

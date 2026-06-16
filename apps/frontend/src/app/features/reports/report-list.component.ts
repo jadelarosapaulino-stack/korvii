@@ -324,6 +324,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
     'RECKLESS_DRIVING',
     'DANGEROUS_CROSSING',
     'FLOOD_ZONE',
+    'POLICE_ON_ROAD',
     'OTHER',
   ];
   readonly statusOptions: ReportStatus[] = ['PENDING', 'VALIDATED', 'IN_PROGRESS', 'RESOLVED', 'REJECTED', 'DUPLICATE'];

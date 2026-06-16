@@ -14,7 +14,7 @@ import { Map as MapTilerMap, Marker, Popup, type MapMouseEvent } from '@maptiler
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
 import { LatLngPoint, ReverseGeocodeDetails, applyKorviMapTheme, circlePolygon, createKorviMap, mapReady, metersBetween, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
-import { InstitutionOption, ReportCategory, ReportMapPoint, ReportsService, reportCategoryIcon, reportCategoryLabel } from '../../core/reports.service';
+import { InstitutionOption, ReportCategory, ReportImageSuggestion, ReportMapPoint, ReportsService, reportCategoryIcon, reportCategoryLabel } from '../../core/reports.service';
 import { ReportCategoryConfig, SystemConfigService } from '../../core/system-config.service';
 import { RiskChipComponent } from '../../shared/ui/risk-chip/risk-chip.component';
 
@@ -253,6 +253,27 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
               <span>{{ selectedPhotos().length }}/5 adjuntas</span>
             </div>
 
+            <div class="ai-image-card" *ngIf="aiImageAnalyzing() || aiImageSuggestion()">
+              <mat-icon>{{ aiImageAnalyzing() ? 'sync' : 'auto_awesome' }}</mat-icon>
+              <div>
+                <strong>{{ aiImageAnalyzing() ? 'Analizando imagen con IA...' : 'Sugerencia de la IA' }}</strong>
+                <span *ngIf="aiImageAnalyzing()">Korvi esta revisando la evidencia para sugerir categoria, titulo y riesgo.</span>
+                <ng-container *ngIf="!aiImageAnalyzing() && aiImageSuggestion() as suggestion">
+                  <span>
+                    {{ categoryLabel(suggestion.suggestedCategory) }} - Riesgo {{ suggestion.riskScore }}/5 - Confianza {{ confidencePercent(suggestion.confidence) }}
+                  </span>
+                  <small>{{ suggestion.summary || suggestion.rationale }}</small>
+                  <div class="ai-image-actions">
+                    <button mat-stroked-button type="button" (click)="applyImageSuggestion(suggestion)">
+                      <mat-icon>check</mat-icon>
+                      Aplicar
+                    </button>
+                    <button mat-button type="button" (click)="dismissImageSuggestion()">Descartar</button>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+
             <div class="photo-grid" *ngIf="selectedPhotos().length">
               <figure class="photo-preview" *ngFor="let photo of selectedPhotos(); let index = index">
                 <img [src]="photo.url" [alt]="'Evidencia ' + (index + 1)" />
@@ -476,6 +497,8 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
   modalLocationLabel = signal('Ubicacion pendiente');
   modalLocationSource = signal('Pendiente');
   imageVerificationStatus = signal<string | null>(null);
+  aiImageAnalyzing = signal(false);
+  aiImageSuggestion = signal<ReportImageSuggestion | null>(null);
   previewHybridMode = signal(false);
   modalHybridMode = signal(false);
   selectedPhotos = signal<PhotoPreview[]>([]);
@@ -508,6 +531,8 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
   private titleManuallyAdjusted = false;
   private descriptionManuallyAdjusted = false;
   private applyingCategorySuggestion = false;
+  private applyingAiSuggestion = false;
+  private lastAnalyzedImageName: string | null = null;
 
   readonly provinceOptions = Object.keys(MUNICIPALITIES_BY_PROVINCE);
   private readonly defaultReportCategory: ReportCategory = 'TRAFFIC_LIGHT_DAMAGED';
@@ -521,6 +546,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     'RECKLESS_DRIVING',
     'DANGEROUS_CROSSING',
     'FLOOD_ZONE',
+    'POLICE_ON_ROAD',
     'OTHER',
   ];
   private readonly categoryDraftSuggestions: Record<ReportCategory, CategoryDraftSuggestion> = {
@@ -559,6 +585,10 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     FLOOD_ZONE: {
       title: 'Zona de posible inundacion',
       description: 'Se reporta acumulacion de agua o posible inundacion en la via. Evita transitar por este tramo hasta que sea validado o resuelto.',
+    },
+    POLICE_ON_ROAD: {
+      title: 'Policias en la via',
+      description: 'Se reporta presencia policial o un punto de control en la via. Reduce la velocidad, respeta las indicaciones y conduce con precaucion.',
     },
     OTHER: {
       title: 'Riesgo vial reportado',
@@ -754,12 +784,85 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
 
     const next = validFiles.map((file) => ({ file, url: URL.createObjectURL(file) }));
     this.selectedPhotos.set([...current, ...next]);
+    if (next[0]) this.analyzePhotoWithAi(next[0].file);
   }
 
   removePhoto(index: number) {
     const current = this.selectedPhotos();
     URL.revokeObjectURL(current[index].url);
     this.selectedPhotos.set(current.filter((_photo, photoIndex) => photoIndex !== index));
+    if (!this.selectedPhotos().length) {
+      this.aiImageSuggestion.set(null);
+      this.lastAnalyzedImageName = null;
+    }
+  }
+
+  applyImageSuggestion(suggestion = this.aiImageSuggestion()) {
+    if (!suggestion) return;
+
+    this.applyingAiSuggestion = true;
+    this.applyingCategorySuggestion = true;
+    this.form.controls.category.setValue(suggestion.suggestedCategory, { emitEvent: false });
+    if (!this.titleManuallyAdjusted || this.shouldReplaceDraftTitle()) {
+      this.form.controls.title.setValue(suggestion.title, { emitEvent: false });
+      this.titleManuallyAdjusted = false;
+    }
+    if (!this.descriptionManuallyAdjusted || this.shouldReplaceDraftDescription()) {
+      this.form.controls.description.setValue(suggestion.description, { emitEvent: false });
+      this.descriptionManuallyAdjusted = false;
+    }
+    this.form.controls.riskLevel.setValue(suggestion.riskScore, { emitEvent: false });
+    this.lastSuggestedRiskLevel = suggestion.riskScore;
+    this.riskManuallyAdjusted = false;
+    this.autoRiskReason.set(
+      `IA por imagen: ${this.categoryLabel(suggestion.suggestedCategory)} con ${this.confidencePercent(suggestion.confidence)} de confianza. ${suggestion.needsUserConfirmation ? 'Confirma o corrige antes de enviar.' : 'Puedes confirmar o ajustar antes de enviar.'}`,
+    );
+    this.maybeOpenEmergencyPrompt(suggestion.suggestedCategory);
+    this.applyingCategorySuggestion = false;
+    this.applyingAiSuggestion = false;
+  }
+
+  dismissImageSuggestion() {
+    this.aiImageSuggestion.set(null);
+  }
+
+  confidencePercent(value: number): string {
+    return `${Math.round(Math.min(1, Math.max(0, Number(value) || 0)) * 100)}%`;
+  }
+
+  private analyzePhotoWithAi(file: File) {
+    const imageKey = `${file.name}:${file.size}:${file.lastModified}`;
+    if (this.lastAnalyzedImageName === imageKey || this.aiImageAnalyzing()) return;
+
+    this.lastAnalyzedImageName = imageKey;
+    this.aiImageAnalyzing.set(true);
+    this.reports.suggestFromImage(file).subscribe({
+      next: (suggestion) => {
+        this.aiImageAnalyzing.set(false);
+        this.aiImageSuggestion.set(suggestion);
+        this.applyImageSuggestion(suggestion);
+        this.toastr.info(
+          suggestion.needsUserConfirmation
+            ? 'La IA sugirio una categoria. Revisa y confirma antes de enviar.'
+            : 'La IA completo una sugerencia inicial del reporte.',
+          'Sugerencia por imagen',
+        );
+      },
+      error: () => {
+        this.aiImageAnalyzing.set(false);
+        this.toastr.warning('No se pudo analizar la imagen con IA. Puedes completar el reporte manualmente.', 'IA no disponible');
+      },
+    });
+  }
+
+  private shouldReplaceDraftTitle(): boolean {
+    const current = this.normalizeField(this.form.controls.title.value);
+    return Object.values(this.categoryDraftSuggestions).some((suggestion) => this.normalizeField(suggestion.title) === current);
+  }
+
+  private shouldReplaceDraftDescription(): boolean {
+    const current = this.normalizeField(this.form.controls.description.value);
+    return Object.values(this.categoryDraftSuggestions).some((suggestion) => this.normalizeField(suggestion.description) === current);
   }
 
   toX(longitude: number | null | undefined): number {
@@ -1000,6 +1103,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
       ROAD_DAMAGE: 4,
       ROAD_OBSTRUCTION: 4,
       FLOOD_ZONE: 5,
+      POLICE_ON_ROAD: 3,
       POOR_LIGHTING: 3,
       MISSING_SIGNAGE: 3,
       OTHER: 2,

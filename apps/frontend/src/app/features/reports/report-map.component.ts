@@ -285,6 +285,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     'RECKLESS_DRIVING',
     'DANGEROUS_CROSSING',
     'FLOOD_ZONE',
+    'POLICE_ON_ROAD',
     'OTHER',
   ];
 
@@ -1196,6 +1197,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
       'RECKLESS_DRIVING',
       'DANGEROUS_CROSSING',
       'FLOOD_ZONE',
+      'POLICE_ON_ROAD',
       'OTHER',
     ] as const;
 
@@ -1293,6 +1295,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
       RECKLESS_DRIVING: '#7B4BA0',
       DANGEROUS_CROSSING: '#3B8A8A',
       FLOOD_ZONE: '#1D6F93',
+      POLICE_ON_ROAD: '#24465F',
       OTHER: '#66788A',
     };
     return colors[category] ?? colors.OTHER;
@@ -1326,6 +1329,9 @@ export class ReportMapComponent implements OnInit, OnDestroy {
         break;
       case 'FLOOD_ZONE':
         this.drawFloodIcon(context);
+        break;
+      case 'POLICE_ON_ROAD':
+        this.drawPoliceIcon(context);
         break;
       default:
         this.drawWarningIcon(context);
@@ -1482,6 +1488,28 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     context.arc(46, 42, 12, Math.PI, 0, true);
     context.quadraticCurveTo(58, 34, 46, 20);
     context.closePath();
+    context.stroke();
+  }
+
+  private drawPoliceIcon(context: CanvasRenderingContext2D) {
+    context.strokeStyle = '#FFFFFF';
+    context.fillStyle = '#FFFFFF';
+    context.lineWidth = 5;
+    context.beginPath();
+    context.moveTo(46, 20);
+    context.lineTo(64, 27);
+    context.lineTo(60, 49);
+    context.quadraticCurveTo(56, 61, 46, 67);
+    context.quadraticCurveTo(36, 61, 32, 49);
+    context.lineTo(28, 27);
+    context.closePath();
+    context.stroke();
+    context.beginPath();
+    context.arc(46, 39, 6, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.moveTo(36, 52);
+    context.quadraticCurveTo(46, 46, 56, 52);
     context.stroke();
   }
 
@@ -1701,6 +1729,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
       RECKLESS_DRIVING: 'speed',
       DANGEROUS_CROSSING: 'directions_walk',
       FLOOD_ZONE: 'waves',
+      POLICE_ON_ROAD: 'local_police',
       OTHER: 'warning',
     };
     return icons[category] ?? 'warning';

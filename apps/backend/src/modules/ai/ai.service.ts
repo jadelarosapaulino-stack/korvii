@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Express } from "express";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -26,6 +27,17 @@ export interface ReportAiAnalysis {
   suggestedInstitution: string;
   confidence: number;
   rationale: string;
+}
+
+export interface ReportImageSuggestion {
+  title: string;
+  description: string;
+  summary: string;
+  suggestedCategory: ReportCategory;
+  riskScore: number;
+  confidence: number;
+  rationale: string;
+  needsUserConfirmation: boolean;
 }
 
 interface OpenAiResponse {
@@ -140,6 +152,101 @@ export class AiService {
     return this.normalizeAnalysis(parsed);
   }
 
+  async suggestReportFromImage(
+    image: Express.Multer.File,
+  ): Promise<ReportImageSuggestion | null> {
+    if (!this.isEnabled()) return null;
+
+    const apiKey = this.config.getOrThrow<string>("OPENAI_API_KEY");
+    const model = this.config.get<string>("OPENAI_MODEL", "gpt-4o-mini");
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        input: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "input_text",
+                text: [
+                  "Eres un analista de seguridad vial para Korvi.",
+                  "Observa la imagen y sugiere como clasificar un reporte ciudadano.",
+                  "No inventes detalles que no se ven. Si la imagen es ambigua, usa OTHER y baja la confianza.",
+                  "Devuelve solo JSON valido segun el esquema.",
+                ].join(" "),
+              },
+            ],
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: [
+                  "Analiza esta imagen como evidencia inicial de un reporte vial.",
+                  `Categorias permitidas: ${this.categories.join(", ")}`,
+                  "Genera un titulo breve, una descripcion operacional, categoria sugerida, riesgo 1-5 y confianza 0-1.",
+                  "needsUserConfirmation debe ser true si confianza < 0.75 o si faltan detalles contextuales.",
+                ].join("\n"),
+              },
+              {
+                type: "input_image",
+                image_url: this.fileToDataUrl(image),
+              },
+            ],
+          },
+        ],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "traffic_report_image_suggestion",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                summary: { type: "string" },
+                suggestedCategory: { type: "string", enum: this.categories },
+                riskScore: { type: "integer" },
+                confidence: { type: "number" },
+                rationale: { type: "string" },
+                needsUserConfirmation: { type: "boolean" },
+              },
+              required: [
+                "title",
+                "description",
+                "summary",
+                "suggestedCategory",
+                "riskScore",
+                "confidence",
+                "rationale",
+                "needsUserConfirmation",
+              ],
+            },
+          },
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(
+        `OpenAI HTTP ${response.status}${body ? `: ${body.slice(0, 220)}` : ""}`,
+      );
+    }
+
+    const data = (await response.json()) as OpenAiResponse;
+    const text = this.extractOutputText(data);
+    return this.normalizeImageSuggestion(JSON.parse(text) as ReportImageSuggestion);
+  }
+
   private async buildUserContent(
     input: ReportAiAnalysisInput,
   ): Promise<OpenAiInputContent[]> {
@@ -215,6 +322,10 @@ export class AiService {
     return `data:${mimeType};base64,${file.toString("base64")}`;
   }
 
+  private fileToDataUrl(file: Express.Multer.File): string {
+    return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+  }
+
   private normalizeAnalysis(value: ReportAiAnalysis): ReportAiAnalysis {
     const suggestedCategory = this.categories.includes(value.suggestedCategory)
       ? value.suggestedCategory
@@ -237,6 +348,27 @@ export class AiService {
       ).slice(0, 160),
       confidence,
       rationale: String(value.rationale || "").slice(0, 800),
+    };
+  }
+
+  private normalizeImageSuggestion(
+    value: ReportImageSuggestion,
+  ): ReportImageSuggestion {
+    const confidence = Math.min(1, Math.max(0, Number(value.confidence) || 0));
+    const suggestedCategory = this.categories.includes(value.suggestedCategory)
+      ? value.suggestedCategory
+      : ReportCategory.OTHER;
+    return {
+      title: String(value.title || "Riesgo vial detectado").slice(0, 120),
+      description: String(
+        value.description || "La imagen muestra un posible riesgo vial que requiere validacion.",
+      ).slice(0, 700),
+      summary: String(value.summary || "").slice(0, 500),
+      suggestedCategory,
+      riskScore: Math.min(5, Math.max(1, Math.round(Number(value.riskScore) || 3))),
+      confidence,
+      rationale: String(value.rationale || "").slice(0, 800),
+      needsUserConfirmation: Boolean(value.needsUserConfirmation) || confidence < 0.75,
     };
   }
 }
