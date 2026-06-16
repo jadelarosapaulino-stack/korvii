@@ -5,9 +5,18 @@ COPY package.json pnpm-workspace.yaml ./
 COPY apps/frontend/package.json apps/frontend/package.json
 RUN pnpm install --filter @ruta-segura/frontend... --frozen-lockfile=false --config.dangerously-allow-all-builds=true
 COPY . .
-ARG NG_APP_API_URL
-ARG NG_APP_REALTIME_URL
-ARG NG_APP_MAPTILER_KEY=
+ARG NG_APP_API_URL=http://@ruta-segura/backend.railway.internal:3000/api
+ARG REALTIME_URL=http://@ruta-segura/realtime.railway.internal:3001
+ARG MAPTILER_KEY=
+RUN node -e "\
+  const fs = require('fs');\
+  const file = 'apps/frontend/src/environments/environment.prod.ts';\
+  let src = fs.readFileSync(file, 'utf8');\
+  src = src.replace('__API_URL__', process.env.NG_APP_API_URL || '');\
+  src = src.replace('__REALTIME_URL__', process.env.REALTIME_URL || '');\
+  src = src.replace('__MAPTILER_KEY__', process.env.MAPTILER_KEY || '');\
+  fs.writeFileSync(file, src);\
+"
 RUN pnpm --filter @ruta-segura/frontend build --configuration production
 
 FROM nginx:1.27-alpine AS runner
