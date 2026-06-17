@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { AutoTranslateDirective } from './auto-translate.directive';
 import { AppLanguage, I18nService } from './i18n.service';
+import { LANDING_SYSTEM_URL } from './landing-env';
 
 interface IconCard {
   icon: string;
@@ -95,10 +96,17 @@ export class AppComponent {
   }
 
   private resolveSystemLoginUrl(): string {
+    const configuredUrl = this.trimTrailingSlash(LANDING_SYSTEM_URL);
+    if (configuredUrl) return `${configuredUrl}/login`;
+
     if (typeof window === 'undefined') return '/login';
 
     const { protocol, hostname } = window.location;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
     return isLocal ? `${protocol}//${hostname}:4200/login` : '/login';
+  }
+
+  private trimTrailingSlash(value: string): string {
+    return value.trim().replace(/\/+$/, '');
   }
 }
