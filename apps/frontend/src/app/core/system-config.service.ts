@@ -147,6 +147,17 @@ export interface SystemIntegrationConfig {
   storageProvider: string;
 }
 
+export interface ExternalApiLogEntry {
+  id: string;
+  provider: string;
+  service: string;
+  operation: string;
+  status?: number;
+  message: string;
+  details?: string;
+  createdAt: string;
+}
+
 export interface SystemConfig {
   categories: ReportCategoryConfig[];
   storage: SystemStorageConfig;
@@ -266,6 +277,14 @@ export class SystemConfigService {
         provider: patch.storageProvider ?? this.config().storage.provider,
       },
     });
+  }
+
+  externalApiLogs(): Observable<ExternalApiLogEntry[]> {
+    return this.http.get<ExternalApiLogEntry[]>(`${API_URL}/system/config/external-api-logs`);
+  }
+
+  clearExternalApiLogs(): Observable<{ logs: ExternalApiLogEntry[] }> {
+    return this.http.delete<{ logs: ExternalApiLogEntry[] }>(`${API_URL}/system/config/external-api-logs`);
   }
 
   resetDefaults() {

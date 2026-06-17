@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1296f635-c302-468e-abee-01d3263ed092" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/lib/core/models.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/core/models.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/core/reports_repository.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/core/reports_repository.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/features/reports/report_create_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/reports/report_create_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/features/reports/report_list_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/reports/report_list_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/features/reports/risk_map_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/features/reports/risk_map_screen.dart" afterDir="false" />
-    </list>
+    <list default="true" id="1296f635-c302-468e-abee-01d3263ed092" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

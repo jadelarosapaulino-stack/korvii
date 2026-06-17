@@ -1,10 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { InjectRepository } from "@nestjs/typeorm";
 import type { Express } from "express";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { Repository } from "typeorm";
 import { ReportCategory } from "../../common/enums/report-category.enum";
+import { SystemConfigEntry } from "../system-config/system-config.entity";
 
 export interface ReportAiAnalysisInput {
   title: string;
@@ -56,10 +59,16 @@ type OpenAiInputContent =
 
 @Injectable()
 export class AiService {
+  private static readonly EXTERNAL_API_LOGS_KEY = "external_api_logs";
+  private static readonly MAX_EXTERNAL_API_LOGS = 100;
   private readonly logger = new Logger(AiService.name);
   private readonly categories = Object.values(ReportCategory);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @InjectRepository(SystemConfigEntry)
+    private readonly configRepo: Repository<SystemConfigEntry>,
+  ) {}
 
   isEnabled() {
     return (
@@ -141,8 +150,16 @@ export class AiService {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(
-        `OpenAI HTTP ${response.status}${body ? `: ${body.slice(0, 220)}` : ""}`,
+      await this.recordExternalApiError({
+        provider: "OpenAI",
+        service: "Responses API",
+        operation: "report analysis",
+        status: response.status,
+        message: this.openAiUserSafeMessage(response.status),
+        details: body,
+      });
+      throw new ServiceUnavailableException(
+        "No pudimos completar el analisis con IA en este momento.",
       );
     }
 
@@ -237,8 +254,16 @@ export class AiService {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(
-        `OpenAI HTTP ${response.status}${body ? `: ${body.slice(0, 220)}` : ""}`,
+      await this.recordExternalApiError({
+        provider: "OpenAI",
+        service: "Responses API",
+        operation: "image report suggestion",
+        status: response.status,
+        message: this.openAiUserSafeMessage(response.status),
+        details: body,
+      });
+      throw new ServiceUnavailableException(
+        "No pudimos analizar la imagen con IA en este momento.",
       );
     }
 
@@ -370,5 +395,50 @@ export class AiService {
       rationale: String(value.rationale || "").slice(0, 800),
       needsUserConfirmation: Boolean(value.needsUserConfirmation) || confidence < 0.75,
     };
+  }
+
+  private openAiUserSafeMessage(status: number): string {
+    if (status === 429) return "OpenAI rate limit durante analisis IA.";
+    if (status >= 500) return "OpenAI no disponible durante analisis IA.";
+    return "OpenAI rechazo la solicitud de analisis IA.";
+  }
+
+  private async recordExternalApiError(entry: {
+    provider: string;
+    service: string;
+    operation: string;
+    status?: number;
+    message: string;
+    details?: string;
+  }) {
+    const nextEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      createdAt: new Date().toISOString(),
+      ...entry,
+      details: entry.details ? entry.details.slice(0, 1200) : undefined,
+    };
+
+    try {
+      const stored = await this.configRepo.findOne({
+        where: { key: AiService.EXTERNAL_API_LOGS_KEY },
+      });
+      const current = Array.isArray(stored?.value?.["logs"])
+        ? (stored.value["logs"] as typeof nextEntry[])
+        : [];
+      const logs = [nextEntry, ...current].slice(
+        0,
+        AiService.MAX_EXTERNAL_API_LOGS,
+      );
+      await this.configRepo.save(
+        this.configRepo.create({
+          key: AiService.EXTERNAL_API_LOGS_KEY,
+          value: { logs },
+        }),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo registrar error de API externa: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 }

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Delete,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -42,6 +43,20 @@ export class SystemConfigController {
   @Get()
   get(@CurrentUser() user: { role?: string }) {
     return this.systemConfig.get(user.role);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @Get("external-api-logs")
+  externalApiLogs() {
+    return this.systemConfig.externalApiLogs();
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  @Delete("external-api-logs")
+  clearExternalApiLogs() {
+    return this.systemConfig.clearExternalApiLogs();
   }
 
   @UseGuards(RolesGuard)

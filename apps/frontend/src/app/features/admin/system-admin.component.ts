@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,15 +16,16 @@ import { API_URL } from '../../core/api.config';
 import { ReportCategory, ReportsService } from '../../core/reports.service';
 import { FeatureFlag, FeatureFlagsService } from '../../core/feature-flags.service';
 import { GamificationService } from '../../core/gamification.service';
-import { SystemApiKeysConfig, SystemConfigService, SystemIntegrationConfig, SystemMapThemeConfig, SystemSocialAuthConfig } from '../../core/system-config.service';
+import { ExternalApiLogEntry, SystemApiKeysConfig, SystemConfigService, SystemIntegrationConfig, SystemMapThemeConfig, SystemSocialAuthConfig } from '../../core/system-config.service';
 
-type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' | 'storage' | 'maps' | 'libraries' | 'integrations' | 'weather';
+type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' | 'storage' | 'maps' | 'libraries' | 'integrations' | 'weather' | 'external-logs';
 
 @Component({
   selector: 'app-system-admin',
   standalone: true,
   imports: [
     FormsModule,
+    DatePipe,
     RouterLink,
     MatButtonModule,
     MatCardModule,
@@ -987,6 +989,55 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
               </div>
             }
 
+            @case ('external-logs') {
+              <div class="section-title">
+                <div>
+                  <h2>Logs de APIs externas</h2>
+                  <p>Errores tecnicos de proveedores externos. Estos detalles no se muestran al usuario final.</p>
+                </div>
+                <div class="section-actions">
+                  <button mat-stroked-button type="button" (click)="loadExternalApiLogs()" [disabled]="externalApiLogsLoading">
+                    <mat-icon>{{ externalApiLogsLoading ? 'sync' : 'refresh' }}</mat-icon>
+                    Actualizar
+                  </button>
+                  <button mat-stroked-button type="button" (click)="clearExternalApiLogs()" [disabled]="externalApiLogsLoading || !externalApiLogs.length">
+                    <mat-icon>delete_sweep</mat-icon>
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+
+              @if (!externalApiLogs.length && !externalApiLogsLoading) {
+                <div class="empty-state">
+                  <mat-icon>task_alt</mat-icon>
+                  <strong>Sin errores registrados</strong>
+                  <p>Cuando una API externa falle, el detalle tecnico aparecera aqui para diagnostico.</p>
+                </div>
+              } @else {
+                <div class="external-log-list">
+                  @for (log of externalApiLogs; track log.id) {
+                    <article class="external-log-card">
+                      <div class="external-log-head">
+                        <span class="external-log-provider">{{ log.provider }}</span>
+                        <strong>{{ log.service }}</strong>
+                        <small>{{ log.createdAt | date:'short' }}</small>
+                      </div>
+                      <div class="external-log-body">
+                        <span class="external-log-status" [class.warning]="(log.status ?? 0) >= 400">{{ log.status || 'Sin status' }}</span>
+                        <div>
+                          <strong>{{ log.operation }}</strong>
+                          <p>{{ log.message }}</p>
+                          @if (log.details) {
+                            <pre>{{ log.details }}</pre>
+                          }
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              }
+            }
+
           }
         </mat-card>
       </section>
@@ -999,6 +1050,8 @@ export class SystemAdminComponent implements OnInit {
   weatherFloodScanRunning = false;
   savingMapSettings = false;
   uploadingCategoryPhoto: ReportCategory | null = null;
+  externalApiLogs: ExternalApiLogEntry[] = [];
+  externalApiLogsLoading = false;
   visibleSocialCredentials: Partial<Record<keyof SystemSocialAuthConfig, boolean>> = {};
   readonly storageProviders = [
     { id: 'Local uploads', label: 'Local uploads', description: 'Archivos en disco del servidor', icon: 'folder' },
@@ -1015,6 +1068,7 @@ export class SystemAdminComponent implements OnInit {
     { id: 'libraries', label: 'Librerias', description: 'Graficos y UI', icon: 'extension' },
     { id: 'integrations', label: 'Integraciones', description: 'Proveedores y estado', icon: 'key' },
     { id: 'weather', label: 'Clima', description: 'Inundaciones y pronosticos', icon: 'waves' },
+    { id: 'external-logs', label: 'Logs externos', description: 'Errores de APIs', icon: 'bug_report' },
   ];
   readonly riskLevels = [1, 2, 3, 4, 5];
   readonly apiKeyServices: Array<{ key: keyof SystemApiKeysConfig; label: string; description: string; icon: string }> = [
@@ -1188,6 +1242,36 @@ export class SystemAdminComponent implements OnInit {
     this.route.queryParamMap.subscribe((params) => {
       const section = params.get('section');
       this.activeSection = this.isValidSection(section) ? section : 'categories';
+      if (this.activeSection === 'external-logs') this.loadExternalApiLogs();
+    });
+  }
+
+  loadExternalApiLogs() {
+    this.externalApiLogsLoading = true;
+    this.config.externalApiLogs().subscribe({
+      next: (logs) => {
+        this.externalApiLogs = logs;
+        this.externalApiLogsLoading = false;
+      },
+      error: () => {
+        this.externalApiLogsLoading = false;
+        this.toastr.error('No se pudieron cargar los logs externos.', 'Sistema');
+      },
+    });
+  }
+
+  clearExternalApiLogs() {
+    this.externalApiLogsLoading = true;
+    this.config.clearExternalApiLogs().subscribe({
+      next: () => {
+        this.externalApiLogs = [];
+        this.externalApiLogsLoading = false;
+        this.toastr.success('Logs externos limpiados.', 'Sistema');
+      },
+      error: () => {
+        this.externalApiLogsLoading = false;
+        this.toastr.error('No se pudieron limpiar los logs externos.', 'Sistema');
+      },
     });
   }
 

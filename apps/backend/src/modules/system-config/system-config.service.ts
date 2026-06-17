@@ -14,9 +14,21 @@ type SystemConfig = Record<string, unknown> & {
   apiKeys?: Record<string, unknown>;
 };
 
+export interface ExternalApiLogEntry {
+  id: string;
+  provider: string;
+  service: string;
+  operation: string;
+  status?: number;
+  message: string;
+  details?: string;
+  createdAt: string;
+}
+
 @Injectable()
 export class SystemConfigService implements OnModuleInit {
   private static readonly CONFIG_KEY = "shared";
+  private static readonly EXTERNAL_API_LOGS_KEY = "external_api_logs";
   private readonly logger = new Logger(SystemConfigService.name);
   private readonly configPath: string;
   private current: SystemConfig;
@@ -78,6 +90,25 @@ export class SystemConfigService implements OnModuleInit {
       : [...categories, { id: category, defaultPhotoUrl }];
 
     return this.update({ categories: nextCategories });
+  }
+
+  async externalApiLogs(): Promise<ExternalApiLogEntry[]> {
+    const stored = await this.configRepo.findOne({
+      where: { key: SystemConfigService.EXTERNAL_API_LOGS_KEY },
+    });
+    return Array.isArray(stored?.value?.["logs"])
+      ? (stored.value["logs"] as ExternalApiLogEntry[])
+      : [];
+  }
+
+  async clearExternalApiLogs(): Promise<{ logs: ExternalApiLogEntry[] }> {
+    await this.configRepo.save(
+      this.configRepo.create({
+        key: SystemConfigService.EXTERNAL_API_LOGS_KEY,
+        value: { logs: [] },
+      }),
+    );
+    return { logs: [] };
   }
 
   async loadValue<T>(key: string, defaults: T, filePath?: string): Promise<T> {
