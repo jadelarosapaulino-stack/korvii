@@ -1,5 +1,5 @@
 import { NgFor, NgIf } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -16,6 +16,7 @@ import { Subscription } from 'rxjs';
 import { LatLngPoint, ReverseGeocodeDetails, applyKorviMapTheme, circlePolygon, createKorviMap, mapReady, metersBetween, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
 import { InstitutionOption, ReportCategory, ReportImageSuggestion, ReportMapPoint, ReportsService, reportCategoryIcon, reportCategoryLabel } from '../../core/reports.service';
 import { ReportCategoryConfig, SystemConfigService } from '../../core/system-config.service';
+import { I18nService } from '../../core/i18n.service';
 import { RiskChipComponent } from '../../shared/ui/risk-chip/risk-chip.component';
 
 interface PhotoPreview {
@@ -160,7 +161,7 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
               </figure>
             </div>
 
-            <div class="field-grid two">
+            <div class="field-grid incident-fields">
               <mat-form-field appearance="outline">
                 <mat-label>Título</mat-label>
                 <input matInput formControlName="title" />
@@ -177,11 +178,22 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
                   }
                 </mat-select>
               </mat-form-field>
+              <mat-form-field appearance="outline" class="authority-field">
+                <mat-label>Autoridad opcional</mat-label>
+                <mat-select formControlName="assignedInstitutionId">
+                  <mat-option value="">Sin mencionar autoridad</mat-option>
+                  @for (institution of institutions(); track institution.id) {
+                    <mat-option [value]="institution.id">
+                      {{ institution.name }}{{ institution.municipality ? ' - ' + institution.municipality : '' }}
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
             </div>
 
             <mat-form-field appearance="outline">
               <mat-label>Descripción</mat-label>
-              <textarea matInput formControlName="description" rows="4"></textarea>
+              <textarea matInput formControlName="description" rows="3"></textarea>
             </mat-form-field>
           </mat-card>
 
@@ -189,48 +201,46 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
             <div class="panel-heading">
               <span>02</span>
               <div>
-                <strong>Ubicación y severidad</strong>
-                <small>La ubicación del dispositivo es obligatoria.</small>
+                <strong>Ubicación, riesgo y atención</strong>
+                <small>Confirma el punto, completa la referencia y menciona una autoridad si aplica.</small>
               </div>
             </div>
 
-            <div class="location-card" [class.ready]="hasUserLocation()">
-              <mat-icon>{{ hasUserLocation() ? 'gps_fixed' : 'gps_not_fixed' }}</mat-icon>
-              <div>
-                <strong>{{ hasUserLocation() ? 'Ubicación confirmada' : 'Ubicación requerida' }}</strong>
-                <span>{{ locationMessage() }}</span>
+            <input type="hidden" formControlName="latitude" />
+            <input type="hidden" formControlName="longitude" />
+
+            <div class="quick-location-grid">
+              <div class="location-card" [class.ready]="hasUserLocation()">
+                <mat-icon>{{ hasUserLocation() ? 'gps_fixed' : 'gps_not_fixed' }}</mat-icon>
+                <div>
+                  <strong>{{ hasUserLocation() ? 'Ubicación confirmada' : 'Ubicación requerida' }}</strong>
+                  <span>{{ locationMessage() }}</span>
+                </div>
+                <button mat-stroked-button type="button" (click)="requestUserLocation()" [disabled]="locating()">
+                  {{ locating() ? 'Ubicando' : 'Usar GPS' }}
+                </button>
               </div>
-              <button mat-stroked-button type="button" (click)="requestUserLocation()" [disabled]="locating()">
-                Usar GPS
-              </button>
-            </div>
 
-            <div class="field-grid three">
-              <mat-form-field appearance="outline">
-                <mat-label>Latitud</mat-label>
-                <input matInput type="number" step="0.0000001" formControlName="latitude" readonly />
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Longitud</mat-label>
-                <input matInput type="number" step="0.0000001" formControlName="longitude" readonly />
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Riesgo sugerido 1-5</mat-label>
-                <input matInput type="number" min="1" max="5" formControlName="riskLevel" (input)="markRiskAsManuallyAdjusted()" />
-              </mat-form-field>
-            </div>
-
-            <div class="risk-auto-card">
-              <mat-icon>auto_awesome</mat-icon>
-              <div>
-                <strong>Clasificacion sugerida</strong>
-                <span>{{ autoRiskReason() }}</span>
+              <div class="risk-control-card">
+                <div class="risk-score-preview">
+                  <span>Riesgo sugerido</span>
+                  <strong>{{ riskLevel() }}/5</strong>
+                </div>
+                <mat-form-field appearance="outline">
+                  <mat-label>Ajustar nivel</mat-label>
+                  <mat-select formControlName="riskLevel" (selectionChange)="markRiskAsManuallyAdjusted()">
+                    <mat-option [value]="1">1 - Bajo</mat-option>
+                    <mat-option [value]="2">2 - Moderado</mat-option>
+                    <mat-option [value]="3">3 - Medio</mat-option>
+                    <mat-option [value]="4">4 - Alto</mat-option>
+                    <mat-option [value]="5">5 - Crítico</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <small>{{ autoRiskReason() }}</small>
               </div>
             </div>
 
-            <div class="field-grid two">
+            <div class="field-grid location-fields">
               <mat-form-field appearance="outline">
                 <mat-label>Provincia</mat-label>
                 <mat-select formControlName="province" (selectionChange)="onProvinceChange($event.value)">
@@ -248,36 +258,15 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
                   }
                 </mat-select>
               </mat-form-field>
-            </div>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="address-field">
               <mat-label>Calle o referencia</mat-label>
               <input matInput formControlName="address" />
             </mat-form-field>
-          </mat-card>
 
-          <mat-card class="form-panel">
-            <div class="panel-heading">
-              <span>03</span>
-              <div>
-                <strong>Autoridad responsable</strong>
-                <small>Menciona la institucion que podria atender la solucion.</small>
-              </div>
             </div>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Autoridad a mencionar</mat-label>
-              <mat-select formControlName="assignedInstitutionId">
-                <mat-option value="">Sin mencionar autoridad</mat-option>
-                @for (institution of institutions(); track institution.id) {
-                  <mat-option [value]="institution.id">
-                    {{ institution.name }}{{ institution.municipality ? ' · ' + institution.municipality : '' }}
-                  </mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
-            <div class="authority-hint">
+            <div class="authority-hint compact" *ngIf="form.controls.assignedInstitutionId.value">
               <mat-icon>alternate_email</mat-icon>
               <span>{{ selectedInstitutionLabel() }}</span>
             </div>
@@ -517,6 +506,7 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
   styleUrls: ['./report-create.component.css'],
 })
 export class ReportCreateComponent implements OnInit, OnDestroy {
+  private readonly i18n = inject(I18nService);
   @ViewChild('previewMapContainer', { static: true }) private readonly previewMapContainer?: ElementRef<HTMLElement>;
   @ViewChild('modalMapContainer') private readonly modalMapContainer?: ElementRef<HTMLElement>;
 
@@ -912,12 +902,12 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
 
   private shouldReplaceDraftTitle(): boolean {
     const current = this.normalizeField(this.form.controls.title.value);
-    return Object.values(this.categoryDraftSuggestions).some((suggestion) => this.normalizeField(suggestion.title) === current);
+    return Object.values(this.categoryDraftSuggestions).some((suggestion) => this.isDraftText(current, suggestion.title));
   }
 
   private shouldReplaceDraftDescription(): boolean {
     const current = this.normalizeField(this.form.controls.description.value);
-    return Object.values(this.categoryDraftSuggestions).some((suggestion) => this.normalizeField(suggestion.description) === current);
+    return Object.values(this.categoryDraftSuggestions).some((suggestion) => this.isDraftText(current, suggestion.description));
   }
 
   toX(longitude: number | null | undefined): number {
@@ -1093,7 +1083,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
       this.form.controls.title.valueChanges.subscribe((value) => {
         if (this.applyingCategorySuggestion) return;
         const category = (this.form.controls.category.value ?? this.defaultReportCategory) as ReportCategory;
-        this.titleManuallyAdjusted = this.normalizeField(value) !== this.normalizeField(this.categoryDraftSuggestions[category]?.title);
+        this.titleManuallyAdjusted = !this.isDraftText(value, this.categoryDraftSuggestions[category]?.title);
       }),
     );
 
@@ -1101,7 +1091,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
       this.form.controls.description.valueChanges.subscribe((value) => {
         if (this.applyingCategorySuggestion) return;
         const category = (this.form.controls.category.value ?? this.defaultReportCategory) as ReportCategory;
-        this.descriptionManuallyAdjusted = this.normalizeField(value) !== this.normalizeField(this.categoryDraftSuggestions[category]?.description);
+        this.descriptionManuallyAdjusted = !this.isDraftText(value, this.categoryDraftSuggestions[category]?.description);
       }),
     );
 
@@ -1121,11 +1111,11 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     this.applyingCategorySuggestion = true;
 
     if (!this.titleManuallyAdjusted) {
-      this.form.controls.title.setValue(suggestion.title, { emitEvent: false });
+      this.form.controls.title.setValue(this.translateGeneratedText(suggestion.title), { emitEvent: false });
     }
 
     if (!this.descriptionManuallyAdjusted) {
-      this.form.controls.description.setValue(suggestion.description, { emitEvent: false });
+      this.form.controls.description.setValue(this.translateGeneratedText(suggestion.description), { emitEvent: false });
     }
 
     this.applyingCategorySuggestion = false;
@@ -1133,6 +1123,16 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
 
   private normalizeField(value: string | null | undefined): string {
     return (value ?? '').trim();
+  }
+
+  private translateGeneratedText(value: string): string {
+    return this.i18n.translate(value);
+  }
+
+  private isDraftText(value: string | null | undefined, draft: string | null | undefined): boolean {
+    if (!draft) return false;
+    const current = this.normalizeField(value);
+    return current === this.normalizeField(draft) || current === this.normalizeField(this.translateGeneratedText(draft));
   }
 
   private maybeOpenEmergencyPrompt(category: ReportCategory) {

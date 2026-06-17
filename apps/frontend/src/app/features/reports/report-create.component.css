@@ -5,31 +5,42 @@
 .incident-header p { max-width: 760px; margin: 0; color: var(--rs-text-muted); line-height: 1.5; }
 .incident-header button mat-icon, .submit-bar button mat-icon, .evidence-toolbar button mat-icon { margin-right: .35rem; }
 .incident-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1rem; align-items: start; }
-.form-stack { display: grid; gap: 1rem; min-width: 0; }
+.form-stack { display: grid; gap: .85rem; min-width: 0; }
 .form-panel, .summary-card { padding: 1rem; border: 1px solid var(--rs-border); box-shadow: none !important; }
-.panel-heading { display: flex; align-items: flex-start; gap: .75rem; margin-bottom: 1rem; }
+.panel-heading { display: flex; align-items: flex-start; gap: .75rem; margin-bottom: .85rem; }
 .panel-heading > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--rs-radius); background: var(--rs-primary-soft); color: var(--rs-primary); font-size: .8rem; font-weight: 900; }
 .panel-heading strong { display: block; color: var(--rs-text); letter-spacing: 0; }
 .panel-heading small { display: block; margin-top: .14rem; color: var(--rs-text-muted); font-size: .8rem; }
 .field-grid { display: grid; gap: .85rem; }
+.field-grid.incident-fields { grid-template-columns: minmax(0, 1.15fr) minmax(190px, .7fr) minmax(280px, 1.15fr); align-items: start; }
 .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .field-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.field-grid.location-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
+.field-grid.location-fields .address-field { grid-column: span 2; }
 mat-form-field { width: 100%; }
 :host ::ng-deep .mat-mdc-text-field-wrapper { background: #fff; border-radius: var(--rs-radius); }
 :host ::ng-deep .mat-mdc-form-field-infix { min-height: 46px; padding-top: 12px !important; padding-bottom: 8px !important; }
 :host ::ng-deep .mat-mdc-form-field-subscript-wrapper { min-height: .35rem; }
-:host ::ng-deep textarea.mat-mdc-input-element { min-height: 88px; resize: vertical; }
-.location-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .85rem; margin-bottom: 1rem; padding: .9rem; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-surface-soft); }
+:host ::ng-deep textarea.mat-mdc-input-element { min-height: 72px; resize: vertical; }
+.quick-location-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: .85rem; align-items: stretch; margin-bottom: .85rem; }
+.location-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .85rem; min-height: 100%; padding: .85rem; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-surface-soft); }
 .location-card.ready { border-color: rgba(59,138,138,.28); background: var(--rs-secondary-soft); }
 .location-card > mat-icon { color: var(--rs-danger); }
 .location-card.ready > mat-icon { color: var(--rs-secondary); }
 .location-card strong { display: block; color: var(--rs-text); letter-spacing: 0; }
 .location-card span { display: block; margin-top: .14rem; color: var(--rs-text-muted); font-size: .8rem; }
+.risk-control-card { display: grid; grid-template-columns: auto minmax(126px, 1fr); gap: .55rem .75rem; align-items: center; min-height: 100%; padding: .75rem; border: 1px solid rgba(36,70,95,.14); border-radius: var(--rs-radius); background: var(--rs-primary-soft); }
+.risk-score-preview { min-width: 84px; }
+.risk-score-preview span { display: block; color: var(--rs-text-muted); font-size: .72rem; font-weight: 850; text-transform: uppercase; letter-spacing: .02em; }
+.risk-score-preview strong { display: block; margin-top: .12rem; color: var(--rs-danger); font-size: 1.7rem; line-height: 1; letter-spacing: 0; }
+.risk-control-card mat-form-field { margin-bottom: -.35rem; }
+.risk-control-card small { grid-column: 1 / -1; color: var(--rs-text-muted); font-size: .78rem; line-height: 1.3; }
 .risk-auto-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: .75rem; margin: -.25rem 0 1rem; padding: .75rem; border: 1px solid rgba(36,70,95,.14); border-radius: var(--rs-radius); background: var(--rs-primary-soft); }
 .risk-auto-card mat-icon { color: var(--rs-primary); }
 .risk-auto-card strong { display: block; color: var(--rs-text); font-size: .86rem; letter-spacing: 0; }
 .risk-auto-card span { display: block; margin-top: .15rem; color: var(--rs-text-muted); font-size: .8rem; line-height: 1.35; }
 .authority-hint { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: .75rem; padding: .75rem; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-secondary-soft); color: var(--rs-text-muted); }
+.authority-hint.compact { margin-top: -.15rem; padding: .65rem .75rem; }
 .authority-hint mat-icon { color: var(--rs-primary); }
 .authority-hint span { font-size: .84rem; font-weight: 750; line-height: 1.35; }
 .file-input { display: none; }
@@ -111,10 +122,12 @@ mat-form-field { width: 100%; }
 @media (max-width: 1120px) {
   .incident-layout { grid-template-columns: 1fr; }
   .summary-panel, .submit-bar { position: static; }
+  .field-grid.location-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .incident-header { align-items: stretch; flex-direction: column; }
-  .field-grid.two, .field-grid.three, .location-card, .initial-image-card { grid-template-columns: 1fr; }
+  .field-grid.incident-fields, .field-grid.two, .field-grid.three, .field-grid.location-fields, .quick-location-grid, .location-card, .initial-image-card, .risk-control-card { grid-template-columns: 1fr; }
+  .field-grid.location-fields .address-field { grid-column: auto; }
   .initial-image-actions { justify-content: stretch; }
   .initial-image-actions button { flex: 1 1 150px; }
   .evidence-toolbar > span { margin-left: 0; width: 100%; }
