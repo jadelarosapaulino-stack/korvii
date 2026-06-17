@@ -14,6 +14,7 @@ import { ReportCategory } from "../../common/enums/report-category.enum";
 import { ReportStatus } from "../../common/enums/report-status.enum";
 import { UserRole } from "../../common/enums/user-role.enum";
 import { RealtimeEventPublisherService } from "../realtime-events/realtime-event-publisher.service";
+import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
 import { Report } from "../reports/entities/report.entity";
 import { StatusHistory } from "../reports/entities/status-history.entity";
 import { User } from "../users/user.entity";
@@ -193,6 +194,7 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
     private readonly settingsService: TrafficLightsSettingsService,
     private readonly realtimeEvents: RealtimeEventPublisherService,
     private readonly config: ConfigService,
+    private readonly externalApiLogger: ExternalApiLoggerService,
   ) {}
 
   onModuleInit() {
@@ -1404,7 +1406,7 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
         namedetails: "0",
         "accept-language": "es",
       });
-      const response = await fetch(
+      const response = await this.fetchExternal(
         `https://nominatim.openstreetmap.org/reverse?${query.toString()}`,
         {
           headers: {
@@ -1412,8 +1414,20 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
             Accept: "application/json",
           },
         },
+        {
+          provider: "OpenStreetMap",
+          service: "Nominatim Reverse Geocoding",
+          operation: "traffic light reverse geocode",
+        },
       );
-      if (!response.ok) return null;
+      if (!response.ok) {
+        await this.recordExternalHttpFailure(response, {
+          provider: "OpenStreetMap",
+          service: "Nominatim Reverse Geocoding",
+          operation: "traffic light reverse geocode",
+        });
+        return null;
+      }
 
       const data = (await response.json()) as ReverseGeocodeResponse;
       const details = this.extractReverseGeocodeDetails(
@@ -1569,22 +1583,41 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
 
     for (const endpoint of endpoints) {
       try {
-        const response = await fetch(endpoint, {
+        const response = await this.fetchExternal(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
             "User-Agent": "Korvi/0.1",
           },
           body: new URLSearchParams({ data: query }).toString(),
+        }, {
+          provider: "OpenStreetMap",
+          service: "Overpass API",
+          operation: "traffic lights import",
         });
 
         if (response.ok) return (await response.json()) as OverpassResponse;
 
         const body = await response.text();
+        await this.externalApiLogger.record({
+          provider: "OpenStreetMap",
+          service: "Overpass API",
+          operation: "traffic lights import",
+          status: response.status,
+          message: `Overpass respondio HTTP ${response.status}`,
+          details: `${endpoint}: ${body}`,
+        });
         errors.push(
           `${endpoint} HTTP ${response.status}${body ? `: ${body.slice(0, 180).replace(/\s+/g, " ")}` : ""}`,
         );
       } catch (error) {
+        await this.externalApiLogger.recordException({
+          provider: "OpenStreetMap",
+          service: "Overpass API",
+          operation: "traffic lights import",
+          error,
+          message: "Overpass no disponible",
+        });
         errors.push(
           `${endpoint}: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -1614,5 +1647,40 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
         "La caja geografica es demasiado grande para importar semaforos.",
       );
     }
+  }
+
+  private async fetchExternal(
+    url: string,
+    init: RequestInit | undefined,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ): Promise<Response> {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      await this.externalApiLogger.recordException({
+        ...context,
+        error,
+        message: `${context.provider} no disponible`,
+      });
+      throw error;
+    }
+  }
+
+  private async recordExternalHttpFailure(
+    response: Response,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ) {
+    await this.externalApiLogger.recordHttpFailure({
+      ...context,
+      response: response.clone(),
+    });
   }
 }

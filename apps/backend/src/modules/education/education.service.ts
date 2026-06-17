@@ -3,6 +3,7 @@ import { BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ILike, Repository } from "typeorm";
+import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
 import { User } from "../users/user.entity";
 import { CompleteLessonDto } from "./dto/complete-lesson.dto";
 import { CreateLessonDto } from "./dto/create-lesson.dto";
@@ -20,6 +21,7 @@ export class EducationService {
     private readonly progressRepo: Repository<UserProgress>,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
     private readonly config: ConfigService,
+    private readonly externalApiLogger: ExternalApiLoggerService,
   ) {}
 
   async findLessons() {
@@ -198,10 +200,21 @@ export class EducationService {
   }
 
   private async fetchYoutubeOEmbed(videoId: string) {
-    const response = await fetch(
+    const response = await this.fetchExternal(
       `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}`,
+      undefined,
+      {
+        provider: "YouTube",
+        service: "oEmbed",
+        operation: "video metadata",
+      },
     );
     if (!response.ok) {
+      await this.recordExternalHttpFailure(response, {
+        provider: "YouTube",
+        service: "oEmbed",
+        operation: "video metadata",
+      });
       return {
         title: "",
         authorName: undefined,
@@ -231,7 +244,7 @@ export class EducationService {
       if (fromApi.durationSeconds) return fromApi;
     }
 
-    const response = await fetch(
+    const response = await this.fetchExternal(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
       {
         method: "POST",
@@ -246,8 +259,18 @@ export class EducationService {
           videoId,
         }),
       },
+      {
+        provider: "YouTube",
+        service: "YouTube Player API",
+        operation: "video metadata",
+      },
     );
     if (!response.ok) {
+      await this.recordExternalHttpFailure(response, {
+        provider: "YouTube",
+        service: "YouTube Player API",
+        operation: "video metadata",
+      });
       return { title: "", description: undefined, durationSeconds: undefined };
     }
 
@@ -269,10 +292,21 @@ export class EducationService {
   }
 
   private async fetchYoutubeDataApiMetadata(videoId: string, apiKey: string) {
-    const response = await fetch(
+    const response = await this.fetchExternal(
       `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${encodeURIComponent(videoId)}&key=${encodeURIComponent(apiKey)}`,
+      undefined,
+      {
+        provider: "Google",
+        service: "YouTube Data API",
+        operation: "video metadata",
+      },
     );
     if (!response.ok) {
+      await this.recordExternalHttpFailure(response, {
+        provider: "Google",
+        service: "YouTube Data API",
+        operation: "video metadata",
+      });
       return { title: "", description: undefined, durationSeconds: undefined };
     }
 
@@ -304,6 +338,41 @@ export class EducationService {
       Number(minutes ?? 0) * 60 +
       Number(seconds ?? 0)
     );
+  }
+
+  private async fetchExternal(
+    url: string,
+    init: RequestInit | undefined,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ): Promise<Response> {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      await this.externalApiLogger.recordException({
+        ...context,
+        error,
+        message: `${context.provider} no disponible`,
+      });
+      throw error;
+    }
+  }
+
+  private async recordExternalHttpFailure(
+    response: Response,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ) {
+    await this.externalApiLogger.recordHttpFailure({
+      ...context,
+      response: response.clone(),
+    });
   }
 
   private async seedDefaultLessons() {

@@ -1,12 +1,16 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as nodemailer from "nodemailer";
+import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly externalApiLogger: ExternalApiLoggerService,
+  ) {}
 
   async sendActivationCode(to: string, code: string) {
     await this.sendCode(
@@ -69,6 +73,17 @@ export class EmailService {
       auth: user && pass ? { user, pass } : undefined,
     });
 
-    await transporter.sendMail({ from, to, subject, text, html });
+    try {
+      await transporter.sendMail({ from, to, subject, text, html });
+    } catch (error) {
+      await this.externalApiLogger.recordException({
+        provider: "SMTP",
+        service: host,
+        operation: `send email (${purpose})`,
+        error,
+        message: "No se pudo enviar correo por SMTP",
+      });
+      throw error;
+    }
   }
 }

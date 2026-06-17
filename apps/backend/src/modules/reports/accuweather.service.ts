@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
 import { WeatherSettingsService } from "./weather-settings.service";
 
 interface OpenMeteoResponse {
@@ -115,7 +116,10 @@ export class AccuWeatherService {
   private readonly warningCooldownMs = 5 * 60 * 1000;
   private readonly lastWarningAt = new Map<string, number>();
 
-  constructor(private readonly weatherSettings: WeatherSettingsService) {}
+  constructor(
+    private readonly weatherSettings: WeatherSettingsService,
+    private readonly externalApiLogger: ExternalApiLoggerService,
+  ) {}
 
   async evaluateFloodRisk(
     latitude: number,
@@ -306,8 +310,21 @@ export class AccuWeatherService {
     });
     const response = await this.fetchWithTimeout(
       `${this.baseUrl}?${query.toString()}`,
+      undefined,
+      {
+        provider: "Open-Meteo",
+        service: "Forecast API",
+        operation: "weather forecast",
+      },
     );
-    if (!response.ok) throw new Error(`Open-Meteo HTTP ${response.status}`);
+    if (!response.ok) {
+      await this.recordHttpFailure(response, {
+        provider: "Open-Meteo",
+        service: "Forecast API",
+        operation: "weather forecast",
+      });
+      throw new Error(`Open-Meteo HTTP ${response.status}`);
+    }
     return response.json() as Promise<OpenMeteoResponse>;
   }
 
@@ -329,9 +346,21 @@ export class AccuWeatherService {
       });
       const response = await this.fetchWithTimeout(
         `${this.googleWeatherBaseUrl}?${query.toString()}`,
+        undefined,
+        {
+          provider: "Google",
+          service: "Weather API",
+          operation: "current weather status",
+        },
       );
-      if (!response.ok)
+      if (!response.ok) {
+        await this.recordHttpFailure(response, {
+          provider: "Google",
+          service: "Weather API",
+          operation: "current weather status",
+        });
         throw new Error(`Google Weather HTTP ${response.status}`);
+      }
 
       const current = (await response.json()) as GoogleWeatherResponse;
       const risk = this.weatherSettings.get().useOpenMeteoForecast
@@ -407,9 +436,21 @@ export class AccuWeatherService {
       });
       const response = await this.fetchWithTimeout(
         `${this.floodBaseUrl}?${query.toString()}`,
+        undefined,
+        {
+          provider: "Open-Meteo",
+          service: "Flood API",
+          operation: "flood forecast",
+        },
       );
-      if (!response.ok)
+      if (!response.ok) {
+        await this.recordHttpFailure(response, {
+          provider: "Open-Meteo",
+          service: "Flood API",
+          operation: "flood forecast",
+        });
         throw new Error(`Open-Meteo Flood HTTP ${response.status}`);
+      }
 
       const flood = (await response.json()) as OpenMeteoFloodResponse;
       const discharges = [
@@ -539,8 +580,20 @@ export class AccuWeatherService {
           includeNonQualityVerified: false,
         }),
       },
+      {
+        provider: "Google",
+        service: "Flood Forecasting API",
+        operation: `flood status by area (${countryCode})`,
+      },
     );
-    if (!response.ok) throw new Error(`Google Flood HTTP ${response.status}`);
+    if (!response.ok) {
+      await this.recordHttpFailure(response, {
+        provider: "Google",
+        service: "Flood Forecasting API",
+        operation: `flood status by area (${countryCode})`,
+      });
+      throw new Error(`Google Flood HTTP ${response.status}`);
+    }
 
     const data = (await response.json()) as GoogleFloodStatusResponse;
     return data.floodStatuses ?? [];
@@ -549,6 +602,11 @@ export class AccuWeatherService {
   private async fetchWithTimeout(
     url: string,
     init?: RequestInit,
+    logContext?: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
   ): Promise<Response> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
@@ -561,12 +619,40 @@ export class AccuWeatherService {
           `timeout despues de ${this.requestTimeoutMs}ms`,
         ) as Error & { cause?: unknown };
         timeoutError.cause = error;
+        if (logContext) {
+          await this.externalApiLogger.recordException({
+            ...logContext,
+            error: timeoutError,
+            message: `${logContext.provider} no respondio antes del timeout`,
+          });
+        }
         throw timeoutError;
+      }
+      if (logContext) {
+        await this.externalApiLogger.recordException({
+          ...logContext,
+          error,
+          message: `${logContext.provider} no disponible`,
+        });
       }
       throw error;
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async recordHttpFailure(
+    response: Response,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ) {
+    await this.externalApiLogger.recordHttpFailure({
+      ...context,
+      response: response.clone(),
+    });
   }
 
   private warnThrottled(key: string, message: string) {

@@ -1,13 +1,11 @@
 import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
 import type { Express } from "express";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { Repository } from "typeorm";
 import { ReportCategory } from "../../common/enums/report-category.enum";
-import { SystemConfigEntry } from "../system-config/system-config.entity";
+import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
 
 export interface ReportAiAnalysisInput {
   title: string;
@@ -59,15 +57,12 @@ type OpenAiInputContent =
 
 @Injectable()
 export class AiService {
-  private static readonly EXTERNAL_API_LOGS_KEY = "external_api_logs";
-  private static readonly MAX_EXTERNAL_API_LOGS = 100;
   private readonly logger = new Logger(AiService.name);
   private readonly categories = Object.values(ReportCategory);
 
   constructor(
     private readonly config: ConfigService,
-    @InjectRepository(SystemConfigEntry)
-    private readonly configRepo: Repository<SystemConfigEntry>,
+    private readonly externalApiLogger: ExternalApiLoggerService,
   ) {}
 
   isEnabled() {
@@ -85,7 +80,7 @@ export class AiService {
     const apiKey = this.config.getOrThrow<string>("OPENAI_API_KEY");
     const model = this.config.get<string>("OPENAI_MODEL", "gpt-4o-mini");
     const userContent = await this.buildUserContent(input);
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await this.fetchOpenAiResponses({
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -146,17 +141,15 @@ export class AiService {
           },
         },
       }),
-    });
+    }, "report analysis");
 
     if (!response.ok) {
-      const body = await response.text();
-      await this.recordExternalApiError({
+      await this.externalApiLogger.recordHttpFailure({
         provider: "OpenAI",
         service: "Responses API",
         operation: "report analysis",
-        status: response.status,
         message: this.openAiUserSafeMessage(response.status),
-        details: body,
+        response,
       });
       throw new ServiceUnavailableException(
         "No pudimos completar el analisis con IA en este momento.",
@@ -176,7 +169,7 @@ export class AiService {
 
     const apiKey = this.config.getOrThrow<string>("OPENAI_API_KEY");
     const model = this.config.get<string>("OPENAI_MODEL", "gpt-4o-mini");
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await this.fetchOpenAiResponses({
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -250,17 +243,15 @@ export class AiService {
           },
         },
       }),
-    });
+    }, "image report suggestion");
 
     if (!response.ok) {
-      const body = await response.text();
-      await this.recordExternalApiError({
+      await this.externalApiLogger.recordHttpFailure({
         provider: "OpenAI",
         service: "Responses API",
         operation: "image report suggestion",
-        status: response.status,
         message: this.openAiUserSafeMessage(response.status),
-        details: body,
+        response,
       });
       throw new ServiceUnavailableException(
         "No pudimos analizar la imagen con IA en este momento.",
@@ -403,41 +394,22 @@ export class AiService {
     return "OpenAI rechazo la solicitud de analisis IA.";
   }
 
-  private async recordExternalApiError(entry: {
-    provider: string;
-    service: string;
-    operation: string;
-    status?: number;
-    message: string;
-    details?: string;
-  }) {
-    const nextEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-      createdAt: new Date().toISOString(),
-      ...entry,
-      details: entry.details ? entry.details.slice(0, 1200) : undefined,
-    };
-
+  private async fetchOpenAiResponses(
+    init: RequestInit,
+    operation: string,
+  ): Promise<Response> {
     try {
-      const stored = await this.configRepo.findOne({
-        where: { key: AiService.EXTERNAL_API_LOGS_KEY },
-      });
-      const current = Array.isArray(stored?.value?.["logs"])
-        ? (stored.value["logs"] as typeof nextEntry[])
-        : [];
-      const logs = [nextEntry, ...current].slice(
-        0,
-        AiService.MAX_EXTERNAL_API_LOGS,
-      );
-      await this.configRepo.save(
-        this.configRepo.create({
-          key: AiService.EXTERNAL_API_LOGS_KEY,
-          value: { logs },
-        }),
-      );
+      return await fetch("https://api.openai.com/v1/responses", init);
     } catch (error) {
-      this.logger.warn(
-        `No se pudo registrar error de API externa: ${error instanceof Error ? error.message : String(error)}`,
+      await this.externalApiLogger.recordException({
+        provider: "OpenAI",
+        service: "Responses API",
+        operation,
+        error,
+        message: "OpenAI no disponible durante analisis IA.",
+      });
+      throw new ServiceUnavailableException(
+        "No pudimos completar el analisis con IA en este momento.",
       );
     }
   }

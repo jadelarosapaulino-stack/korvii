@@ -1,10 +1,9 @@
 import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { SystemConfigEntry } from "../system-config/system-config.entity";
+import { SystemConfigModule } from "../system-config/system-config.module";
 import { AiService } from "./ai.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SystemConfigEntry])],
+  imports: [SystemConfigModule],
   providers: [AiService],
   exports: [AiService],
 })

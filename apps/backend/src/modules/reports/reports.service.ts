@@ -17,6 +17,7 @@ import { ReportStatus } from "../../common/enums/report-status.enum";
 import { UserRole } from "../../common/enums/user-role.enum";
 import { AiService } from "../ai/ai.service";
 import { RealtimeEventPublisherService } from "../realtime-events/realtime-event-publisher.service";
+import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
 import { SystemConfigService } from "../system-config/system-config.service";
 import { User } from "../users/user.entity";
 import { Institution } from "../institutions/institution.entity";
@@ -183,6 +184,7 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly aiService: AiService,
     private readonly realtimeEvents: RealtimeEventPublisherService,
+    private readonly externalApiLogger: ExternalApiLoggerService,
   ) {}
 
   onApplicationBootstrap() {
@@ -877,7 +879,7 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
     this.assertGoogleMapsApiKey(apiKey);
 
     const mapType = dto.mapType === "satellite" ? "satellite" : "roadmap";
-    const response = await fetch(
+    const response = await this.fetchExternal(
       `https://tile.googleapis.com/v1/createSession?key=${encodeURIComponent(apiKey)}`,
       {
         method: "POST",
@@ -891,12 +893,24 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
             : {}),
         }),
       },
+      {
+        provider: "Google",
+        service: "Map Tiles API",
+        operation: `create tile session (${mapType})`,
+      },
     );
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
+      const detail = await this.externalApiLogger.safeResponseText(
+        response.clone(),
+      );
+      await this.recordExternalHttpFailure(response, {
+        provider: "Google",
+        service: "Map Tiles API",
+        operation: `create tile session (${mapType})`,
+      });
       this.logger.warn(
-        `Google Map Tiles createSession fallo: ${response.status} ${detail.slice(0, 300)}`,
+        `Google Map Tiles createSession fallo: ${response.status} ${(detail ?? "").slice(0, 300)}`,
       );
       throw new ServiceUnavailableException(
         "No se pudo crear una sesion de Google Map Tiles. Verifica API key, billing, permisos y Map Tiles API.",
@@ -933,14 +947,27 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
       throw new BadRequestException("Coordenadas de tile invalidas.");
     }
 
-    const response = await fetch(
+    const response = await this.fetchExternal(
       `https://tile.googleapis.com/v1/2dtiles/${z}/${x}/${y}?session=${encodeURIComponent(safeSession)}&key=${encodeURIComponent(apiKey)}`,
+      undefined,
+      {
+        provider: "Google",
+        service: "Map Tiles API",
+        operation: `fetch tile ${z}/${x}/${y}`,
+      },
     );
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
+      const detail = await this.externalApiLogger.safeResponseText(
+        response.clone(),
+      );
+      await this.recordExternalHttpFailure(response, {
+        provider: "Google",
+        service: "Map Tiles API",
+        operation: `fetch tile ${z}/${x}/${y}`,
+      });
       this.logger.warn(
-        `Google Map Tiles tile fallo: ${response.status} ${detail.slice(0, 300)}`,
+        `Google Map Tiles tile fallo: ${response.status} ${(detail ?? "").slice(0, 300)}`,
       );
       throw new ServiceUnavailableException(
         "No se pudo cargar una tesela de Google Maps.",
@@ -975,17 +1002,30 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
     }
 
     const safeStyle = this.safeMapTilerStyle(style);
-    const response = await fetch(
+    const response = await this.fetchExternal(
       `https://api.maptiler.com/maps/${safeStyle}/{z}/{x}/{y}.png`
         .replace("{z}", String(z))
         .replace("{x}", String(x))
         .replace("{y}", String(y)) + `?key=${encodeURIComponent(apiKey)}`,
+      undefined,
+      {
+        provider: "MapTiler",
+        service: "Raster Tiles API",
+        operation: `fetch tile ${safeStyle}/${z}/${x}/${y}`,
+      },
     );
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
+      const detail = await this.externalApiLogger.safeResponseText(
+        response.clone(),
+      );
+      await this.recordExternalHttpFailure(response, {
+        provider: "MapTiler",
+        service: "Raster Tiles API",
+        operation: `fetch tile ${safeStyle}/${z}/${x}/${y}`,
+      });
       this.logger.warn(
-        `MapTiler tile fallo: ${response.status} ${detail.slice(0, 300)}`,
+        `MapTiler tile fallo: ${response.status} ${(detail ?? "").slice(0, 300)}`,
       );
       throw new ServiceUnavailableException(
         "No se pudo cargar una tesela de MapTiler.",
@@ -1004,6 +1044,41 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
   private safeMapTilerStyle(style?: string): string {
     const value = String(style || "streets-v2").trim();
     return /^[a-z0-9-]+$/i.test(value) ? value : "streets-v2";
+  }
+
+  private async fetchExternal(
+    url: string,
+    init: RequestInit | undefined,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ): Promise<Response> {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      await this.externalApiLogger.recordException({
+        ...context,
+        error,
+        message: `${context.provider} no disponible`,
+      });
+      throw error;
+    }
+  }
+
+  private async recordExternalHttpFailure(
+    response: Response,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ) {
+    await this.externalApiLogger.recordHttpFailure({
+      ...context,
+      response: response.clone(),
+    });
   }
 
   private applyReportDateFilters(
@@ -1243,7 +1318,7 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
     const intermediates = rest.slice(0, -1);
     if (!origin || !destination) return null;
 
-    const response = await fetch(
+    const response = await this.fetchExternal(
       "https://routes.googleapis.com/directions/v2:computeRoutes",
       {
         method: "POST",
@@ -1268,9 +1343,21 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
           regionCode: "DO",
         }),
       },
+      {
+        provider: "Google",
+        service: "Routes API",
+        operation: "compute route",
+      },
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      await this.recordExternalHttpFailure(response, {
+        provider: "Google",
+        service: "Routes API",
+        operation: "compute route",
+      });
+      return null;
+    }
 
     const data = (await response.json()) as GoogleRoutesResponse;
     const route = data.routes?.[0];
@@ -1347,7 +1434,7 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
     points: Array<{ latitude: number; longitude: number }>,
     apiKey: string,
   ): Promise<Omit<RouteCandidate, "risk"> | null> {
-    const response = await fetch(
+    const response = await this.fetchExternal(
       "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
       {
         method: "POST",
@@ -1361,9 +1448,21 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
           preference: "recommended",
         }),
       },
+      {
+        provider: "OpenRouteService",
+        service: "Directions API",
+        operation: "driving route",
+      },
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      await this.recordExternalHttpFailure(response, {
+        provider: "OpenRouteService",
+        service: "Directions API",
+        operation: "driving route",
+      });
+      return null;
+    }
 
     const data = (await response.json()) as OrsGeoJsonResponse;
     const feature = data.features?.[0];
@@ -1401,10 +1500,23 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
       .map((point) => `${point.longitude},${point.latitude}`)
       .join(";");
     const baseEndpoint = endpoint.replace(/\/$/, "");
-    const response = await fetch(
+    const response = await this.fetchExternal(
       `${baseEndpoint}/${coordinates}?overview=full&geometries=geojson&alternatives=false`,
+      undefined,
+      {
+        provider: "OSRM",
+        service: "Route API",
+        operation: "driving route",
+      },
     );
-    if (!response.ok) return null;
+    if (!response.ok) {
+      await this.recordExternalHttpFailure(response, {
+        provider: "OSRM",
+        service: "Route API",
+        operation: "driving route",
+      });
+      return null;
+    }
 
     const data = (await response.json()) as OsrmRouteResponse;
     const route = data.routes?.[0];

@@ -9,6 +9,7 @@ import * as bcrypt from "bcrypt";
 import { randomBytes, randomInt } from "node:crypto";
 import { UserRole } from "../../common/enums/user-role.enum";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
 import { UsersService } from "../users/users.service";
 import { ActivateAccountDto } from "./dto/activate-account.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
@@ -92,6 +93,7 @@ export class AuthService {
     private readonly featureFlags: FeatureFlagsService,
     private readonly socialAuthSettings: SocialAuthSettingsService,
     private readonly loginPayloadCrypto: LoginPayloadCryptoService,
+    private readonly externalApiLogger: ExternalApiLoggerService,
   ) {}
 
   async register(dto: RegisterDto): Promise<PendingActivationResponse> {
@@ -373,11 +375,23 @@ export class AuthService {
     if (!clientId)
       throw new BadRequestException("GOOGLE_CLIENT_ID no esta configurado");
 
-    const response = await fetch(
+    const response = await this.fetchExternal(
       `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+      undefined,
+      {
+        provider: "Google",
+        service: "OAuth Token Info",
+        operation: "verify social login token",
+      },
     );
-    if (!response.ok)
+    if (!response.ok) {
+      await this.recordExternalHttpFailure(response, {
+        provider: "Google",
+        service: "OAuth Token Info",
+        operation: "verify social login token",
+      });
       throw new UnauthorizedException("Token de Google invalido");
+    }
 
     const data = (await response.json()) as Record<string, string | undefined>;
     if (data.aud !== clientId)
@@ -407,9 +421,19 @@ export class AuthService {
       const debugUrl =
         `https://graph.facebook.com/debug_token?input_token=${encodeURIComponent(accessToken)}` +
         `&access_token=${encodeURIComponent(appAccessToken)}`;
-      const debugResponse = await fetch(debugUrl);
-      if (!debugResponse.ok)
+      const debugResponse = await this.fetchExternal(debugUrl, undefined, {
+        provider: "Facebook",
+        service: "Graph API",
+        operation: "debug social login token",
+      });
+      if (!debugResponse.ok) {
+        await this.recordExternalHttpFailure(debugResponse, {
+          provider: "Facebook",
+          service: "Graph API",
+          operation: "debug social login token",
+        });
         throw new UnauthorizedException("Token de Facebook invalido");
+      }
 
       const debugData = (await debugResponse.json()) as {
         data?: { app_id?: string; is_valid?: boolean };
@@ -424,9 +448,19 @@ export class AuthService {
     const profileUrl =
       "https://graph.facebook.com/me?fields=id,name,email" +
       `&access_token=${encodeURIComponent(accessToken)}`;
-    const profileResponse = await fetch(profileUrl);
-    if (!profileResponse.ok)
+    const profileResponse = await this.fetchExternal(profileUrl, undefined, {
+      provider: "Facebook",
+      service: "Graph API",
+      operation: "fetch social profile",
+    });
+    if (!profileResponse.ok) {
+      await this.recordExternalHttpFailure(profileResponse, {
+        provider: "Facebook",
+        service: "Graph API",
+        operation: "fetch social profile",
+      });
       throw new UnauthorizedException("Token de Facebook invalido");
+    }
 
     const data = (await profileResponse.json()) as Record<
       string,
@@ -445,5 +479,40 @@ export class AuthService {
       fullName: data.name || data.email.split("@")[0],
       emailVerified: true,
     };
+  }
+
+  private async fetchExternal(
+    url: string,
+    init: RequestInit | undefined,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ): Promise<Response> {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      await this.externalApiLogger.recordException({
+        ...context,
+        error,
+        message: `${context.provider} no disponible`,
+      });
+      throw error;
+    }
+  }
+
+  private async recordExternalHttpFailure(
+    response: Response,
+    context: {
+      provider: string;
+      service: string;
+      operation: string;
+    },
+  ) {
+    await this.externalApiLogger.recordHttpFailure({
+      ...context,
+      response: response.clone(),
+    });
   }
 }

@@ -5,10 +5,8 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { InjectRepository } from "@nestjs/typeorm";
 import type { Express } from "express";
-import { Repository } from "typeorm";
-import { SystemConfigEntry } from "../../modules/system-config/system-config.entity";
+import { ExternalApiLoggerService } from "../../modules/system-config/external-api-logger.service";
 
 export type ImageModerationContext = "avatar" | "education" | "report";
 
@@ -24,17 +22,6 @@ interface ImageModerationDecision {
   allowed: boolean;
   blockedCategories: string[];
   scores: Record<string, number>;
-}
-
-interface ExternalApiLogEntry {
-  id: string;
-  provider: string;
-  service: string;
-  operation: string;
-  status?: number;
-  message: string;
-  details?: string;
-  createdAt: string;
 }
 
 const commonBlockedCategories = [
@@ -54,14 +41,11 @@ const blockedCategoriesByContext: Record<ImageModerationContext, string[]> = {
 
 @Injectable()
 export class ImageModerationService {
-  private static readonly EXTERNAL_API_LOGS_KEY = "external_api_logs";
-  private static readonly MAX_EXTERNAL_API_LOGS = 100;
   private readonly logger = new Logger(ImageModerationService.name);
 
   constructor(
     private readonly config: ConfigService,
-    @InjectRepository(SystemConfigEntry)
-    private readonly configRepo: Repository<SystemConfigEntry>,
+    private readonly externalApiLogger: ExternalApiLoggerService,
   ) {}
 
   async assertAllowed(
@@ -134,17 +118,16 @@ export class ImageModerationService {
         },
         body: requestBody,
       },
+      `image moderation (${context})`,
     );
 
     if (!response.ok) {
-      const body = await response.text();
-      await this.recordExternalApiError({
+      await this.externalApiLogger.recordHttpFailure({
         provider: "OpenAI",
         service: "Moderations API",
         operation: `image moderation (${context})`,
-        status: response.status,
         message: this.openAiUserSafeMessage(response.status),
-        details: body,
+        response,
       });
 
       if (response.status === 429) {
@@ -180,12 +163,13 @@ export class ImageModerationService {
   private async fetchWithRetry(
     url: string,
     init: RequestInit,
+    operation: string,
     maxAttempts = 3,
   ): Promise<Response> {
     let lastResponse: Response | null = null;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      const response = await fetch(url, init);
+      const response = await this.fetchExternal(url, init, operation);
       if (response.status !== 429 || attempt === maxAttempts) {
         return response;
       }
@@ -200,6 +184,25 @@ export class ImageModerationService {
     }
 
     return lastResponse as Response;
+  }
+
+  private async fetchExternal(
+    url: string,
+    init: RequestInit,
+    operation: string,
+  ): Promise<Response> {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      await this.externalApiLogger.recordException({
+        provider: "OpenAI",
+        service: "Moderations API",
+        operation,
+        error,
+        message: "OpenAI no disponible durante moderacion.",
+      });
+      throw error;
+    }
   }
 
   private retryAfterMs(response: Response): number | null {
@@ -223,40 +226,5 @@ export class ImageModerationService {
     if (status === 429) return "OpenAI rate limit durante moderacion.";
     if (status >= 500) return "OpenAI no disponible durante moderacion.";
     return "OpenAI rechazo la solicitud de moderacion.";
-  }
-
-  private async recordExternalApiError(
-    entry: Omit<ExternalApiLogEntry, "id" | "createdAt">,
-  ) {
-    const nextEntry: ExternalApiLogEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-      createdAt: new Date().toISOString(),
-      ...entry,
-      details: entry.details ? entry.details.slice(0, 1200) : undefined,
-    };
-
-    try {
-      const stored = await this.configRepo.findOne({
-        where: { key: ImageModerationService.EXTERNAL_API_LOGS_KEY },
-      });
-      const current = Array.isArray(stored?.value?.["logs"])
-        ? (stored.value["logs"] as ExternalApiLogEntry[])
-        : [];
-      const logs = [
-        nextEntry,
-        ...current,
-      ].slice(0, ImageModerationService.MAX_EXTERNAL_API_LOGS);
-
-      await this.configRepo.save(
-        this.configRepo.create({
-          key: ImageModerationService.EXTERNAL_API_LOGS_KEY,
-          value: { logs },
-        }),
-      );
-    } catch (error) {
-      this.logger.warn(
-        `No se pudo registrar error de API externa: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
   }
 }
