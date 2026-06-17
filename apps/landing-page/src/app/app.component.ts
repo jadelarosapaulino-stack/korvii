@@ -99,17 +99,27 @@ export class AppComponent {
     const configuredUrl = this.trimTrailingSlash(
       this.runtimeSystemUrl() || LANDING_SYSTEM_URL,
     );
-    if (configuredUrl) return `${configuredUrl.replace(/\/krv$/, '')}/krv/login`;
-
-    if (typeof window === 'undefined') return '/krv/login';
-
-    const { protocol, hostname } = window.location;
-    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-    return isLocal ? `${protocol}//${hostname}:4200/krv/login` : '/krv/login';
+    const externalUrl = this.externalSystemUrl(configuredUrl);
+    return externalUrl ? `${externalUrl}/krv/login` : '/krv/login';
   }
 
   private trimTrailingSlash(value: string): string {
     return value.trim().replace(/\/+$/, '');
+  }
+
+  private externalSystemUrl(value: string): string {
+    if (!value) return '';
+
+    const normalizedValue = value.replace(/\/krv$/, '');
+    if (typeof window === 'undefined') return normalizedValue;
+
+    try {
+      const configured = new URL(normalizedValue);
+      if (configured.hostname === window.location.hostname) return '';
+      return configured.origin;
+    } catch {
+      return normalizedValue;
+    }
   }
 
   private runtimeSystemUrl(): string {
