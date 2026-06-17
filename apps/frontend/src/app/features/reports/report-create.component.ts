@@ -106,6 +106,60 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
               </div>
             </div>
 
+            <input #initialCameraInput class="file-input" type="file" accept="image/*" capture="environment" (change)="addPhotos($event)" />
+            <input #initialImageInput class="file-input" type="file" accept="image/png,image/jpeg,image/webp" multiple (change)="addPhotos($event)" />
+
+            <div class="initial-image-card">
+              <div class="initial-image-copy">
+                <mat-icon>add_a_photo</mat-icon>
+                <div>
+                  <strong>Empieza con una imagen</strong>
+                  <span>La IA la revisa, valida contenido y completa categoria, titulo, descripcion y riesgo.</span>
+                </div>
+              </div>
+              <div class="initial-image-actions">
+                <button mat-stroked-button type="button" (click)="initialCameraInput.click()" [disabled]="aiImageAnalyzing()">
+                  <mat-icon>photo_camera</mat-icon>
+                  Camara
+                </button>
+                <button mat-flat-button color="primary" type="button" (click)="initialImageInput.click()" [disabled]="aiImageAnalyzing()">
+                  <mat-icon>upload_file</mat-icon>
+                  Cargar imagenes
+                </button>
+                <span>{{ selectedPhotos().length }}/5 adjuntas</span>
+              </div>
+            </div>
+
+            <div class="ai-image-card" *ngIf="aiImageAnalyzing() || aiImageSuggestion()">
+              <mat-icon>{{ aiImageAnalyzing() ? 'sync' : 'auto_awesome' }}</mat-icon>
+              <div>
+                <strong>{{ aiImageAnalyzing() ? 'Analizando imagen con IA...' : 'Sugerencia de la IA' }}</strong>
+                <span *ngIf="aiImageAnalyzing()">Korvi esta revisando la evidencia para sugerir categoria, titulo y riesgo.</span>
+                <ng-container *ngIf="!aiImageAnalyzing() && aiImageSuggestion() as suggestion">
+                  <span>
+                    {{ categoryLabel(suggestion.suggestedCategory) }} - Riesgo {{ suggestion.riskScore }}/5 - Confianza {{ confidencePercent(suggestion.confidence) }}
+                  </span>
+                  <small>{{ suggestion.summary || suggestion.rationale }}</small>
+                  <div class="ai-image-actions">
+                    <button mat-stroked-button type="button" (click)="applyImageSuggestion(suggestion)">
+                      <mat-icon>check</mat-icon>
+                      Aplicar
+                    </button>
+                    <button mat-button type="button" (click)="dismissImageSuggestion()">Descartar</button>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+
+            <div class="photo-grid initial-photo-grid" *ngIf="selectedPhotos().length">
+              <figure class="photo-preview" *ngFor="let photo of selectedPhotos(); let index = index">
+                <img [src]="photo.url" [alt]="'Evidencia ' + (index + 1)" />
+                <button mat-icon-button type="button" [attr.aria-label]="'Quitar evidencia ' + (index + 1)" (click)="removePhoto(index)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </figure>
+            </div>
+
             <div class="field-grid two">
               <mat-form-field appearance="outline">
                 <mat-label>Título</mat-label>
@@ -229,7 +283,7 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
             </div>
           </mat-card>
 
-          <mat-card class="form-panel">
+          <mat-card class="form-panel" *ngIf="false">
             <div class="panel-heading">
               <span>04</span>
               <div>
@@ -253,27 +307,6 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
               <span>{{ selectedPhotos().length }}/5 adjuntas</span>
             </div>
 
-            <div class="ai-image-card" *ngIf="aiImageAnalyzing() || aiImageSuggestion()">
-              <mat-icon>{{ aiImageAnalyzing() ? 'sync' : 'auto_awesome' }}</mat-icon>
-              <div>
-                <strong>{{ aiImageAnalyzing() ? 'Analizando imagen con IA...' : 'Sugerencia de la IA' }}</strong>
-                <span *ngIf="aiImageAnalyzing()">Korvi esta revisando la evidencia para sugerir categoria, titulo y riesgo.</span>
-                <ng-container *ngIf="!aiImageAnalyzing() && aiImageSuggestion() as suggestion">
-                  <span>
-                    {{ categoryLabel(suggestion.suggestedCategory) }} - Riesgo {{ suggestion.riskScore }}/5 - Confianza {{ confidencePercent(suggestion.confidence) }}
-                  </span>
-                  <small>{{ suggestion.summary || suggestion.rationale }}</small>
-                  <div class="ai-image-actions">
-                    <button mat-stroked-button type="button" (click)="applyImageSuggestion(suggestion)">
-                      <mat-icon>check</mat-icon>
-                      Aplicar
-                    </button>
-                    <button mat-button type="button" (click)="dismissImageSuggestion()">Descartar</button>
-                  </div>
-                </ng-container>
-              </div>
-            </div>
-
             <div class="photo-grid" *ngIf="selectedPhotos().length">
               <figure class="photo-preview" *ngFor="let photo of selectedPhotos(); let index = index">
                 <img [src]="photo.url" [alt]="'Evidencia ' + (index + 1)" />
@@ -290,7 +323,7 @@ const MUNICIPALITIES_BY_PROVINCE: Record<string, string[]> = {
               <span>{{ imageVerificationStatus() }}</span>
             </div>
             <button mat-button type="button" (click)="requestUserLocation()" [disabled]="locating()">Actualizar ubicación</button>
-            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || !hasUserLocation() || loading()">
+            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || !hasUserLocation() || loading() || aiImageAnalyzing()">
               <mat-icon>send</mat-icon>
               {{ loading() ? 'Verificando...' : 'Crear reporte' }}
             </button>
@@ -773,8 +806,14 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
 
     const current = this.selectedPhotos();
     const availableSlots = 5 - current.length;
+    if (availableSlots <= 0) {
+      this.toastr.warning('Ya alcanzaste el limite de 5 imagenes por reporte.', 'Evidencia');
+      return;
+    }
+
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
     const validFiles = files
-      .filter((file) => file.type.startsWith('image/'))
+      .filter((file) => allowedTypes.has(file.type))
       .filter((file) => file.size <= 5 * 1024 * 1024)
       .slice(0, Math.max(availableSlots, 0));
 
@@ -848,11 +887,27 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
           'Sugerencia por imagen',
         );
       },
-      error: () => {
+      error: (error: unknown) => {
         this.aiImageAnalyzing.set(false);
+        const moderationMessage = this.moderationErrorMessage(error);
+        if (moderationMessage) {
+          this.removePhotoByFile(file);
+          this.aiImageSuggestion.set(null);
+          this.imageVerificationStatus.set(moderationMessage);
+          this.lastAnalyzedImageName = null;
+          this.toastr.error(moderationMessage, 'Imagen no permitida');
+          return;
+        }
         this.toastr.warning('No se pudo analizar la imagen con IA. Puedes completar el reporte manualmente.', 'IA no disponible');
       },
     });
+  }
+
+  private removePhotoByFile(file: File) {
+    const current = this.selectedPhotos();
+    const photo = current.find((item) => item.file === file);
+    if (photo) URL.revokeObjectURL(photo.url);
+    this.selectedPhotos.set(current.filter((item) => item.file !== file));
   }
 
   private shouldReplaceDraftTitle(): boolean {

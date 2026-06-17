@@ -8,11 +8,19 @@ enum ReportCategory {
   recklessDriving('RECKLESS_DRIVING', 'Conduccion imprudente'),
   dangerousCrossing('DANGEROUS_CROSSING', 'Cruce peligroso'),
   floodZone('FLOOD_ZONE', 'Zona de posible inundacion'),
+  policeOnRoad('POLICE_ON_ROAD', 'Policias en la via'),
   other('OTHER', 'Otro riesgo');
 
   const ReportCategory(this.value, this.label);
   final String value;
   final String label;
+
+  static ReportCategory fromValue(String value) {
+    for (final category in ReportCategory.values) {
+      if (category.value == value) return category;
+    }
+    return ReportCategory.other;
+  }
 }
 
 class SystemMapConfig {
@@ -371,6 +379,41 @@ class CreateReportResult {
 
   final bool reused;
   final bool confirmationAdded;
+}
+
+class ReportImageSuggestion {
+  ReportImageSuggestion({
+    required this.title,
+    required this.description,
+    required this.summary,
+    required this.suggestedCategory,
+    required this.riskScore,
+    required this.confidence,
+    required this.rationale,
+    required this.needsUserConfirmation,
+  });
+
+  factory ReportImageSuggestion.fromJson(Map<String, dynamic> json) =>
+      ReportImageSuggestion(
+        title: json['title'] as String? ?? 'Riesgo vial reportado',
+        description: json['description'] as String? ?? '',
+        summary: json['summary'] as String? ?? '',
+        suggestedCategory: ReportCategory.fromValue(
+            json['suggestedCategory'] as String? ?? ''),
+        riskScore: (json['riskScore'] as num?)?.toInt().clamp(1, 5) ?? 3,
+        confidence: (json['confidence'] as num?)?.toDouble() ?? 0,
+        rationale: json['rationale'] as String? ?? '',
+        needsUserConfirmation: json['needsUserConfirmation'] as bool? ?? true,
+      );
+
+  final String title;
+  final String description;
+  final String summary;
+  final ReportCategory suggestedCategory;
+  final int riskScore;
+  final double confidence;
+  final String rationale;
+  final bool needsUserConfirmation;
 }
 
 class Lesson {

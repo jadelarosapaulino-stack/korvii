@@ -121,6 +121,16 @@ class ReportsRepository {
     return CreateReportResult.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<ReportImageSuggestion> suggestFromImage(File image) async {
+    final data = FormData.fromMap({
+      'image': await MultipartFile.fromFile(image.path),
+    });
+    final response =
+        await _api.dio.post('/reports/ai/image-suggestion', data: data);
+    return ReportImageSuggestion.fromJson(
+        response.data as Map<String, dynamic>);
+  }
+
   Future<void> logEmergencyCall({
     ReportCategory? category,
     String? title,

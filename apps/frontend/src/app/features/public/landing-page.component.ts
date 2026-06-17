@@ -17,6 +17,17 @@ interface LandingCard {
       <section class="hero" id="inicio">
         <img class="hero__background" src="assets/auth/korvi-auth-background.png" alt="" aria-hidden="true" fetchpriority="high" />
 
+        <div class="language-switch" aria-label="Language selector">
+          <button type="button" class="language-switch__item">
+            <img src="assets/flags/do.svg" alt="" />
+            ES
+          </button>
+          <button type="button" class="language-switch__item active">
+            <img src="assets/flags/us.svg" alt="" />
+            EN
+          </button>
+        </div>
+
         <nav class="nav" aria-label="Primary">
           <a class="brand" href="#inicio" aria-label="Korvi home">
             <img src="assets/brand/korvi-wordmark-light.svg" alt="Korvi" />

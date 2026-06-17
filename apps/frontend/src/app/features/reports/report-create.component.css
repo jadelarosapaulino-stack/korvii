@@ -33,6 +33,14 @@ mat-form-field { width: 100%; }
 .authority-hint mat-icon { color: var(--rs-primary); }
 .authority-hint span { font-size: .84rem; font-weight: 750; line-height: 1.35; }
 .file-input { display: none; }
+.initial-image-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .85rem; align-items: center; margin-bottom: 1rem; padding: .9rem; border: 1px solid rgba(47,125,115,.24); border-radius: var(--rs-radius); background: linear-gradient(135deg, var(--rs-secondary-soft), #fff); }
+.initial-image-copy { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: .75rem; align-items: center; min-width: 0; }
+.initial-image-copy mat-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: var(--rs-radius); background: var(--rs-secondary); color: #fff; }
+.initial-image-copy strong { display: block; color: var(--rs-text); font-size: .94rem; letter-spacing: 0; }
+.initial-image-copy span { display: block; margin-top: .14rem; color: var(--rs-text-muted); font-size: .82rem; line-height: 1.35; }
+.initial-image-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
+.initial-image-actions button mat-icon { margin-right: .35rem; }
+.initial-image-actions > span { flex: 1 1 100%; color: var(--rs-text-muted); font-size: .82rem; font-weight: 800; text-align: right; }
 .evidence-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
 .evidence-toolbar > span { margin-left: auto; color: var(--rs-text-muted); font-size: .82rem; font-weight: 800; }
 .ai-image-card { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: .75rem; align-items: start; margin-top: .85rem; padding: .85rem; border: 1px solid rgba(47,125,115,.28); border-radius: var(--rs-radius); background: var(--rs-secondary-soft); }
@@ -106,7 +114,9 @@ mat-form-field { width: 100%; }
 }
 @media (max-width: 760px) {
   .incident-header { align-items: stretch; flex-direction: column; }
-  .field-grid.two, .field-grid.three, .location-card { grid-template-columns: 1fr; }
+  .field-grid.two, .field-grid.three, .location-card, .initial-image-card { grid-template-columns: 1fr; }
+  .initial-image-actions { justify-content: stretch; }
+  .initial-image-actions button { flex: 1 1 150px; }
   .evidence-toolbar > span { margin-left: 0; width: 100%; }
   .submit-bar { align-items: stretch; flex-direction: column; }
   .location-modal footer { grid-template-columns: 1fr; align-items: stretch; }

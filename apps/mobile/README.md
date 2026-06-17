@@ -23,7 +23,13 @@ flutter create .
 flutter pub get
 ```
 
-Para apuntar al API local:
+Por defecto la app apunta al API remoto de Railway:
+
+```text
+https://korvii-api-prod.up.railway.app/api
+```
+
+Para apuntar al API local durante desarrollo:
 
 ```bash
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api

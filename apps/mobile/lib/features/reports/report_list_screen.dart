@@ -761,6 +761,7 @@ IconData _iconFor(String category) {
     'RECKLESS_DRIVING' => Icons.speed,
     'DANGEROUS_CROSSING' => Icons.directions_walk,
     'FLOOD_ZONE' => Icons.flood,
+    'POLICE_ON_ROAD' => Icons.local_police,
     _ => Icons.warning,
   };
 }

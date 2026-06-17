@@ -75,7 +75,7 @@ export class ImageModerationService {
   ): Promise<ImageModerationDecision> {
     const apiKey = this.config.get<string>("OPENAI_API_KEY");
     const requireModeration =
-      this.config.get<string>("IMAGE_MODERATION_REQUIRED", "false") === "true";
+      this.config.get<string>("IMAGE_MODERATION_REQUIRED", "true") !== "false";
 
     if (!apiKey) {
       if (requireModeration) {

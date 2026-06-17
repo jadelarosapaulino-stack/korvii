@@ -48,9 +48,11 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
   bool _loading = false;
   bool _locating = false;
   bool _loadingNearby = false;
+  bool _imageAnalyzing = false;
   String? _message;
   String _locationMessage = 'Usa GPS o toca el mapa para ubicar el reporte.';
   String _riskReason = 'Nivel 4/5 calculado por categoria y descripcion.';
+  ReportImageSuggestion? _imageSuggestion;
   MapTileSource _tileSource = MapTileSource.openStreetMap();
   LatLng? _selectedLocation;
   double? _locationAccuracy;
@@ -104,6 +106,11 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
       title: 'Zona de posible inundacion',
       description:
           'Se reporta acumulacion de agua o posible inundacion en la via. Evita transitar por este tramo hasta que sea validado o resuelto.',
+    ),
+    ReportCategory.policeOnRoad: (
+      title: 'Policias en la via',
+      description:
+          'Se reporta presencia policial o un punto de control en la via. Reduce la velocidad, respeta las indicaciones y conduce con precaucion.',
     ),
     ReportCategory.other: (
       title: 'Riesgo vial reportado',
@@ -166,6 +173,40 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
               number: '01',
               title: 'Incidente',
               subtitle: 'Categoria, titulo y contexto.'),
+          _InitialImageCard(
+            photosCount: _photos.length,
+            analyzing: _imageAnalyzing,
+            onCamera: _photos.length >= 5 || _imageAnalyzing
+                ? null
+                : () => _pickPhotos(ImageSource.camera),
+            onGallery: _photos.length >= 5 || _imageAnalyzing
+                ? null
+                : () => _pickPhotos(ImageSource.gallery),
+          ),
+          if (_imageAnalyzing || _imageSuggestion != null) ...[
+            const SizedBox(height: 12),
+            _AiImageSuggestionCard(
+              analyzing: _imageAnalyzing,
+              suggestion: _imageSuggestion,
+              onApply: _imageSuggestion == null
+                  ? null
+                  : () => _applyImageSuggestion(_imageSuggestion!),
+              onDismiss: _imageSuggestion == null
+                  ? null
+                  : () => setState(() => _imageSuggestion = null),
+            ),
+          ],
+          if (_photos.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _PhotoStrip(
+              photos: _photos,
+              onRemove: (index) => setState(() {
+                _photos.removeAt(index);
+                if (_photos.isEmpty) _imageSuggestion = null;
+              }),
+            ),
+          ],
+          const SizedBox(height: 12),
           TextField(
               controller: _title,
               decoration: const InputDecoration(labelText: 'Titulo')),
@@ -360,84 +401,13 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
                 reason: _riskReason,
                 color: _colorFor(_riskLevel)),
           ),
-          const SizedBox(height: 18),
-          const _SectionHeader(
-              number: '03',
-              title: 'Evidencia',
-              subtitle: 'Hasta 5 imagenes desde camara o galeria.'),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _photos.length >= 5
-                    ? null
-                    : () => _pickPhotos(ImageSource.camera),
-                icon: const Icon(Icons.photo_camera),
-                label: const Text('Camara'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _photos.length >= 5
-                    ? null
-                    : () => _pickPhotos(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library),
-                label: const Text('Galeria'),
-              ),
-              InputChip(
-                avatar: const Icon(Icons.collections, size: 18),
-                label: Text('${_photos.length}/5 adjuntas'),
-                backgroundColor: const Color(0xFFE5FBF7),
-              ),
-            ],
-          ),
-          if (_photos.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            AnimatedSize(
-              duration: KorviMotion.normal,
-              curve: KorviMotion.curve,
-              child: SizedBox(
-                height: 110,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _photos.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    return MotionFadeSlide(
-                      key: ValueKey(_photos[index].path),
-                      offset: const Offset(16, 0),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(_photos[index],
-                                width: 120, height: 110, fit: BoxFit.cover),
-                          ),
-                          Positioned(
-                            right: 4,
-                            top: 4,
-                            child: IconButton.filledTonal(
-                              onPressed: () =>
-                                  setState(() => _photos.removeAt(index)),
-                              icon: const Icon(Icons.close),
-                              tooltip: 'Quitar evidencia',
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
           if (_message != null)
             Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Text(_message!)),
           const SizedBox(height: 18),
           FilledButton.icon(
-            onPressed: _loading ? null : _submit,
+            onPressed: _loading || _imageAnalyzing ? null : _submit,
             icon: _loading
                 ? const SizedBox.square(
                     dimension: 18,
@@ -515,6 +485,7 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
       ReportCategory.roadDamage: 4,
       ReportCategory.roadObstruction: 4,
       ReportCategory.floodZone: 5,
+      ReportCategory.policeOnRoad: 3,
       ReportCategory.poorLighting: 3,
       ReportCategory.missingSignage: 3,
       ReportCategory.other: 2,
@@ -677,12 +648,104 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
           ]
         : await _picker.pickMultiImage(imageQuality: 82, limit: remaining);
 
+    final files = <File>[];
+    for (final photo in picked.take(remaining)) {
+      final file = File(photo.path);
+      if (await _isValidImage(file)) {
+        files.add(file);
+      }
+    }
+
+    if (files.length < picked.take(remaining).length) {
+      setState(() => _message =
+          'Solo se agregaron imagenes JPG, PNG o WebP menores de 5 MB.');
+    }
+
     setState(() {
       _photos = [
         ..._photos,
-        ...picked.take(remaining).map((photo) => File(photo.path)),
+        ...files,
       ];
     });
+    if (files.isNotEmpty) await _analyzePhotoWithAi(files.first);
+  }
+
+  Future<bool> _isValidImage(File file) async {
+    final lowerPath = file.path.toLowerCase();
+    final allowed = lowerPath.endsWith('.jpg') ||
+        lowerPath.endsWith('.jpeg') ||
+        lowerPath.endsWith('.png') ||
+        lowerPath.endsWith('.webp');
+    if (!allowed) return false;
+    final size = await file.length();
+    return size <= 5 * 1024 * 1024;
+  }
+
+  Future<void> _analyzePhotoWithAi(File file) async {
+    setState(() {
+      _imageAnalyzing = true;
+      _message = null;
+    });
+    try {
+      final suggestion = await widget.reports.suggestFromImage(file);
+      if (!mounted) return;
+      setState(() {
+        _imageSuggestion = suggestion;
+      });
+      _applyImageSuggestion(suggestion);
+    } catch (error) {
+      if (!mounted) return;
+      final moderationMessage = _moderationErrorMessage(error);
+      setState(() {
+        if (moderationMessage != null) {
+          _photos.removeWhere((photo) => photo.path == file.path);
+          _imageSuggestion = null;
+          _message = moderationMessage;
+        } else {
+          _message =
+              'No se pudo analizar la imagen con IA. Puedes completar el reporte manualmente.';
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _imageAnalyzing = false);
+    }
+  }
+
+  void _applyImageSuggestion(ReportImageSuggestion suggestion) {
+    _applyingSuggestion = true;
+    setState(() {
+      _category = suggestion.suggestedCategory;
+      if (!_titleManuallyAdjusted || _isDraftTitle(_title.text)) {
+        _title.text = suggestion.title;
+        _titleManuallyAdjusted = false;
+      }
+      if (!_descriptionManuallyAdjusted ||
+          _isDraftDescription(_description.text)) {
+        _description.text = suggestion.description;
+        _descriptionManuallyAdjusted = false;
+      }
+      _riskLevel = suggestion.riskScore;
+      _suggestedRiskLevel = suggestion.riskScore;
+      _riskManuallyAdjusted = false;
+      _riskReason =
+          'IA por imagen: ${suggestion.suggestedCategory.label} con ${(suggestion.confidence.clamp(0, 1) * 100).round()}% de confianza. Revisa antes de enviar.';
+    });
+    _applyingSuggestion = false;
+    if (_requiresEmergencyCall(suggestion.suggestedCategory)) {
+      _showEmergencyPrompt();
+    }
+  }
+
+  bool _isDraftTitle(String value) {
+    final current = _normalizeField(value);
+    return _suggestions.values
+        .any((suggestion) => _normalizeField(suggestion.title) == current);
+  }
+
+  bool _isDraftDescription(String value) {
+    final current = _normalizeField(value);
+    return _suggestions.values.any(
+        (suggestion) => _normalizeField(suggestion.description) == current);
   }
 
   Future<void> _submit() async {
@@ -832,6 +895,7 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
       'RECKLESS_DRIVING' => Icons.speed,
       'DANGEROUS_CROSSING' => Icons.directions_walk,
       'FLOOD_ZONE' => Icons.flood,
+      'POLICE_ON_ROAD' => Icons.local_police,
       _ => Icons.warning,
     };
   }
@@ -852,6 +916,224 @@ class _ReportCreateScreenState extends State<ReportCreateScreen> {
     replacements
         .forEach((from, to) => normalized = normalized.replaceAll(from, to));
     return normalized;
+  }
+}
+
+class _InitialImageCard extends StatelessWidget {
+  const _InitialImageCard({
+    required this.photosCount,
+    required this.analyzing,
+    required this.onCamera,
+    required this.onGallery,
+  });
+
+  final int photosCount;
+  final bool analyzing;
+  final VoidCallback? onCamera;
+  final VoidCallback? onGallery;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5FBF7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFC9F5EE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00C2A8),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.add_a_photo, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Empieza con una imagen',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF102033))),
+                    SizedBox(height: 2),
+                    Text(
+                      'Korvi valida la imagen y autocompleta el reporte con IA.',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF6B7785)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onCamera,
+                icon: const Icon(Icons.photo_camera),
+                label: const Text('Camara'),
+              ),
+              FilledButton.icon(
+                onPressed: onGallery,
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Cargar imagenes'),
+              ),
+              InputChip(
+                avatar: analyzing
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.collections, size: 18),
+                label: Text('$photosCount/5 adjuntas'),
+                backgroundColor: Colors.white,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiImageSuggestionCard extends StatelessWidget {
+  const _AiImageSuggestionCard({
+    required this.analyzing,
+    required this.suggestion,
+    required this.onApply,
+    required this.onDismiss,
+  });
+
+  final bool analyzing;
+  final ReportImageSuggestion? suggestion;
+  final VoidCallback? onApply;
+  final VoidCallback? onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = suggestion;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFC9F5EE)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: const Color(0xFF00C2A8),
+            foregroundColor: Colors.white,
+            child: Icon(analyzing ? Icons.sync : Icons.auto_awesome),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  analyzing ? 'Analizando imagen con IA...' : 'Sugerencia IA',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                if (analyzing)
+                  const Text('Validando contenido y detectando categoria.')
+                else if (current != null) ...[
+                  Text(
+                    '${current.suggestedCategory.label} - Riesgo ${current.riskScore}/5 - Confianza ${(current.confidence.clamp(0, 1) * 100).round()}%',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  if ((current.summary.isNotEmpty ||
+                      current.rationale.isNotEmpty)) ...[
+                    const SizedBox(height: 4),
+                    Text(current.summary.isNotEmpty
+                        ? current.summary
+                        : current.rationale),
+                  ],
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: onApply,
+                        icon: const Icon(Icons.check),
+                        label: const Text('Aplicar'),
+                      ),
+                      TextButton(
+                        onPressed: onDismiss,
+                        child: const Text('Descartar'),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhotoStrip extends StatelessWidget {
+  const _PhotoStrip({required this.photos, required this.onRemove});
+
+  final List<File> photos;
+  final ValueChanged<int> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: KorviMotion.normal,
+      curve: KorviMotion.curve,
+      child: SizedBox(
+        height: 110,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: photos.length,
+          separatorBuilder: (context, index) => const SizedBox(width: 10),
+          itemBuilder: (context, index) {
+            return MotionFadeSlide(
+              key: ValueKey(photos[index].path),
+              offset: const Offset(16, 0),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(photos[index],
+                        width: 120, height: 110, fit: BoxFit.cover),
+                  ),
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: IconButton.filledTonal(
+                      onPressed: () => onRemove(index),
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Quitar evidencia',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 
