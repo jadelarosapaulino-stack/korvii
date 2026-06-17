@@ -7,8 +7,8 @@ Aplicacion Angular publica para el landing de Korvi. Debe desplegarse en un serv
 Si el landing va en la raiz y el frontend va en `/krv` del mismo dominio, usa el contenedor combinado:
 
 ```text
-Dockerfile: apps/web/Dockerfile
-Railway config: apps/web/railway.json
+Dockerfile: apps/frontend/Dockerfile
+Railway config: apps/frontend/railway.json
 ```
 
 En ese modo no configures `LANDING_SYSTEM_URL`. El landing navega a `/krv/login` como ruta relativa.

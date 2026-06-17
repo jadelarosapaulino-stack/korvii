@@ -10,10 +10,15 @@ El repositorio tiene dos aplicaciones web, pero para publicar landing en la raiz
 Usar:
 
 ```text
-apps/web/Dockerfile
+apps/frontend/Dockerfile
 ```
 
-Railway config:
+Ese Dockerfile construye ambas aplicaciones y las sirve asi:
+
+- `/`: landing.
+- `/krv`: frontend operativo.
+
+Tambien existe una configuracion equivalente en:
 
 ```text
 apps/web/railway.json

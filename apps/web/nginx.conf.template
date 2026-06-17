@@ -1,6 +1,9 @@
 server {
   listen ${PORT};
   server_name _;
+  absolute_redirect off;
+  port_in_redirect off;
+  server_name_in_redirect off;
 
   resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;
   set $api_upstream "${API_UPSTREAM}";
