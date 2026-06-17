@@ -9,16 +9,24 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
-  location = /index.html {
+  location = / {
+    return 302 /krv/login;
+  }
+
+  location = /krv {
+    return 302 /krv/;
+  }
+
+  location = /krv/index.html {
     add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
   }
 
-  location /assets/ {
+  location /krv/assets/ {
     try_files $uri =404;
     add_header Cache-Control "public, max-age=31536000, immutable" always;
   }
 
-  location ~* \.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$ {
+  location ~* ^/krv/.+\.(?:js|css|woff2?|png|jpe?g|webp|svg|ico)$ {
     try_files $uri =404;
     add_header Cache-Control "public, max-age=31536000, immutable" always;
   }
@@ -55,8 +63,8 @@ server {
     proxy_pass $realtime_upstream;
   }
 
-  location / {
+  location /krv/ {
     add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
-    try_files $uri $uri/ /index.html;
+    try_files $uri $uri/ /krv/index.html;
   }
 }

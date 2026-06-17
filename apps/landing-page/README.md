@@ -11,16 +11,16 @@ Dockerfile: apps/landing-page/Dockerfile
 Railway config: apps/landing-page/railway.json
 ```
 
-Variable recomendada:
+Variable runtime recomendada:
 
 ```env
 LANDING_SYSTEM_URL=https://<dominio-del-frontend-operativo>
 ```
 
-Esa variable hace que los botones de acceso del landing apunten al frontend real, por ejemplo:
+Esa variable debe ser el dominio base del frontend operativo, sin `/krv`. Se escribe en `landing-config.js` cuando inicia el contenedor, por lo que puedes cambiarla en Railway y reiniciar sin recompilar. Hace que los botones de acceso del landing apunten al frontend real bajo `/krv`, por ejemplo:
 
 ```text
-https://korvii-app.up.railway.app/login
+https://korvii-app.up.railway.app/krv/login
 ```
 
 ## Local
@@ -29,4 +29,4 @@ https://korvii-app.up.railway.app/login
 pnpm --filter @ruta-segura/landing-page start
 ```
 
-El landing local corre en `http://localhost:4300` y apunta al frontend local en `http://localhost:4200/login`.
+El landing local corre en `http://localhost:4300` y apunta al frontend local en `http://localhost:4200/krv/login`.

@@ -96,17 +96,25 @@ export class AppComponent {
   }
 
   private resolveSystemLoginUrl(): string {
-    const configuredUrl = this.trimTrailingSlash(LANDING_SYSTEM_URL);
-    if (configuredUrl) return `${configuredUrl}/login`;
+    const configuredUrl = this.trimTrailingSlash(
+      this.runtimeSystemUrl() || LANDING_SYSTEM_URL,
+    );
+    if (configuredUrl) return `${configuredUrl.replace(/\/krv$/, '')}/krv/login`;
 
-    if (typeof window === 'undefined') return '/login';
+    if (typeof window === 'undefined') return '/krv/login';
 
     const { protocol, hostname } = window.location;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-    return isLocal ? `${protocol}//${hostname}:4200/login` : '/login';
+    return isLocal ? `${protocol}//${hostname}:4200/krv/login` : '/krv/login';
   }
 
   private trimTrailingSlash(value: string): string {
     return value.trim().replace(/\/+$/, '');
+  }
+
+  private runtimeSystemUrl(): string {
+    if (typeof window === 'undefined') return '';
+    const config = (window as Window & { __KORVI_LANDING_CONFIG__?: { systemUrl?: string } }).__KORVI_LANDING_CONFIG__;
+    return config?.systemUrl ?? '';
   }
 }

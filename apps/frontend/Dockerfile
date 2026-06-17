@@ -8,13 +8,13 @@ COPY . .
 ARG NG_APP_API_URL=https://korvii-api-prod.up.railway.app/api
 ARG NG_APP_REALTIME_URL=https://korvii-realtime-prod.up.railway.app
 ARG NG_APP_MAPTILER_KEY=
-RUN pnpm --filter @ruta-segura/frontend build --configuration production
+RUN pnpm --filter @ruta-segura/frontend env:write && pnpm --filter @ruta-segura/frontend exec ng build --configuration production --base-href /krv/
 
 FROM nginx:1.27-alpine AS runner
 ENV PORT=80
 ENV API_UPSTREAM=https://korvii-api-prod.up.railway.app
 ENV REALTIME_UPSTREAM=https://korvii-realtime-prod.up.railway.app
-COPY --from=build /app/apps/frontend/dist/ruta-segura-frontend/browser /usr/share/nginx/html
+COPY --from=build /app/apps/frontend/dist/ruta-segura-frontend/browser /usr/share/nginx/html/krv
 COPY apps/frontend/nginx.conf.template /etc/nginx/templates/default.conf.template
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

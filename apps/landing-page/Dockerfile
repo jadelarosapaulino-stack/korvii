@@ -11,7 +11,10 @@ RUN pnpm --filter @ruta-segura/landing-page build --configuration production
 
 FROM nginx:1.27-alpine AS runner
 ENV PORT=80
+ENV LANDING_SYSTEM_URL=
 COPY --from=build /app/apps/landing-page/dist/ruta-segura-landing-page/browser /usr/share/nginx/html
 COPY apps/landing-page/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY apps/landing-page/docker-entrypoint.d/40-landing-config.sh /docker-entrypoint.d/40-landing-config.sh
+RUN chmod +x /docker-entrypoint.d/40-landing-config.sh
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

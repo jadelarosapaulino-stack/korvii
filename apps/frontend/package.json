@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "env:write": "node scripts/write-build-env.mjs",
-    "start": "pnpm env:write && ng serve --host 0.0.0.0 --port 4200",
-    "build": "pnpm env:write && ng build",
+    "start": "pnpm env:write && ng serve --host 0.0.0.0 --port 4200 --serve-path /krv --base-href /krv/",
+    "build": "pnpm env:write && ng build --base-href /krv/",
     "test": "ng test",
     "lint": "echo \"Agregar @angular-eslint cuando se active lint formal\"",
-    "start:dev": "pnpm env:write && ng serve --host 0.0.0.0 --port 4200"
+    "start:dev": "pnpm env:write && ng serve --host 0.0.0.0 --port 4200 --serve-path /krv --base-href /krv/"
   },
   "dependencies": {
     "@angular/animations": "21.2.12",

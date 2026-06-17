@@ -19,6 +19,8 @@ Configurar:
 LANDING_SYSTEM_URL=https://<dominio-del-frontend-operativo>
 ```
 
+`LANDING_SYSTEM_URL` es runtime y debe ser el dominio base del frontend operativo, sin `/krv`. El contenedor genera `/landing-config.js` al iniciar y el landing lo usa para enviar al usuario a `/krv/login` del frontend operativo.
+
 ## Servicio Railway: Frontend
 
 Usar:
@@ -27,4 +29,4 @@ Usar:
 apps/frontend/Dockerfile
 ```
 
-El frontend ya no sirve el landing en `/`; su raiz redirige a `/login`.
+El frontend ya no sirve el landing en `/`; se publica bajo `/krv` y su raiz redirige a `/krv/login`.
