@@ -25,6 +25,14 @@ export interface ExternalApiLogEntry {
   createdAt: string;
 }
 
+export interface ExternalApiLogsPage {
+  data: ExternalApiLogEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 @Injectable()
 export class SystemConfigService implements OnModuleInit {
   private static readonly CONFIG_KEY = "shared";
@@ -92,13 +100,33 @@ export class SystemConfigService implements OnModuleInit {
     return this.update({ categories: nextCategories });
   }
 
-  async externalApiLogs(): Promise<ExternalApiLogEntry[]> {
+  async externalApiLogs(query: {
+    page?: string | number;
+    limit?: string | number;
+  } = {}): Promise<ExternalApiLogsPage> {
+    const requestedPage = Number(query.page ?? 1);
+    const requestedLimit = Number(query.limit ?? 10);
+    const page = Number.isFinite(requestedPage)
+      ? Math.max(1, Math.floor(requestedPage))
+      : 1;
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(100, Math.max(1, Math.floor(requestedLimit)))
+      : 10;
     const stored = await this.configRepo.findOne({
       where: { key: SystemConfigService.EXTERNAL_API_LOGS_KEY },
     });
-    return Array.isArray(stored?.value?.["logs"])
+    const logs = Array.isArray(stored?.value?.["logs"])
       ? (stored.value["logs"] as ExternalApiLogEntry[])
       : [];
+    const total = logs.length;
+    const start = (page - 1) * limit;
+    return {
+      data: logs.slice(start, start + limit),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async clearExternalApiLogs(): Promise<{ logs: ExternalApiLogEntry[] }> {

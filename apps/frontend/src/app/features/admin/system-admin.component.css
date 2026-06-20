@@ -184,6 +184,7 @@
 .external-log-body strong { display: block; color: var(--rs-text); font-size: .9rem; letter-spacing: 0; }
 .external-log-body p { margin: .18rem 0 0; color: var(--rs-text-muted); line-height: 1.35; }
 .external-log-body pre { max-height: 180px; margin: .65rem 0 0; overflow: auto; padding: .75rem; border-radius: var(--rs-radius); background: #0f172a; color: #dbeafe; font-size: .76rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.external-log-paginator { justify-self: end; margin-top: .75rem; color: var(--rs-text); }
 :host-context(body:not(.rs-dark-theme)) .settings-sidebar,
 :host-context(body:not(.rs-dark-theme)) .settings-panel,
 :host-context(body:not(.rs-dark-theme)) .category-card,

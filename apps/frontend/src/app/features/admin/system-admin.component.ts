@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -33,6 +34,7 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatSelectModule,
     MatSliderModule,
     MatSlideToggleModule,
@@ -1000,7 +1002,7 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                     <mat-icon>{{ externalApiLogsLoading ? 'sync' : 'refresh' }}</mat-icon>
                     Actualizar
                   </button>
-                  <button mat-stroked-button type="button" (click)="clearExternalApiLogs()" [disabled]="externalApiLogsLoading || !externalApiLogs.length">
+                  <button mat-stroked-button type="button" (click)="clearExternalApiLogs()" [disabled]="externalApiLogsLoading || !externalApiLogsTotal">
                     <mat-icon>delete_sweep</mat-icon>
                     Limpiar
                   </button>
@@ -1035,6 +1037,14 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
                     </article>
                   }
                 </div>
+                <mat-paginator
+                  class="external-log-paginator"
+                  [length]="externalApiLogsTotal"
+                  [pageIndex]="externalApiLogsPageIndex"
+                  [pageSize]="externalApiLogsPageSize"
+                  [pageSizeOptions]="[10, 20, 50]"
+                  (page)="onExternalApiLogsPage($event)">
+                </mat-paginator>
               }
             }
 
@@ -1052,6 +1062,9 @@ export class SystemAdminComponent implements OnInit {
   uploadingCategoryPhoto: ReportCategory | null = null;
   externalApiLogs: ExternalApiLogEntry[] = [];
   externalApiLogsLoading = false;
+  externalApiLogsTotal = 0;
+  externalApiLogsPageIndex = 0;
+  externalApiLogsPageSize = 10;
   visibleSocialCredentials: Partial<Record<keyof SystemSocialAuthConfig, boolean>> = {};
   readonly storageProviders = [
     { id: 'Local uploads', label: 'Local uploads', description: 'Archivos en disco del servidor', icon: 'folder' },
@@ -1248,9 +1261,13 @@ export class SystemAdminComponent implements OnInit {
 
   loadExternalApiLogs() {
     this.externalApiLogsLoading = true;
-    this.config.externalApiLogs().subscribe({
-      next: (logs) => {
-        this.externalApiLogs = logs;
+    this.config.externalApiLogs({
+      page: this.externalApiLogsPageIndex + 1,
+      limit: this.externalApiLogsPageSize,
+    }).subscribe({
+      next: (page) => {
+        this.externalApiLogs = page.data;
+        this.externalApiLogsTotal = page.total;
         this.externalApiLogsLoading = false;
       },
       error: () => {
@@ -1265,6 +1282,8 @@ export class SystemAdminComponent implements OnInit {
     this.config.clearExternalApiLogs().subscribe({
       next: () => {
         this.externalApiLogs = [];
+        this.externalApiLogsTotal = 0;
+        this.externalApiLogsPageIndex = 0;
         this.externalApiLogsLoading = false;
         this.toastr.success('Logs externos limpiados.', 'Sistema');
       },
@@ -1273,6 +1292,12 @@ export class SystemAdminComponent implements OnInit {
         this.toastr.error('No se pudieron limpiar los logs externos.', 'Sistema');
       },
     });
+  }
+
+  onExternalApiLogsPage(event: PageEvent) {
+    this.externalApiLogsPageIndex = event.pageIndex;
+    this.externalApiLogsPageSize = event.pageSize;
+    this.loadExternalApiLogs();
   }
 
   updateCategory(category: ReportCategory, patch: Parameters<SystemConfigService['updateCategory']>[1]) {

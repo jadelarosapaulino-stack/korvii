@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Delete,
   UploadedFile,
   UseGuards,
@@ -48,8 +49,8 @@ export class SystemConfigController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Get("external-api-logs")
-  externalApiLogs() {
-    return this.systemConfig.externalApiLogs();
+  externalApiLogs(@Query() query: { page?: string; limit?: string }) {
+    return this.systemConfig.externalApiLogs(query);
   }
 
   @UseGuards(RolesGuard)

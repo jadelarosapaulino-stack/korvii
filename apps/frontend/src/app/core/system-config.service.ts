@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 import { catchError, forkJoin, map, Observable, of } from 'rxjs';
 import { REPORT_CATEGORY_LABELS, ReportCategory } from './reports.service';
@@ -158,6 +158,14 @@ export interface ExternalApiLogEntry {
   createdAt: string;
 }
 
+export interface ExternalApiLogsPage {
+  data: ExternalApiLogEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface SystemConfig {
   categories: ReportCategoryConfig[];
   storage: SystemStorageConfig;
@@ -279,8 +287,8 @@ export class SystemConfigService {
     });
   }
 
-  externalApiLogs(): Observable<ExternalApiLogEntry[]> {
-    return this.http.get<ExternalApiLogEntry[]>(`${API_URL}/system/config/external-api-logs`);
+  externalApiLogs(filters: { page?: number; limit?: number } = {}): Observable<ExternalApiLogsPage> {
+    return this.http.get<ExternalApiLogsPage>(`${API_URL}/system/config/external-api-logs`, { params: this.params(filters) });
   }
 
   clearExternalApiLogs(): Observable<{ logs: ExternalApiLogEntry[] }> {
@@ -324,6 +332,16 @@ export class SystemConfigService {
         return result;
       }),
     );
+  }
+
+  private params(filters: Record<string, string | number | boolean | undefined>): HttpParams {
+    let params = new HttpParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params = params.set(key, String(value));
+      }
+    });
+    return params;
   }
 
   private update(next: SystemConfig) {
