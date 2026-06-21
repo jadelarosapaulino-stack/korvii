@@ -163,14 +163,14 @@ mat-form-field {
 }
 
 .auth-card button[mat-flat-button] {
-  --mdc-filled-button-container-color: var(--rs-primary);
-  --mdc-filled-button-label-text-color: #ffffff;
-  --mat-filled-button-state-layer-color: #ffffff;
+  --mdc-filled-button-container-color: var(--rs-primary-pastel);
+  --mdc-filled-button-label-text-color: var(--rs-primary);
+  --mat-filled-button-state-layer-color: var(--rs-primary);
   min-height: 44px;
 }
 
 .auth-card button[mat-flat-button]:hover {
-  --mdc-filled-button-container-color: var(--rs-primary-dark);
+  --mdc-filled-button-container-color: var(--rs-primary-pastel-hover);
 }
 
 :host-context(body.rs-dark-theme) ::ng-deep .auth-page .mat-mdc-text-field-wrapper,

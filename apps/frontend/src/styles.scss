@@ -20,6 +20,42 @@ body {
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 
+button,
+button.mat-mdc-button-base,
+.mat-mdc-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-icon-button,
+.mat-mdc-fab,
+.mat-mdc-mini-fab,
+.mdc-button {
+  border-radius: 8px !important;
+  --mdc-filled-button-container-shape: 8px;
+  --mdc-protected-button-container-shape: 8px;
+  --mdc-outlined-button-container-shape: 8px;
+  --mdc-text-button-container-shape: 8px;
+  --mdc-icon-button-container-shape: 8px;
+  --mdc-fab-container-shape: 8px;
+}
+
+.mat-mdc-button .mat-mdc-button-touch-target,
+.mat-mdc-unelevated-button .mat-mdc-button-touch-target,
+.mat-mdc-raised-button .mat-mdc-button-touch-target,
+.mat-mdc-outlined-button .mat-mdc-button-touch-target,
+.mat-mdc-icon-button .mat-mdc-button-touch-target,
+.mat-mdc-fab .mat-mdc-button-touch-target,
+.mat-mdc-mini-fab .mat-mdc-button-touch-target,
+.mat-mdc-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-unelevated-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-raised-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-outlined-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-icon-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-fab .mat-mdc-button-persistent-ripple,
+.mat-mdc-mini-fab .mat-mdc-button-persistent-ripple {
+  border-radius: 8px !important;
+}
+
 html,
 body,
 .mat-typography,
@@ -1008,6 +1044,55 @@ body.rs-dark-theme .control-tile.purple > mat-icon:first-child { background: var
 }
 
 /* Pastel Material color enforcement after the prebuilt Angular Material theme. */
+button,
+button.mat-mdc-button-base,
+.mat-mdc-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-icon-button,
+.mat-mdc-fab,
+.mat-mdc-mini-fab,
+.mdc-button {
+  border-radius: 8px !important;
+  --mdc-filled-button-container-shape: 8px !important;
+  --mdc-protected-button-container-shape: 8px !important;
+  --mdc-outlined-button-container-shape: 8px !important;
+  --mdc-text-button-container-shape: 8px !important;
+  --mdc-icon-button-container-shape: 8px !important;
+  --mdc-fab-container-shape: 8px !important;
+}
+
+.mat-mdc-button .mat-mdc-button-touch-target,
+.mat-mdc-unelevated-button .mat-mdc-button-touch-target,
+.mat-mdc-raised-button .mat-mdc-button-touch-target,
+.mat-mdc-outlined-button .mat-mdc-button-touch-target,
+.mat-mdc-icon-button .mat-mdc-button-touch-target,
+.mat-mdc-fab .mat-mdc-button-touch-target,
+.mat-mdc-mini-fab .mat-mdc-button-touch-target,
+.mat-mdc-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-unelevated-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-raised-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-outlined-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-icon-button .mat-mdc-button-persistent-ripple,
+.mat-mdc-fab .mat-mdc-button-persistent-ripple,
+.mat-mdc-mini-fab .mat-mdc-button-persistent-ripple {
+  border-radius: 8px !important;
+}
+
+.mat-mdc-button,
+.mat-mdc-icon-button {
+  --mdc-text-button-label-text-color: var(--rs-primary) !important;
+  --mdc-icon-button-icon-color: var(--rs-primary) !important;
+  --mat-text-button-state-layer-color: var(--rs-primary) !important;
+  --mat-icon-button-state-layer-color: var(--rs-primary) !important;
+  color: var(--rs-primary) !important;
+}
+
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-fab,
+.mat-mdc-mini-fab,
 .mat-mdc-unelevated-button.mat-primary,
 .mat-mdc-raised-button.mat-primary,
 .mat-mdc-fab.mat-primary,
@@ -1024,6 +1109,10 @@ body.rs-dark-theme .control-tile.purple > mat-icon:first-child { background: var
   color: var(--rs-primary) !important;
 }
 
+.mat-mdc-unelevated-button:hover,
+.mat-mdc-raised-button:hover,
+.mat-mdc-fab:hover,
+.mat-mdc-mini-fab:hover,
 .mat-mdc-unelevated-button.mat-primary:hover,
 .mat-mdc-raised-button.mat-primary:hover,
 .mat-mdc-fab.mat-primary:hover,
@@ -1034,6 +1123,48 @@ body.rs-dark-theme .control-tile.purple > mat-icon:first-child { background: var
   background-color: var(--rs-primary-pastel-hover) !important;
 }
 
+.mat-mdc-unelevated-button.mat-accent,
+.mat-mdc-raised-button.mat-accent,
+.mat-mdc-fab.mat-accent,
+.mat-mdc-mini-fab.mat-accent {
+  --mdc-filled-button-container-color: var(--rs-secondary-pastel) !important;
+  --mdc-filled-button-label-text-color: var(--rs-secondary) !important;
+  --mdc-protected-button-container-color: var(--rs-secondary-pastel) !important;
+  --mdc-protected-button-label-text-color: var(--rs-secondary) !important;
+  --mdc-fab-container-color: var(--rs-secondary-pastel) !important;
+  --mat-filled-button-state-layer-color: var(--rs-secondary) !important;
+  --mat-protected-button-state-layer-color: var(--rs-secondary) !important;
+  --mat-fab-state-layer-color: var(--rs-secondary) !important;
+  background-color: var(--rs-secondary-pastel) !important;
+  color: var(--rs-secondary) !important;
+}
+
+.mat-mdc-unelevated-button.mat-accent:hover,
+.mat-mdc-raised-button.mat-accent:hover,
+.mat-mdc-fab.mat-accent:hover,
+.mat-mdc-mini-fab.mat-accent:hover {
+  --mdc-filled-button-container-color: var(--rs-secondary-pastel-hover) !important;
+  --mdc-protected-button-container-color: var(--rs-secondary-pastel-hover) !important;
+  --mdc-fab-container-color: var(--rs-secondary-pastel-hover) !important;
+  background-color: var(--rs-secondary-pastel-hover) !important;
+}
+
+.mat-mdc-unelevated-button.mat-warn,
+.mat-mdc-raised-button.mat-warn,
+.mat-mdc-fab.mat-warn,
+.mat-mdc-mini-fab.mat-warn {
+  --mdc-filled-button-container-color: var(--rs-danger-pastel) !important;
+  --mdc-filled-button-label-text-color: var(--rs-danger) !important;
+  --mdc-protected-button-container-color: var(--rs-danger-pastel) !important;
+  --mdc-protected-button-label-text-color: var(--rs-danger) !important;
+  --mdc-fab-container-color: var(--rs-danger-pastel) !important;
+  --mat-filled-button-state-layer-color: var(--rs-danger) !important;
+  --mat-protected-button-state-layer-color: var(--rs-danger) !important;
+  --mat-fab-state-layer-color: var(--rs-danger) !important;
+  background-color: var(--rs-danger-pastel) !important;
+  color: var(--rs-danger) !important;
+}
+
 .mat-mdc-outlined-button.mat-primary,
 .mat-mdc-button.mat-primary {
   --mdc-outlined-button-label-text-color: var(--rs-primary) !important;
@@ -1041,4 +1172,36 @@ body.rs-dark-theme .control-tile.purple > mat-icon:first-child { background: var
   --mat-outlined-button-state-layer-color: var(--rs-primary) !important;
   --mat-text-button-state-layer-color: var(--rs-primary) !important;
   color: var(--rs-primary) !important;
+}
+
+.mat-mdc-outlined-button.mat-accent,
+.mat-mdc-button.mat-accent,
+.mat-mdc-icon-button.mat-accent {
+  --mdc-outlined-button-label-text-color: var(--rs-secondary) !important;
+  --mdc-text-button-label-text-color: var(--rs-secondary) !important;
+  --mdc-icon-button-icon-color: var(--rs-secondary) !important;
+  --mat-outlined-button-state-layer-color: var(--rs-secondary) !important;
+  --mat-text-button-state-layer-color: var(--rs-secondary) !important;
+  --mat-icon-button-state-layer-color: var(--rs-secondary) !important;
+  color: var(--rs-secondary) !important;
+}
+
+.mat-mdc-outlined-button.mat-accent:hover {
+  background-color: var(--rs-secondary-soft) !important;
+}
+
+.mat-mdc-outlined-button.mat-warn,
+.mat-mdc-button.mat-warn,
+.mat-mdc-icon-button.mat-warn {
+  --mdc-outlined-button-label-text-color: var(--rs-danger) !important;
+  --mdc-text-button-label-text-color: var(--rs-danger) !important;
+  --mdc-icon-button-icon-color: var(--rs-danger) !important;
+  --mat-outlined-button-state-layer-color: var(--rs-danger) !important;
+  --mat-text-button-state-layer-color: var(--rs-danger) !important;
+  --mat-icon-button-state-layer-color: var(--rs-danger) !important;
+  color: var(--rs-danger) !important;
+}
+
+.mat-mdc-outlined-button.mat-warn:hover {
+  background-color: var(--rs-danger-soft) !important;
 }

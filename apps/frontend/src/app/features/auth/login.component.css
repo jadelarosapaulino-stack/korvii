@@ -118,13 +118,13 @@
 }
 
 .primary-actions button {
-  --mdc-filled-button-container-color: var(--rs-primary);
-  --mdc-filled-button-label-text-color: #ffffff;
-  --mat-filled-button-state-layer-color: #ffffff;
+  --mdc-filled-button-container-color: var(--rs-primary-pastel);
+  --mdc-filled-button-label-text-color: var(--rs-primary);
+  --mat-filled-button-state-layer-color: var(--rs-primary);
 }
 
 .primary-actions button:hover {
-  --mdc-filled-button-container-color: var(--rs-primary-dark);
+  --mdc-filled-button-container-color: var(--rs-primary-pastel-hover);
 }
 
 .primary-actions a {
@@ -168,9 +168,10 @@
 .facebook-button {
   min-height: 40px;
   justify-content: center;
-  --mdc-outlined-button-outline-color: rgba(24, 119, 242, .38);
-  --mdc-outlined-button-label-text-color: #1877f2;
-  --mat-outlined-button-state-layer-color: #1877f2;
+  --mdc-outlined-button-outline-color: var(--rs-border);
+  --mdc-outlined-button-label-text-color: var(--rs-secondary);
+  --mat-outlined-button-state-layer-color: var(--rs-secondary);
+  color: var(--rs-secondary);
 }
 
 .facebook-button mat-icon {

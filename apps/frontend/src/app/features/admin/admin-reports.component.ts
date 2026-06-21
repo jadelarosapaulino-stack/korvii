@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, effect, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,7 @@ import Chart from 'chart.js/auto';
 import { ToastrService } from 'ngx-toastr';
 import { auditTime, merge, Subscription } from 'rxjs';
 import { createKorviMap, observeMapResize, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
+import { I18nService } from '../../core/i18n.service';
 import { RealtimeService } from '../../core/realtime.service';
 import { ReportAdminMetrics, ReportCategory, ReportItem, ReportStatus, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
 import { RiskChipComponent } from '../../shared/ui/risk-chip/risk-chip.component';
@@ -414,7 +415,13 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly reportsService: ReportsService,
     private readonly realtime: RealtimeService,
     private readonly toastr: ToastrService,
-  ) {}
+    private readonly i18n: I18nService,
+  ) {
+    effect(() => {
+      this.i18n.language();
+      this.renderStatusChart();
+    });
+  }
 
   categoryLabel(category: string): string {
     return reportCategoryLabel(category);
@@ -693,10 +700,10 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.statusChart = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: ['Pendientes', 'Validados', 'Intervencion', 'Resueltos'],
+        labels: ['Pendientes', 'Validados', 'Intervencion', 'Resueltos'].map((label) => this.t(label)),
         datasets: [
           {
-            label: 'Reportes',
+            label: this.t('Reportes'),
             data: [this.pendingCount(), this.validatedCount(), this.inProgressCount(), this.resolvedCount()],
             backgroundColor: colors,
             borderColor: colors,
@@ -712,7 +719,7 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (item) => `${item.parsed.y} reporte(s)`,
+              label: (item) => `${item.parsed.y} ${this.t('reporte(s)')}`,
             },
           },
         },
@@ -729,6 +736,10 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
         },
       },
     });
+  }
+
+  private t(value: string): string {
+    return this.i18n.translate(value);
   }
 }
 

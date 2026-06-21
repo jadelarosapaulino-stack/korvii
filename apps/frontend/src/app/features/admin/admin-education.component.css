@@ -22,7 +22,7 @@
 .media-studio > header strong { display: block; margin-top: .15rem; color: var(--rs-text); letter-spacing: 0; }
 .media-source-switch { display: flex; align-items: center; gap: .45rem; padding: .25rem; border: 1px solid var(--rs-border); border-radius: var(--rs-radius); background: var(--rs-surface); }
 .media-source-switch button { min-height: 36px; display: inline-flex; align-items: center; gap: .35rem; padding: 0 .7rem; border: 0; border-radius: calc(var(--rs-radius) - 2px); background: transparent; color: var(--rs-text-muted); font: inherit; font-size: .82rem; font-weight: 850; cursor: pointer; }
-.media-source-switch button.active { background: var(--rs-primary); color: #fff; }
+.media-source-switch button.active { background: var(--rs-primary-pastel); color: var(--rs-primary); }
 .media-source-switch mat-icon { width: 18px; height: 18px; font-size: 18px; color: currentColor; }
 .media-studio-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, .72fr); gap: 1rem; align-items: start; }
 .media-controls { display: grid; gap: .75rem; min-width: 0; }

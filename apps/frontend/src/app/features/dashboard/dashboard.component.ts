@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, effect, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Map as MapTilerMap, Popup, type GeoJSONSource, type MapLayerMouseEvent } from '@maptiler/sdk';
 import Chart from 'chart.js/auto';
 import { AnalyticsService, AnalyticsSummary } from '../../core/analytics.service';
+import { I18nService } from '../../core/i18n.service';
 import { applyKorviMapTheme, createKorviMap, mapReady, observeMapResize, scheduleMapResize, toggleKorviMapMode } from '../../core/map.config';
 import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/reports.service';
 
@@ -225,7 +226,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private readonly analytics: AnalyticsService,
     private readonly reportsService: ReportsService,
-  ) {}
+    private readonly i18n: I18nService,
+  ) {
+    effect(() => {
+      this.i18n.language();
+      this.renderCharts();
+    });
+  }
 
   ngOnInit(): void {
     this.load();
@@ -278,17 +285,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   topProvinceLabel(): string {
-    return this.provinceRows()[0]?.label ?? 'Sin actividad territorial';
+    return this.t(this.provinceRows()[0]?.label ?? 'Sin actividad territorial');
   }
 
   categoryRows() {
     const rows = this.summary()?.byCategory?.map((item) => ({ label: reportCategoryLabel(item.category), count: Number(item.count) })) ?? this.groupReports('category');
-    return this.withPercent(rows).slice(0, 6);
+    return this.withPercent(rows).slice(0, 6).map((row) => ({ ...row, label: this.t(row.label) }));
   }
 
   provinceRows() {
     const rows = this.summary()?.byProvince?.map((item) => ({ label: item.province, count: Number(item.count) })) ?? this.groupReports('province');
-    return this.withPercent(rows).slice(0, 6);
+    return this.withPercent(rows).slice(0, 6).map((row) => ({ ...row, label: this.t(row.label) }));
   }
 
   toX(longitude: number): number {
@@ -455,7 +462,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           this.resizeHeatMapNow();
           new Popup({ offset: 14 })
             .setLngLat(coordinates)
-            .setHTML(`<strong>${this.escapeHtml(String(feature.properties?.['title'] ?? 'Reporte'))}</strong><br>Riesgo ${String(feature.properties?.['riskLevel'] ?? '-')}/5`)
+            .setHTML(`<strong>${this.escapeHtml(this.t(String(feature.properties?.['title'] ?? 'Reporte')))}</strong><br>${this.escapeHtml(this.t('Riesgo'))} ${String(feature.properties?.['riskLevel'] ?? '-')}/5`)
             .addTo(this.heatMap as MapTilerMap);
           this.refreshHeatMapAfterCameraMove();
         });
@@ -535,7 +542,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!canvas) return;
 
     const rows = this.categoryRows();
-    const chartRows = rows.length ? rows : [{ label: 'Sin reportes', count: 1, percent: 100 }];
+    const chartRows = rows.length ? rows : [{ label: this.t('Sin reportes'), count: 1, percent: 100 }];
     const colors = rows.length ? this.chartColors : ['#D8E4E8'];
 
     this.categoryChart?.destroy();
@@ -575,7 +582,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
               usePointStyle: true,
             },
           },
-          tooltip: { callbacks: { label: (context) => `${context.label}: ${context.parsed} reportes` } },
+          tooltip: { callbacks: { label: (context) => `${context.label}: ${context.parsed} ${this.t('reportes')}` } },
         },
       },
     });
@@ -586,7 +593,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!canvas) return;
 
     const rows = this.statusRows();
-    const chartRows = rows.some((row) => row.count > 0) ? rows : [{ label: 'Sin reportes', count: 0, color: '#D8E4E8' }];
+    const chartRows = rows.some((row) => row.count > 0) ? rows : [{ label: this.t('Sin reportes'), count: 0, color: '#D8E4E8' }];
 
     this.statusChart?.destroy();
     this.statusChart = new Chart(canvas, {
@@ -594,7 +601,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       data: {
         labels: chartRows.map((row) => row.label),
         datasets: [{
-          label: 'Reportes',
+          label: this.t('Reportes'),
           data: chartRows.map((row) => row.count),
           backgroundColor: chartRows.map((row) => row.color),
           borderRadius: 8,
@@ -622,7 +629,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: (context) => `${context.parsed.y} reportes` } },
+          tooltip: { callbacks: { label: (context) => `${context.parsed.y} ${this.t('reportes')}` } },
         },
       },
     });
@@ -636,7 +643,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       { label: 'En proceso', count: summary?.inProgress ?? this.countByStatus('IN_PROGRESS'), color: '#9CB8D8' },
       { label: 'Resueltos', count: summary?.resolved ?? this.countByStatus('RESOLVED'), color: '#A8D8A5' },
       { label: 'Descartados', count: this.countByStatus('REJECTED') + this.countByStatus('DUPLICATE'), color: '#E58F8A' },
-    ];
+    ].map((row) => ({ ...row, label: this.t(row.label) }));
+  }
+
+  private t(value: string): string {
+    return this.i18n.translate(value);
   }
 }
 
