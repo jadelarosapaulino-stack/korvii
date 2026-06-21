@@ -580,7 +580,6 @@ const EN_DICTIONARY: Record<string, string> = {
   'UbicaciÃ³n seleccionada manualmente en el mapa.': 'Location selected manually on the map.',
   'Riesgo de inundacion': 'Flood risk',
   'Usa la ubicacion para consultar Open-Meteo.': 'Use location to check Open-Meteo.',
-  'Sin reportes': 'No reports',
   'Sin datos': 'No data',
   'Sin recalculo reciente': 'No recent recalculation',
   'Sin actividad territorial': 'No territorial activity',
