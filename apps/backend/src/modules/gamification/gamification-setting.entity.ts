@@ -8,7 +8,7 @@ export class GamificationSetting {
   @Column({ type: "int" })
   value: number;
 
-  @Column({ length: 60, nullable: true })
+  @Column({ type: "varchar", length: 60, nullable: true })
   icon?: string | null;
 
   @UpdateDateColumn()

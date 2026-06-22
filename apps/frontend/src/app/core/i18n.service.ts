@@ -99,44 +99,29 @@ const EN_DICTIONARY: Record<string, string> = {
   'Vista ejecutiva para priorizar riesgos, medir carga operativa y sustentar decisiones comerciales y operativas.': 'Executive view to prioritize risks, measure operational load, and support business and operational decisions.',
   'Total reportes': 'Total reports',
   'Base ciudadana activa': 'Active citizen base',
-  'Requieren verificaciÃ³n': 'Require verification',
   'Requieren verificacion': 'Require verification',
-  'En intervenciÃ³n': 'In progress',
   'En intervencion': 'In progress',
-  'GestiÃ³n operativa': 'Operational management',
   'Gestion operativa': 'Operational management',
   'Riesgo promedio': 'Average risk',
-  'Ãndice territorial': 'Territorial index',
   'Indice territorial': 'Territorial index',
   'Mapa de calor': 'Heat map',
-  'ConcentraciÃ³n de reportes': 'Report concentration',
   'Concentracion de reportes': 'Report concentration',
   'alto riesgo': 'high risk',
   'Mapa real de calor de reportes': 'Real heat map of reports',
   'Prioridad comercial': 'Business priority',
   'Lectura ejecutiva': 'Executive reading',
-  'ExposiciÃ³n territorial': 'Territorial exposure',
   'Exposicion territorial': 'Territorial exposure',
   'puntos de alto riesgo impactan prevencion, cobertura y priorizacion.': 'high-risk points impact prevention, coverage, and prioritization.',
-  'GestiÃ³n institucional': 'Institutional management',
   'Gestion institucional': 'Institutional management',
-  'reportes abiertos requieren validaciÃ³n, intervenciÃ³n o cierre.': 'open reports require validation, intervention, or closure.',
   'reportes abiertos requieren validacion, intervencion o cierre.': 'open reports require validation, intervention, or closure.',
-  'SeÃ±al de demanda': 'Demand signal',
   'Senal de demanda': 'Demand signal',
   'concentra la mayor actividad reportada.': 'concentrates the highest reported activity.',
-  'DistribuciÃ³n visual': 'Visual distribution',
   'Distribucion visual': 'Visual distribution',
-  'Reportes por categorÃ­a': 'Reports by category',
   'Reportes por categoria': 'Reports by category',
-  'GrÃ¡fico de reportes por categorÃ­a': 'Reports by category chart',
   'Grafico de reportes por categoria': 'Reports by category chart',
   'Estado operativo': 'Operational status',
-  'Flujo de atenciÃ³n': 'Response flow',
   'Flujo de atencion': 'Response flow',
-  'GrÃ¡fico de reportes por estado': 'Reports by status chart',
   'Grafico de reportes por estado': 'Reports by status chart',
-  'CategorÃ­as': 'Categories',
   'Categorias': 'Categories',
   'Mix de incidentes': 'Incident mix',
   'Territorio': 'Territory',
@@ -161,13 +146,9 @@ const EN_DICTIONARY: Record<string, string> = {
   'Distribucion de reportes activos': 'Active reports distribution',
   'Distribución de reportes activos': 'Active reports distribution',
   'Leyenda de riesgo': 'Risk legend',
-  'Bajo Â· 1-2': 'Low · 1-2',
   'Bajo · 1-2': 'Low · 1-2',
-  'Medio Â· 3': 'Medium · 3',
   'Medio · 3': 'Medium · 3',
-  'Alto Â· 4': 'High · 4',
   'Alto · 4': 'High · 4',
-  'CrÃ­tico Â· 5': 'Critical · 5',
   'Crítico · 5': 'Critical · 5',
   'Filtro por fecha y hora': 'Date and time filter',
   'Bandeja de incidentes': 'Incident inbox',
@@ -226,22 +207,16 @@ const EN_DICTIONARY: Record<string, string> = {
   'Accidente': 'Accident',
   'Semáforo dañado': 'Damaged traffic light',
   'Semaforo dañado': 'Damaged traffic light',
-  'SemÃ¡foro daÃ±ado': 'Damaged traffic light',
   'Vía en mal estado': 'Road damage',
   'Via en mal estado': 'Road damage',
-  'VÃ­a en mal estado': 'Road damage',
   'Obstrucción en la vía': 'Road obstruction',
   'Obstruccion en la via': 'Road obstruction',
-  'ObstrucciÃ³n en la vÃ­a': 'Road obstruction',
   'Falta de iluminación': 'Poor lighting',
   'Falta de iluminacion': 'Poor lighting',
-  'Falta de iluminaciÃ³n': 'Poor lighting',
   'Falta de señalización': 'Missing signage',
   'Falta de señalizacion': 'Missing signage',
-  'Falta de seÃ±alizaciÃ³n': 'Missing signage',
   'Conducción imprudente': 'Reckless driving',
   'Conduccion imprudente': 'Reckless driving',
-  'ConducciÃ³n imprudente': 'Reckless driving',
   'Cruce peligroso': 'Dangerous crossing',
   'Zona de posible inundacion': 'Potential flood zone',
   'Zona de posible inundación': 'Potential flood zone',
@@ -542,7 +517,6 @@ const EN_DICTIONARY: Record<string, string> = {
   'No se pudo eliminar el semaforo.': 'Could not delete the traffic light.',
   'Autoridad opcional': 'Optional authority',
   'Ubicacion, riesgo y atencion': 'Location, risk and response',
-  'UbicaciÃ³n, riesgo y atenciÃ³n': 'Location, risk and response',
   'Ubicación, riesgo y atención': 'Location, risk and response',
   'Riesgo sugerido': 'Suggested risk',
   'Ajustar nivel': 'Adjust level',
@@ -554,11 +528,8 @@ const EN_DICTIONARY: Record<string, string> = {
   'Ubicacion pendiente': 'Location pending',
   'GPS del dispositivo': 'Device GPS',
   'Seleccion manual': 'Manual selection',
-  'SelecciÃ³n manual': 'Manual selection',
   'Calculado según la categoría y la descripción del incidente.': 'Calculated from the incident category and description.',
-  'Calculado segÃºn la categorÃ­a y la descripciÃ³n del incidente.': 'Calculated from the incident category and description.',
   'Permite el acceso a tu ubicación para completar el reporte.': 'Allow access to your location to complete the report.',
-  'Permite el acceso a tu ubicaciÃ³n para completar el reporte.': 'Allow access to your location to complete the report.',
   'La ubicación es obligatoria para crear un reporte.': 'Location is required to create a report.',
   'Debes seleccionar la ubicación del reporte antes de enviar.': 'You must select the report location before submitting.',
   'Verificando imagenes antes de guardar el reporte...': 'Verifying images before saving the report...',
@@ -573,7 +544,6 @@ const EN_DICTIONARY: Record<string, string> = {
   'IA no disponible': 'AI unavailable',
   'No se pudo analizar la imagen con IA. Puedes completar el reporte manualmente.': 'The image could not be analyzed with AI. You can complete the report manually.',
   'Ubicación seleccionada manualmente en el mapa.': 'Location selected manually on the map.',
-  'UbicaciÃ³n seleccionada manualmente en el mapa.': 'Location selected manually on the map.',
   'Riesgo de inundacion': 'Flood risk',
   'Usa la ubicacion para consultar Open-Meteo.': 'Use location to check Open-Meteo.',
   'Sin datos': 'No data',
@@ -657,38 +627,24 @@ const EN_DICTIONARY: Record<string, string> = {
   'Permite la ubicacion del dispositivo para seguir tu posicion en el mapa.': 'Allow device location to follow your position on the map.',
   'No se pudo leer el area visible del mapa para consultar transito.': 'Could not read the visible map area to check traffic.',
   'No se pudo calcular la ruta optimizada. Intenta de nuevo.': 'Could not calculate the optimized route. Try again.',
-  'Accidente de trÃ¡nsito reportado': 'Reported traffic accident',
   'Accidente de tránsito reportado': 'Reported traffic accident',
-  'Se reporta un accidente de trÃ¡nsito que puede afectar la circulaciÃ³n y representar riesgo para conductores, motociclistas o peatones.': 'A traffic accident is reported that may affect circulation and pose a risk to drivers, motorcyclists or pedestrians.',
   'Se reporta un accidente de tránsito que puede afectar la circulación y representar riesgo para conductores, motociclistas o peatones.': 'A traffic accident is reported that may affect circulation and pose a risk to drivers, motorcyclists or pedestrians.',
-  'SemÃ¡foro daÃ±ado en intersecciÃ³n principal': 'Damaged traffic light at main intersection',
   'Semáforo dañado en intersección principal': 'Damaged traffic light at main intersection',
-  'El semÃ¡foro no funciona correctamente y genera riesgo para conductores, motociclistas y peatones en la intersecciÃ³n.': 'The traffic light is not working properly and creates risk for drivers, motorcyclists and pedestrians at the intersection.',
   'El semáforo no funciona correctamente y genera riesgo para conductores, motociclistas y peatones en la intersección.': 'The traffic light is not working properly and creates risk for drivers, motorcyclists and pedestrians at the intersection.',
-  'El semÃ¡foro no funciona y genera riesgo para motociclistas y peatones.': 'The traffic light is not working and creates risk for motorcyclists and pedestrians.',
   'El semáforo no funciona y genera riesgo para motociclistas y peatones.': 'The traffic light is not working and creates risk for motorcyclists and pedestrians.',
-  'La vÃ­a presenta hoyos, grietas o deterioro que puede provocar maniobras peligrosas, daÃ±os a vehÃ­culos o accidentes.': 'The road has potholes, cracks or deterioration that may cause dangerous maneuvers, vehicle damage or accidents.',
   'La vía presenta hoyos, grietas o deterioro que puede provocar maniobras peligrosas, daños a vehículos o accidentes.': 'The road has potholes, cracks or deterioration that may cause dangerous maneuvers, vehicle damage or accidents.',
-  'Hay escombros, basura, objetos caÃ­dos u otro elemento inusual que bloquea o reduce la movilidad en la ruta.': 'There is debris, trash, fallen objects or another unusual element blocking or reducing mobility on the route.',
   'Hay escombros, basura, objetos caídos u otro elemento inusual que bloquea o reduce la movilidad en la ruta.': 'There is debris, trash, fallen objects or another unusual element blocking or reducing mobility on the route.',
-  'Zona con poca iluminaciÃ³n': 'Poorly lit area',
   'Zona con poca iluminación': 'Poorly lit area',
-  'El tramo tiene iluminaciÃ³n insuficiente durante la noche, reduciendo la visibilidad y aumentando el riesgo para usuarios de la vÃ­a.': 'The road segment has insufficient lighting at night, reducing visibility and increasing risk for road users.',
   'El tramo tiene iluminación insuficiente durante la noche, reduciendo la visibilidad y aumentando el riesgo para usuarios de la vía.': 'The road segment has insufficient lighting at night, reducing visibility and increasing risk for road users.',
-  'SeÃ±alizaciÃ³n ausente o deteriorada': 'Missing or damaged signage',
   'Señalización ausente o deteriorada': 'Missing or damaged signage',
-  'Falta seÃ±alizaciÃ³n vial o la existente estÃ¡ deteriorada, lo que puede generar confusiÃ³n y maniobras inseguras.': 'Road signage is missing or existing signage is damaged, which may cause confusion and unsafe maneuvers.',
   'Falta señalización vial o la existente está deteriorada, lo que puede generar confusión y maniobras inseguras.': 'Road signage is missing or existing signage is damaged, which may cause confusion and unsafe maneuvers.',
-  'ConducciÃ³n imprudente frecuente': 'Frequent reckless driving',
   'Conducción imprudente frecuente': 'Frequent reckless driving',
-  'Se observa conducciÃ³n imprudente en la zona, como exceso de velocidad, rebases peligrosos o irrespeto a seÃ±ales de trÃ¡nsito.': 'Reckless driving is observed in the area, such as speeding, dangerous passing or ignoring traffic signs.',
   'Se observa conducción imprudente en la zona, como exceso de velocidad, rebases peligrosos o irrespeto a señales de tránsito.': 'Reckless driving is observed in the area, such as speeding, dangerous passing or ignoring traffic signs.',
   'Cruce peligroso para peatones': 'Dangerous pedestrian crossing',
   'El cruce representa riesgo para peatones y conductores por falta de control, visibilidad limitada o alto flujo vehicular.': 'The crossing poses risk to pedestrians and drivers due to lack of control, limited visibility or high vehicle flow.',
   'Se reporta acumulacion de agua o posible inundacion en la via. Evita transitar por este tramo hasta que sea validado o resuelto.': 'Water accumulation or possible flooding is reported on the road. Avoid traveling through this segment until it is validated or resolved.',
   'Se reporta presencia policial o un punto de control en la via. Reduce la velocidad, respeta las indicaciones y conduce con precaucion.': 'Police presence or a checkpoint is reported on the road. Reduce speed, follow instructions and drive carefully.',
   'Riesgo vial reportado': 'Reported road risk',
-  'Describe el riesgo vial observado, indicando cÃ³mo afecta la seguridad de peatones, conductores o motociclistas.': 'Describe the observed road risk, indicating how it affects the safety of pedestrians, drivers or motorcyclists.',
   'Describe el riesgo vial observado, indicando cómo afecta la seguridad de peatones, conductores o motociclistas.': 'Describe the observed road risk, indicating how it affects the safety of pedestrians, drivers or motorcyclists.',
   'Items per page:': 'Items per page:',
 };
@@ -708,9 +664,7 @@ const EN_REPLACEMENTS: Array<[RegExp, string]> = [
   [/^Activación automática por estado del tiempo\. Condición actual: (.+)\. Probabilidad de lluvia 24h: (.+)\. Lluvia intensa prevista: (.+) desde (.+)\. Caudal fluvial GloFAS: (.+)\.$/i, 'Automatic activation by weather status. Current condition: $1. 24h rain probability: $2. Expected heavy rain: $3 from $4. GloFAS river flow: $5.'],
   [/^Reportes a (\d+) m$/i, 'Reports within $1 m'],
   [/^(\d+) puntos de alto riesgo impactan prevencion, cobertura y priorizacion\.$/i, '$1 high-risk points impact prevention, coverage, and prioritization.'],
-  [/^(\d+) puntos de alto riesgo impactan prevenciÃ³n, cobertura y priorizaciÃ³n\.$/i, '$1 high-risk points impact prevention, coverage, and prioritization.'],
   [/^(.+) reportes abiertos requieren validacion, intervencion o cierre\.$/i, '$1 open reports require validation, intervention, or closure.'],
-  [/^(.+) reportes abiertos requieren validaciÃ³n, intervenciÃ³n o cierre\.$/i, '$1 open reports require validation, intervention, or closure.'],
   [/^(.+) concentra la mayor actividad reportada\.$/i, '$1 concentrates the highest reported activity.'],
   [/^(\d+) puntos de alto riesgo/i, '$1 high-risk points'],
   [/^(\d+) reportes abiertos/i, '$1 open reports'],
@@ -726,20 +680,14 @@ const EN_REPLACEMENTS: Array<[RegExp, string]> = [
   [/^Riesgo (\d+)\/5 - Confianza (.+)$/i, 'Risk $1/5 - Confidence $2'],
   [/^(.+) - Riesgo (\d+)\/5$/i, '$1 - Risk $2/5'],
   [/^(.+) - Riesgo (\d+)\/5 - Confianza (.+)$/i, '$1 - Risk $2/5 - Confidence $3'],
-  [/^Nivel (\d+)\/5 calculado por la categorÃ­a seleccionada y las seÃ±ales detectadas en el texto\.$/i, 'Level $1/5 calculated from the selected category and signals detected in the text.'],
   [/^Nivel (\d+)\/5 calculado por la categoría seleccionada y las señales detectadas en el texto\.$/i, 'Level $1/5 calculated from the selected category and signals detected in the text.'],
-  [/^Nivel ajustado manualmente por el usuario\. Sugerencia por categorÃ­a: (\d+)\/5\.$/i, 'Level manually adjusted by the user. Category suggestion: $1/5.'],
   [/^Nivel ajustado manualmente por el usuario\. Sugerencia por categoría: (\d+)\/5\.$/i, 'Level manually adjusted by the user. Category suggestion: $1/5.'],
-  [/^Coordenadas capturadas con precisiÃ³n aproximada de (.+) metros\.$/i, 'Coordinates captured with approximate accuracy of $1 meters.'],
   [/^Coordenadas capturadas con precisión aproximada de (.+) metros\.$/i, 'Coordinates captured with approximate accuracy of $1 meters.'],
-  [/^(.+)\. Coordenadas: (.+)\. PrecisiÃ³n: (.+)\. Reportes cercanos: (\d+) en 500 m\.$/i, '$1. Coordinates: $2. Accuracy: $3. Nearby reports: $4 within 500 m.'],
   [/^(.+)\. Coordenadas: (.+)\. Precisión: (.+)\. Reportes cercanos: (\d+) en 500 m\.$/i, '$1. Coordinates: $2. Accuracy: $3. Nearby reports: $4 within 500 m.'],
-  [/^(.+) reportes abiertos requieren validaciÃ³n, intervenciÃ³n o cierre\.$/i, '$1 open reports require validation, intervention or closure.'],
   [/^(.+) reportes abiertos requieren validación, intervención o cierre\.$/i, '$1 open reports require validation, intervention or closure.'],
   [/^Actualizado (.+)$/i, 'Updated $1'],
   [/^Ubicacion detectada: (.+) - (.+)\. Podras cambiarla desde tu perfil\.$/i, 'Location detected: $1 - $2. You can change it from your profile.'],
   [/^Categorias detectadas: (.+)\.$/i, 'Detected categories: $1.'],
-  [/^CategorÃ­as detectadas: (.+)\.$/i, 'Detected categories: $1.'],
 ];
 
 const EN_INLINE_TERMS: Array<[RegExp, string]> = [
@@ -749,6 +697,31 @@ const EN_INLINE_TERMS: Array<[RegExp, string]> = [
   [/\bLluvia intensa\b/gi, 'Heavy rain'],
   [/\bLluvia\b/gi, 'Rain'],
 ];
+
+const MOJIBAKE_REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
+  ['Ã¡', 'á'],
+  ['Ã©', 'é'],
+  ['Ã­', 'í'],
+  ['Ã³', 'ó'],
+  ['Ãº', 'ú'],
+  ['Ã±', 'ñ'],
+  ['Ã', 'Á'],
+  ['Ã‰', 'É'],
+  ['Ã', 'Í'],
+  ['Ã“', 'Ó'],
+  ['Ãš', 'Ú'],
+  ['Ã‘', 'Ñ'],
+  ['Â·', '·'],
+  ['Â', ''],
+];
+
+function normalizeText(value: string): string {
+  const repaired = MOJIBAKE_REPLACEMENTS.reduce(
+    (text, [invalid, valid]) => text.replaceAll(invalid, valid),
+    value,
+  );
+  return repaired.normalize('NFC');
+}
 
 function translateInlineTerms(value: string): string {
   return EN_INLINE_TERMS.reduce((next, [pattern, replacement]) => next.replace(pattern, replacement), value);
@@ -785,10 +758,12 @@ export class I18nService {
   }
 
   translate(value: string | null | undefined): string {
-    if (!value || this.language() === 'es') return value ?? '';
-    const trimmed = value.trim();
-    const leading = value.match(/^\s*/)?.[0] ?? '';
-    const trailing = value.match(/\s*$/)?.[0] ?? '';
+    if (!value) return value ?? '';
+    const normalizedValue = normalizeText(value);
+    if (this.language() === 'es') return normalizedValue;
+    const trimmed = normalizedValue.trim();
+    const leading = normalizedValue.match(/^\s*/)?.[0] ?? '';
+    const trailing = normalizedValue.match(/\s*$/)?.[0] ?? '';
     const exact = EN_DICTIONARY[trimmed]
       ?? EN_DICTIONARY_CASE_INSENSITIVE.get(trimmed.toLocaleLowerCase('es'));
     if (exact) return `${leading}${translateInlineTerms(preserveCase(trimmed, exact))}${trailing}`;
@@ -797,7 +772,7 @@ export class I18nService {
       if (pattern.test(trimmed)) return `${leading}${translateInlineTerms(trimmed.replace(pattern, replacement))}${trailing}`;
     }
 
-    return value;
+    return normalizedValue;
   }
 
   private readInitialLanguage(): AppLanguage {
