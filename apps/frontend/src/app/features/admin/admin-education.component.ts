@@ -22,56 +22,95 @@ import { EducationCategory, EducationService, Lesson, YoutubeVideoMetadata } fro
   template: `
     <section class="education-admin-page">
       <header class="admin-header">
-        <div>
-          <span class="rs-eyebrow">Contenido educativo</span>
-          <h1>Registro de cursos y videos</h1>
-          <p>Administra módulos preventivos, videos formativos y puntaje para la academia vial.</p>
+        <div class="header-copy">
+          <div class="header-icon"><mat-icon>school</mat-icon></div>
+          <div>
+            <span class="rs-eyebrow">Academia vial</span>
+            <h1>Registro de cursos y videos</h1>
+            <p>Diseña experiencias formativas, organiza el contenido y administra las recompensas desde un solo lugar.</p>
+          </div>
         </div>
-        <a mat-stroked-button routerLink="/admin">
+        <a mat-stroked-button class="back-button" routerLink="/admin">
           <mat-icon>arrow_back</mat-icon>
           Volver al panel
         </a>
       </header>
 
+      <section class="summary-grid" aria-label="Resumen de contenido educativo">
+        <article>
+          <span class="summary-icon primary"><mat-icon>library_books</mat-icon></span>
+          <div><strong>{{ lessons().length }}</strong><span>Módulos publicados</span></div>
+        </article>
+        <article>
+          <span class="summary-icon coral"><mat-icon>play_circle</mat-icon></span>
+          <div><strong>{{ videoLessonsCount() }}</strong><span>Lecciones en video</span></div>
+        </article>
+        <article>
+          <span class="summary-icon teal"><mat-icon>category</mat-icon></span>
+          <div><strong>{{ categories().length }}</strong><span>Categorías disponibles</span></div>
+        </article>
+      </section>
+
       <section class="admin-layout">
         <mat-card class="creator-panel">
           <div class="panel-heading">
-            <div>
-              <span>{{ editingLesson() ? 'Editando contenido' : 'Nuevo contenido' }}</span>
-              <strong>{{ editingLesson() ? 'Actualizar curso o video' : 'Curso o video' }}</strong>
+            <div class="panel-title">
+              <span class="panel-icon"><mat-icon>{{ editingLesson() ? 'edit_note' : 'add_circle' }}</mat-icon></span>
+              <div>
+                <span>{{ editingLesson() ? 'Editando contenido' : 'Nuevo contenido' }}</span>
+                <strong>{{ editingLesson() ? 'Actualizar curso o video' : 'Crear curso o video' }}</strong>
+              </div>
             </div>
-            <mat-icon>video_library</mat-icon>
+            <span class="status-pill">{{ editingLesson() ? 'Modo edición' : 'Borrador nuevo' }}</span>
           </div>
 
           <form class="creator-form" [formGroup]="courseForm" (ngSubmit)="createLesson()">
-            <div class="form-row two">
-              <mat-form-field appearance="outline">
-                <mat-label>Curso</mat-label>
-                <input matInput formControlName="courseTitle" placeholder="Seguridad vial urbana" />
-              </mat-form-field>
+            <section class="form-section">
+              <div class="form-section-heading">
+                <span>01</span>
+                <div>
+                  <strong>Información del módulo</strong>
+                  <small>Define cómo se identificará el contenido dentro de la academia.</small>
+                </div>
+              </div>
+              <div class="form-fields">
+                <div class="form-row two">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Curso</mat-label>
+                    <input matInput formControlName="courseTitle" placeholder="Seguridad vial urbana" />
+                  </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Categoría</mat-label>
-                <mat-select formControlName="category">
-                  @for (category of categories(); track category.name) {
-                    <mat-option [value]="category.name">{{ category.name }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            </div>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Categoría</mat-label>
+                    <mat-select formControlName="category">
+                      @for (category of categories(); track category.name) {
+                        <mat-option [value]="category.name">{{ category.name }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                </div>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Título del módulo</mat-label>
-              <input matInput formControlName="title" />
-            </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Título del módulo</mat-label>
+                  <input matInput formControlName="title" />
+                </mat-form-field>
+              </div>
+            </section>
 
             <mat-form-field appearance="outline">
               <mat-label>Descripción</mat-label>
               <textarea matInput rows="4" formControlName="content"></textarea>
             </mat-form-field>
 
-            <div class="wysiwyg-field">
-              <label>Editor visual de contenido</label>
+            <section class="form-section editor-section">
+              <div class="form-section-heading">
+                <span>02</span>
+                <div>
+                  <strong>Contenido de la lección</strong>
+                  <small>Redacta una explicación clara y agrega recursos visuales.</small>
+                </div>
+              </div>
+              <div class="wysiwyg-field">
               <div class="editor-toolbar">
                 <button mat-icon-button type="button" (click)="formatText('bold')" aria-label="Negrita"><mat-icon>format_bold</mat-icon></button>
                 <button mat-icon-button type="button" (click)="formatText('italic')" aria-label="Italica"><mat-icon>format_italic</mat-icon></button>
@@ -92,13 +131,17 @@ import { EducationCategory, EducationService, Lesson, YoutubeVideoMetadata } fro
                 (input)="syncEditorContent()"
                 (blur)="syncEditorContent()"
               ></div>
-            </div>
+              </div>
+            </section>
 
             <section class="media-studio">
               <header>
-                <div>
-                  <span>Estudio de video</span>
-                  <strong>{{ activeMediaSource() === 'youtube' ? 'YouTube' : 'Video local' }}</strong>
+                <div class="form-section-heading media-heading">
+                  <span>03</span>
+                  <div>
+                    <strong>Recurso audiovisual</strong>
+                    <small>{{ activeMediaSource() === 'youtube' ? 'Conecta un video de YouTube' : 'Carga un video desde tu equipo' }}</small>
+                  </div>
                 </div>
                 <div class="media-source-switch">
                   <button type="button" [class.active]="activeMediaSource() === 'youtube'" (click)="selectMediaSource('youtube')">
@@ -251,10 +294,14 @@ import { EducationCategory, EducationService, Lesson, YoutubeVideoMetadata } fro
 
         <mat-card class="content-list">
           <div class="panel-heading">
-            <div>
-              <span>Biblioteca</span>
-              <strong>{{ lessons().length }} módulos registrados</strong>
+            <div class="panel-title">
+              <span class="panel-icon library"><mat-icon>video_library</mat-icon></span>
+              <div>
+                <span>Biblioteca educativa</span>
+                <strong>{{ lessons().length }} módulos registrados</strong>
+              </div>
             </div>
+            <span class="status-pill neutral">{{ pageSize() }} por página</span>
           </div>
 
           <div class="lesson-list">
@@ -363,6 +410,7 @@ export class AdminEducationComponent implements OnInit {
   @ViewChild('contentEditor') contentEditor?: ElementRef<HTMLDivElement>;
 
   lessons = signal<Lesson[]>([]);
+  videoLessonsCount = computed(() => this.lessons().filter((lesson) => Boolean(lesson.videoUrl)).length);
   pageIndex = signal(0);
   pageSize = signal(5);
   pagedLessons = computed(() => {

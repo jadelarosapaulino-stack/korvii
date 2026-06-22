@@ -17,7 +17,7 @@
   overflow: hidden;
   color: var(--rs-text);
   background-color: #ffffff;
-  background-image: url("/assets/auth/korvi-auth-background.png") !important;
+  background-image: url("/krv/assets/auth/korvi-auth-background.png") !important;
   background-repeat: no-repeat !important;
   background-position: center center !important;
   background-size: cover !important;
