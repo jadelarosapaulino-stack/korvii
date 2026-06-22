@@ -42,10 +42,18 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
   template: `
     <section class="system-page">
       <header class="system-header">
-        <div>
-          <span class="rs-eyebrow">Super administracion</span>
-          <h1>Configuracion del sistema</h1>
-          <p>Centro de control para catalogos, categorias, roles, suscripciones, almacenamiento y librerias.</p>
+        <div class="system-heading">
+          <div class="system-heading-icon">
+            <mat-icon>tune</mat-icon>
+          </div>
+          <div>
+            <div class="heading-meta">
+              <span class="rs-eyebrow">Super administracion</span>
+              <span class="system-status"><i></i>Sistema operativo</span>
+            </div>
+            <h1>Configuracion del sistema</h1>
+            <p>Administra capacidades, proveedores y reglas operativas desde un centro de control unificado.</p>
+          </div>
         </div>
         <div class="header-actions">
           <a mat-stroked-button routerLink="/admin">
@@ -63,8 +71,43 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
         </div>
       </header>
 
+      <section class="system-overview" aria-label="Resumen de configuracion">
+        <article>
+          <span class="overview-icon"><mat-icon>category</mat-icon></span>
+          <div>
+            <small>Categorias activas</small>
+            <strong>{{ enabledCategoryCount() }} / {{ config.config().categories.length }}</strong>
+          </div>
+        </article>
+        <article>
+          <span class="overview-icon"><mat-icon>flag</mat-icon></span>
+          <div>
+            <small>Funciones habilitadas</small>
+            <strong>{{ enabledFeatureCount() }} / {{ featureFlags.flags().length }}</strong>
+          </div>
+        </article>
+        <article>
+          <span class="overview-icon"><mat-icon>cloud_done</mat-icon></span>
+          <div>
+            <small>Proveedor activo</small>
+            <strong>{{ config.config().storage.provider }}</strong>
+          </div>
+        </article>
+        <article>
+          <span class="overview-icon"><mat-icon>key</mat-icon></span>
+          <div>
+            <small>Credenciales listas</small>
+            <strong>{{ configuredApiKeyCount() }} / {{ apiKeyServices.length }}</strong>
+          </div>
+        </article>
+      </section>
+
       <section class="settings-layout">
         <aside class="settings-sidebar" aria-label="Menu de configuracion administrativa">
+          <div class="sidebar-heading">
+            <span>Navegacion</span>
+            <strong>Modulos del sistema</strong>
+          </div>
           @for (section of sections; track section.id) {
             <a
               routerLink="/admin/system"
@@ -78,9 +121,21 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
               </span>
             </a>
           }
+          <div class="sidebar-footnote">
+            <mat-icon>verified_user</mat-icon>
+            <span>Acceso exclusivo para super administradores.</span>
+          </div>
         </aside>
 
         <mat-card class="settings-panel">
+          <div class="panel-context">
+            <span class="panel-context-icon"><mat-icon>{{ activeSectionMeta().icon }}</mat-icon></span>
+            <div>
+              <small>Modulo actual</small>
+              <strong>{{ activeSectionMeta().label }}</strong>
+              <span>{{ activeSectionMeta().description }}</span>
+            </div>
+          </div>
           @switch (activeSection) {
             @case ('categories') {
               <div class="section-title">
@@ -454,45 +509,87 @@ type AdminSettingsSection = 'categories' | 'auth' | 'features' | 'gamification' 
             }
 
             @case ('gamification') {
-              <div class="section-title compact">
-                <h2>Insignias y puntos</h2>
-                <p>Ajusta los puntos otorgados por actividad y los umbrales para desbloquear insignias en el perfil ciudadano.</p>
+              <div class="gamification-heading">
+                <div>
+                  <h2>Insignias y puntos</h2>
+                  <p>Ajusta recompensas y metas de progreso desde una vista compacta.</p>
+                </div>
+                <div class="gamification-summary">
+                  <span><mat-icon>stars</mat-icon>{{ pointSettings.length }} recompensas</span>
+                  <span><mat-icon>military_tech</mat-icon>{{ badgeSettings.length }} umbrales</span>
+                </div>
               </div>
 
-              <div class="library-grid">
-                <mat-card class="library-section">
-                  <h3>Puntos por actividad</h3>
-                  <div class="field-grid three">
+              <div class="gamification-grid">
+                <section class="gamification-section points-section">
+                  <div class="gamification-section-heading">
+                    <span class="gamification-section-icon points"><mat-icon>add_chart</mat-icon></span>
+                    <div>
+                      <h3>Puntos por actividad</h3>
+                      <p>Recompensas obtenidas por cada contribucion.</p>
+                    </div>
+                  </div>
+                  <div class="gamification-setting-list">
                     @for (item of pointSettings; track item.key) {
-                      <mat-form-field appearance="outline">
-                        <mat-label>{{ item.label }}</mat-label>
+                      <label class="gamification-setting point-setting">
+                        <span class="setting-icon"><mat-icon>{{ item.icon }}</mat-icon></span>
+                        <span class="setting-copy">
+                          <strong>{{ item.label }}</strong>
+                          <small>Puntos otorgados</small>
+                        </span>
                         <input
-                          matInput
                           type="number"
                           min="0"
                           [ngModel]="gamification.settings()[item.key]"
                           (ngModelChange)="gamification.update(item.key, numberValue($event, item.fallback))" />
-                      </mat-form-field>
+                        <span class="setting-unit">pts</span>
+                      </label>
                     }
                   </div>
-                </mat-card>
+                </section>
 
-                <mat-card class="library-section">
-                  <h3>Umbrales de insignias</h3>
-                  <div class="field-grid three">
+                <section class="gamification-section badges-section">
+                  <div class="gamification-section-heading">
+                    <span class="gamification-section-icon badges"><mat-icon>workspace_premium</mat-icon></span>
+                    <div>
+                      <h3>Umbrales de insignias</h3>
+                      <p>Metas necesarias para desbloquear logros.</p>
+                    </div>
+                  </div>
+                  <div class="gamification-setting-list">
                     @for (item of badgeSettings; track item.key) {
-                      <mat-form-field appearance="outline">
-                        <mat-label>{{ item.label }}</mat-label>
-                        <input
-                          matInput
-                          type="number"
-                          min="0"
-                          [ngModel]="gamification.settings()[item.key]"
-                          (ngModelChange)="gamification.update(item.key, numberValue($event, item.fallback))" />
-                      </mat-form-field>
+                      <label class="gamification-setting badge-setting">
+                        <span class="setting-icon"><mat-icon>{{ badgeIcon(item) }}</mat-icon></span>
+                        <span class="setting-copy">
+                          <strong>{{ item.label }}</strong>
+                          <small>{{ item.unit }}</small>
+                        </span>
+                        <span class="badge-controls">
+                          <label>
+                            <small>Meta</small>
+                            <input
+                              type="number"
+                              min="0"
+                              [ngModel]="gamification.settings()[item.key]"
+                              (ngModelChange)="gamification.update(item.key, numberValue($event, item.fallback))" />
+                          </label>
+                          <label>
+                            <small>Icono</small>
+                            <select
+                              class="badge-icon-select"
+                              [attr.aria-label]="'Icono de ' + item.label"
+                              [ngModel]="badgeIcon(item)"
+                              (ngModelChange)="gamification.update(item.iconKey, $event)">
+                              @for (icon of membershipIcons; track icon.value) {
+                                <option [value]="icon.value">{{ icon.label }}</option>
+                              }
+                            </select>
+                          </label>
+                        </span>
+                      </label>
                     }
                   </div>
-                </mat-card>
+                </section>
               </div>
             }
 
@@ -1218,24 +1315,38 @@ export class SystemAdminComponent implements OnInit {
   ];
   visibleApiKeys: Partial<Record<keyof SystemApiKeysConfig, boolean>> = {};
   readonly pointSettings = [
-    { key: 'pointsReportCreated', label: 'Reporte creado', fallback: 10 },
-    { key: 'pointsValidatedReport', label: 'Reporte validado', fallback: 30 },
-    { key: 'pointsResolvedReport', label: 'Reporte resuelto', fallback: 20 },
-    { key: 'pointsHighRiskReport', label: 'Riesgo alto', fallback: 10 },
-    { key: 'pointsLessonCompleted', label: 'Leccion completada', fallback: 25 },
-    { key: 'pointsHighEducationScore', label: 'Bono educativo', fallback: 10 },
-    { key: 'pointsProfileComplete', label: 'Perfil completo', fallback: 40 },
+    { key: 'pointsReportCreated', label: 'Reporte creado', fallback: 10, icon: 'add_location_alt' },
+    { key: 'pointsValidatedReport', label: 'Reporte validado', fallback: 30, icon: 'verified' },
+    { key: 'pointsResolvedReport', label: 'Reporte resuelto', fallback: 20, icon: 'task_alt' },
+    { key: 'pointsHighRiskReport', label: 'Riesgo alto', fallback: 10, icon: 'warning' },
+    { key: 'pointsLessonCompleted', label: 'Leccion completada', fallback: 25, icon: 'school' },
+    { key: 'pointsHighEducationScore', label: 'Bono educativo', fallback: 10, icon: 'workspace_premium' },
+    { key: 'pointsProfileComplete', label: 'Perfil completo', fallback: 40, icon: 'person_check' },
   ];
   readonly badgeSettings = [
-    { key: 'firstReportThreshold', label: 'Primer aviso', fallback: 1 },
-    { key: 'activeReporterThreshold', label: 'Reportero activo', fallback: 5 },
-    { key: 'trustedReporterThreshold', label: 'Fuente confiable', fallback: 3 },
-    { key: 'highRiskWatcherThreshold', label: 'Guardian vial', fallback: 3 },
-    { key: 'roadScholarThreshold', label: 'Aprendiz vial', fallback: 3 },
-    { key: 'profileCompleteThreshold', label: 'Perfil completo %', fallback: 80 },
-    { key: 'pointsBronzeThreshold', label: 'Bronce puntos', fallback: 100 },
-    { key: 'pointsSilverThreshold', label: 'Plata puntos', fallback: 300 },
-    { key: 'pointsGoldThreshold', label: 'Oro puntos', fallback: 700 },
+    { key: 'firstReportThreshold', iconKey: 'firstReportThresholdIcon', label: 'Primer aviso', fallback: 1, defaultIcon: 'flag', unit: 'Reportes requeridos' },
+    { key: 'activeReporterThreshold', iconKey: 'activeReporterThresholdIcon', label: 'Reportero activo', fallback: 5, defaultIcon: 'campaign', unit: 'Reportes requeridos' },
+    { key: 'trustedReporterThreshold', iconKey: 'trustedReporterThresholdIcon', label: 'Fuente confiable', fallback: 3, defaultIcon: 'verified', unit: 'Validaciones requeridas' },
+    { key: 'highRiskWatcherThreshold', iconKey: 'highRiskWatcherThresholdIcon', label: 'Guardian vial', fallback: 3, defaultIcon: 'shield', unit: 'Riesgos altos' },
+    { key: 'roadScholarThreshold', iconKey: 'roadScholarThresholdIcon', label: 'Aprendiz vial', fallback: 3, defaultIcon: 'school', unit: 'Lecciones completadas' },
+    { key: 'profileCompleteThreshold', iconKey: 'profileCompleteThresholdIcon', label: 'Perfil completo', fallback: 80, defaultIcon: 'person', unit: 'Porcentaje requerido' },
+    { key: 'pointsBronzeThreshold', iconKey: 'pointsBronzeThresholdIcon', label: 'Nivel bronce', fallback: 100, defaultIcon: 'emoji_events', unit: 'Puntos acumulados' },
+    { key: 'pointsSilverThreshold', iconKey: 'pointsSilverThresholdIcon', label: 'Nivel plata', fallback: 300, defaultIcon: 'military_tech', unit: 'Puntos acumulados' },
+    { key: 'pointsGoldThreshold', iconKey: 'pointsGoldThresholdIcon', label: 'Nivel oro', fallback: 700, defaultIcon: 'workspace_premium', unit: 'Puntos acumulados' },
+  ];
+  readonly membershipIcons = [
+    { value: 'flag', label: 'Bandera' },
+    { value: 'campaign', label: 'Campana' },
+    { value: 'verified', label: 'Verificado' },
+    { value: 'shield', label: 'Escudo' },
+    { value: 'school', label: 'Educacion' },
+    { value: 'person', label: 'Perfil' },
+    { value: 'emoji_events', label: 'Trofeo' },
+    { value: 'military_tech', label: 'Medalla' },
+    { value: 'workspace_premium', label: 'Premium' },
+    { value: 'stars', label: 'Estrellas' },
+    { value: 'diamond', label: 'Diamante' },
+    { value: 'local_fire_department', label: 'Racha' },
   ];
 
   constructor(
@@ -1246,6 +1357,23 @@ export class SystemAdminComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly toastr: ToastrService,
   ) {}
+
+  activeSectionMeta() {
+    return this.sections.find((section) => section.id === this.activeSection) ?? this.sections[0];
+  }
+
+  enabledCategoryCount(): number {
+    return this.config.config().categories.filter((category) => category.enabled).length;
+  }
+
+  enabledFeatureCount(): number {
+    return this.featureFlags.flags().filter((flag) => flag.enabled).length;
+  }
+
+  badgeIcon(item: { iconKey: string; defaultIcon: string }): string {
+    const value = this.gamification.settings()[item.iconKey];
+    return typeof value === 'string' && value ? value : item.defaultIcon;
+  }
 
   ngOnInit(): void {
     this.gamification.load();

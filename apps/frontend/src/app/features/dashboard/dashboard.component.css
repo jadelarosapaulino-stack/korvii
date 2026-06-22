@@ -82,30 +82,47 @@
   display: none;
 }
 
-.metric-card > mat-icon {
+.metric-icon {
+  position: relative;
   grid-column: 2;
   grid-row: 1;
   width: 42px;
   height: 42px;
-  display: grid;
-  place-items: center;
+  display: block;
+  padding: 0;
+  overflow: hidden;
   border-radius: var(--rs-radius);
   background: color-mix(in srgb, var(--insight-teal) 16%, #ffffff);
   color: #317F78;
-  font-size: 22px;
 }
 
-.metric-card.accent-warning > mat-icon {
+.metric-icon mat-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  display: block;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 24px;
+  line-height: 24px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+}
+
+.metric-card.accent-warning .metric-icon {
   background: color-mix(in srgb, var(--insight-amber) 24%, #ffffff);
   color: #9B6B25;
 }
 
-.metric-card.accent-primary > mat-icon {
+.metric-card.accent-primary .metric-icon {
   background: color-mix(in srgb, var(--insight-blue) 24%, #ffffff);
   color: #4E7199;
 }
 
-.metric-card.accent-danger > mat-icon {
+.metric-card.accent-danger .metric-icon {
   background: color-mix(in srgb, var(--insight-rose) 22%, #ffffff);
   color: #A24D48;
 }

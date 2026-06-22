@@ -18,7 +18,7 @@ export class GamificationController {
 
   @Patch("settings")
   @Roles(UserRole.SUPER_ADMIN)
-  updateSettings(@Body() body: Record<string, number>) {
+  updateSettings(@Body() body: Record<string, unknown>) {
     return this.gamification.updateSettings(body);
   }
 }

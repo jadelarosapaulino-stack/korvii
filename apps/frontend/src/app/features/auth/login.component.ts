@@ -56,14 +56,14 @@ declare global {
               <div class="field-stack">
                 <label class="auth-input-field" [class.invalid]="form.controls.email.invalid && form.controls.email.touched">
                   <span>Correo*</span>
-                  <input formControlName="email" placeholder="ciudadano@demo.com" autocomplete="email" />
+                  <input formControlName="email" placeholder="Ingresa tu correo" autocomplete="email" />
                   <small *ngIf="form.controls.email.invalid && form.controls.email.touched">Ingresa un correo valido.</small>
                 </label>
 
                 <label class="auth-input-field" [class.invalid]="form.controls.password.invalid && form.controls.password.touched">
                   <span>Contrasena*</span>
                   <div class="password-input-shell">
-                    <input [type]="passwordVisible() ? 'text' : 'password'" formControlName="password" placeholder="Demo12345" autocomplete="current-password" />
+                    <input [type]="passwordVisible() ? 'text' : 'password'" formControlName="password" placeholder="Ingresa tu contrasena" autocomplete="current-password" />
                     <button mat-icon-button type="button" [attr.aria-label]="passwordVisible() ? 'Ocultar contrasena' : 'Mostrar contrasena'" (click)="passwordVisible.update(value => !value)">
                       <mat-icon>{{ passwordVisible() ? 'visibility_off' : 'visibility' }}</mat-icon>
                     </button>
@@ -125,8 +125,8 @@ export class LoginComponent implements OnInit, AfterViewInit {
   googleButtonReady = signal(false);
   facebookReady = signal(false);
   form = this.fb.nonNullable.group({
-    email: ['ciudadano@demo.com', [Validators.required, Validators.email]],
-    password: ['Demo12345', [Validators.required, Validators.minLength(8)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
   constructor(

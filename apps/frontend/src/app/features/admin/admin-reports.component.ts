@@ -235,13 +235,14 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
             </div>
 
             <div class="actions">
-              <button mat-icon-button class="map-button" type="button" aria-label="Ver reporte en mapa" (click)="openReportMap(report)">
-                <mat-icon>map</mat-icon>
-              </button>
               <button mat-icon-button class="options-button" type="button" [matMenuTriggerFor]="reportActions" aria-label="Opciones del reporte">
                 <mat-icon>more_vert</mat-icon>
               </button>
               <mat-menu #reportActions="matMenu" xPosition="before" panelClass="report-actions-menu">
+                <button mat-menu-item class="report-action-item" type="button" (click)="openReportMap(report)">
+                  <mat-icon>map</mat-icon>
+                  <span>Ver en el mapa</span>
+                </button>
                 <button mat-menu-item class="report-action-item" type="button" (click)="change(report, 'VALIDATED')">
                   <mat-icon>verified</mat-icon>
                   <span>Validar</span>

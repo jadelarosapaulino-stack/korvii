@@ -72,6 +72,10 @@ export interface ReportItem {
   riskLevel: number;
   confirmationCount?: number;
   confirmers?: ReportConfirmer[];
+  createdBy?: {
+    id: string;
+    fullName: string;
+  } | null;
   assignedTo?: {
     id: string;
     fullName: string;
@@ -322,6 +326,13 @@ export class ReportsService {
 
   create(payload: Record<string, unknown> | FormData) {
     return this.http.post<CreateReportResult>(`${API_URL}/reports`, payload);
+  }
+
+  update(id: string, payload: Partial<Pick<ReportItem,
+    'title' | 'category' | 'description' | 'latitude' | 'longitude' |
+    'province' | 'municipality' | 'address' | 'riskLevel'
+  >>) {
+    return this.http.patch<ReportItem>(`${API_URL}/reports/${id}`, payload);
   }
 
   suggestFromImage(file: File) {

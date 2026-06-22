@@ -72,12 +72,11 @@ mat-form-field { width: 100%; }
 .lesson-title-row > span { color: var(--rs-primary); font-size: .78rem; font-weight: 900; white-space: nowrap; }
 .lesson-list h2 { margin: .1rem 0 0; color: var(--rs-text); font-size: 1rem; line-height: 1.25; letter-spacing: 0; overflow-wrap: anywhere; }
 .lesson-list p { margin: 0; color: var(--rs-text-muted); line-height: 1.35; font-size: .84rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.video-preview-button { display: inline-flex; align-items: center; gap: .35rem; padding: 0; border: 0; background: transparent; color: var(--rs-primary); font: inherit; font-size: .82rem; font-weight: 850; cursor: pointer; }
-.video-preview-button mat-icon { font-size: 18px; width: 18px; height: 18px; }
 .lesson-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .2rem; }
 .lesson-actions > span { color: var(--rs-text-muted); font-size: .8rem; font-weight: 850; }
-.lesson-actions button { min-height: 34px; padding-inline: .75rem; }
-.lesson-actions button mat-icon { margin-right: .35rem; font-size: 18px; width: 18px; height: 18px; }
+.lesson-menu-button { width: 36px; height: 36px; border: 1px solid var(--rs-border); border-radius: 10px; background: var(--rs-surface); color: var(--rs-text-muted); box-shadow: 0 3px 10px rgba(15, 47, 69, .06); }
+.lesson-menu-button:hover, .lesson-menu-button:focus-visible { border-color: var(--rs-primary); background: var(--rs-primary-soft); color: var(--rs-primary); }
+.lesson-menu-button mat-icon { margin: 0 !important; color: currentColor; }
 .video-modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1.25rem; background: rgba(15, 23, 42, .62); backdrop-filter: blur(4px); }
 .video-modal { width: min(960px, 100%); overflow: hidden; border: 1px solid rgba(255,255,255,.18); border-radius: var(--rs-radius); background: #101820; box-shadow: 0 24px 80px rgba(0,0,0,.32); }
 .video-modal header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: .8rem; align-items: center; padding: .85rem 1rem; color: var(--rs-primary); background: var(--rs-primary-pastel); }

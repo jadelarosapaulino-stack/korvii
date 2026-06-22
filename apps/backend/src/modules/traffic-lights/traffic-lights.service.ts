@@ -15,6 +15,7 @@ import { ReportStatus } from "../../common/enums/report-status.enum";
 import { UserRole } from "../../common/enums/user-role.enum";
 import { RealtimeEventPublisherService } from "../realtime-events/realtime-event-publisher.service";
 import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
+import { LocationResolverService } from "../system-config/location-resolver.service";
 import { Report } from "../reports/entities/report.entity";
 import { StatusHistory } from "../reports/entities/status-history.entity";
 import { User } from "../users/user.entity";
@@ -195,6 +196,7 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
     private readonly realtimeEvents: RealtimeEventPublisherService,
     private readonly config: ConfigService,
     private readonly externalApiLogger: ExternalApiLoggerService,
+    private readonly locationResolver: LocationResolverService,
   ) {}
 
   onModuleInit() {
@@ -969,6 +971,18 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
       `Senales: ${insight.reasons.join(" ")}`,
       `Origen: ${trigger}.`,
     ].join(" ");
+    const location = await this.locationResolver.reverseGeocode(
+      insight.trafficLight.latitude,
+      insight.trafficLight.longitude,
+      {
+        province: insight.trafficLight.province ?? undefined,
+        municipality: insight.trafficLight.municipality ?? undefined,
+        address:
+          insight.trafficLight.intersection ||
+          insight.trafficLight.name ||
+          "Referencia automatica de semaforo",
+      },
+    );
 
     const report = this.reportsRepo.create({
       title: `Situacion con semaforo - ${locationLabel}`.slice(0, 180),
@@ -976,12 +990,9 @@ export class TrafficLightsService implements OnModuleInit, OnModuleDestroy {
       description,
       latitude: insight.trafficLight.latitude,
       longitude: insight.trafficLight.longitude,
-      province: insight.trafficLight.province ?? undefined,
-      municipality: insight.trafficLight.municipality ?? undefined,
-      address:
-        insight.trafficLight.intersection ||
-        insight.trafficLight.name ||
-        "Referencia automatica de semaforo",
+      province: location.province,
+      municipality: location.municipality,
+      address: location.address,
       riskLevel,
       source: "system",
       createdBy: systemUser,

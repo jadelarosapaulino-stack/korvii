@@ -7,6 +7,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -17,7 +18,7 @@ import { EducationCategory, EducationService, Lesson, YoutubeVideoMetadata } fro
 @Component({
   selector: 'app-admin-education',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatCardModule, MatChipsModule, MatFormFieldModule, MatIconModule, MatInputModule, MatPaginatorModule, MatSelectModule],
+  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatCardModule, MatChipsModule, MatFormFieldModule, MatIconModule, MatInputModule, MatMenuModule, MatPaginatorModule, MatSelectModule],
   template: `
     <section class="education-admin-page">
       <header class="admin-header">
@@ -275,18 +276,22 @@ import { EducationCategory, EducationService, Lesson, YoutubeVideoMetadata } fro
                   <h2>{{ lesson.title }}</h2>
                   <p>{{ lessonSummary(lesson.content) }}</p>
                   <div class="lesson-actions">
-                    @if (lesson.videoUrl) {
-                      <button class="video-preview-button" type="button" (click)="openVideoPreview(lesson)">
-                        <mat-icon>play_circle</mat-icon>
-                        Ver video
-                      </button>
-                    } @else {
-                      <span>Leccion de lectura</span>
-                    }
-                    <button mat-stroked-button type="button" (click)="editLesson(lesson)">
-                      <mat-icon>edit</mat-icon>
-                      Editar
+                    <span>{{ lesson.videoUrl ? 'Leccion en video' : 'Leccion de lectura' }}</span>
+                    <button mat-icon-button class="lesson-menu-button" type="button" [matMenuTriggerFor]="lessonMenu" aria-label="Opciones de la leccion">
+                      <mat-icon>more_vert</mat-icon>
                     </button>
+                    <mat-menu #lessonMenu="matMenu" xPosition="before" panelClass="entity-actions-menu">
+                      @if (lesson.videoUrl) {
+                        <button mat-menu-item type="button" (click)="openVideoPreview(lesson)">
+                          <mat-icon>play_circle</mat-icon>
+                          <span>Ver video</span>
+                        </button>
+                      }
+                      <button mat-menu-item type="button" (click)="editLesson(lesson)">
+                        <mat-icon>edit</mat-icon>
+                        <span>Editar leccion</span>
+                      </button>
+                    </mat-menu>
                   </div>
                 </div>
               </article>

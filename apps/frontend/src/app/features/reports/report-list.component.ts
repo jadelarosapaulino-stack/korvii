@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Map as MapTilerMap, Marker } from '@maptiler/sdk';
+import { Map as MapTilerMap, Marker, type MapMouseEvent } from '@maptiler/sdk';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -10,18 +10,33 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { createKorviMap, observeMapResize, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
+import { ToastrService } from 'ngx-toastr';
+import { AuthService } from '../../core/auth.service';
+import { createKorviMap, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
 import { ReportAdminMetrics, ReportCategory, ReportItem, ReportStatus, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
 import { reportStatusStyle } from '../../shared/utils/report-status-style';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 
+interface ReportEditDraft {
+  title: string;
+  category: ReportCategory;
+  description: string;
+  latitude: number;
+  longitude: number;
+  province: string;
+  municipality: string;
+  address: string;
+  riskLevel: number;
+}
+
 @Component({
   selector: 'app-report-list',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatButtonModule, MatCardModule, MatChipsModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatNativeDateModule, MatPaginatorModule, MatSelectModule, MatTooltipModule, StatusChipComponent],
+  imports: [FormsModule, RouterLink, MatButtonModule, MatCardModule, MatChipsModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatMenuModule, MatNativeDateModule, MatPaginatorModule, MatSelectModule, MatTooltipModule, StatusChipComponent],
   template: `
     <section class="reports-page">
       <header class="reports-hero">
@@ -155,16 +170,21 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
                   <span class="category-icon" [class.high-risk]="report.riskLevel >= 4">
                     <mat-icon>{{ categoryIcon(report.category) }}</mat-icon>
                   </span>
-                  <button
-                    class="map-report-button"
-                    mat-icon-button
-                    type="button"
-                    aria-label="Ver en el mapa"
-                    matTooltip="Ver en el mapa"
-                    matTooltipPosition="right"
-                    (click)="openReportMap(report)">
-                    <mat-icon>map</mat-icon>
+                  <button class="entity-menu-button" mat-icon-button type="button" [matMenuTriggerFor]="reportActions" aria-label="Opciones del reporte" matTooltip="Opciones">
+                    <mat-icon>more_vert</mat-icon>
                   </button>
+                  <mat-menu #reportActions="matMenu" xPosition="after" panelClass="entity-actions-menu">
+                    <button mat-menu-item type="button" (click)="openReportMap(report)">
+                      <mat-icon>map</mat-icon>
+                      <span>Ver en el mapa</span>
+                    </button>
+                    @if (canEdit(report)) {
+                      <button mat-menu-item type="button" (click)="openEdit(report)">
+                        <mat-icon>edit</mat-icon>
+                        <span>Editar reporte</span>
+                      </button>
+                    }
+                  </mat-menu>
                 </div>
                 <div>
                   <div class="incident-title-row">
@@ -172,15 +192,15 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
                     <span>#{{ report.id.slice(0, 8) }}</span>
                   </div>
                   <p>{{ report.description }}</p>
-                  <div class="incident-chips">
-                    <mat-chip>{{ categoryLabel(report.category) }}</mat-chip>
-                    <mat-chip>{{ sourceLabel(report.source) }}</mat-chip>
-                    <mat-chip>{{ report.confirmationCount || 1 }} confirmaciones</mat-chip>
+                  <div class="incident-meta">
+                    <span><strong>Categoria:</strong> {{ categoryLabel(report.category) }}</span>
+                    <span><strong>Fuente:</strong> {{ sourceLabel(report.source) }}</span>
+                    <span><strong>Confirmaciones:</strong> {{ report.confirmationCount || 1 }}</span>
+                    <span><strong>Confirmado por:</strong> {{ confirmersLabel(report) }}</span>
                     @if (report.assignedInstitution) {
-                      <mat-chip>{{ report.assignedInstitution.name }}</mat-chip>
+                      <span><strong>Autoridad:</strong> {{ report.assignedInstitution.name }}</span>
                     }
                   </div>
-                  <small class="confirmers-line">Confirmado por: {{ confirmersLabel(report) }}</small>
                 </div>
               </div>
 
@@ -296,16 +316,104 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
           </section>
         </div>
       }
+
+      @if (editingReport(); as report) {
+        <div class="report-map-modal-backdrop" (click)="closeEdit()">
+          <section class="report-edit-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Editar reporte">
+            <header>
+              <div>
+                <span>Edicion autorizada</span>
+                <strong>Editar reporte #{{ report.id.slice(0, 8) }}</strong>
+              </div>
+              <button mat-icon-button type="button" aria-label="Cerrar edicion" (click)="closeEdit()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </header>
+
+            <form #editForm="ngForm" (ngSubmit)="saveEdit()">
+              <div class="report-edit-grid">
+                <mat-form-field appearance="outline" class="wide">
+                  <mat-label>Titulo</mat-label>
+                  <input matInput name="editTitle" [(ngModel)]="editDraft.title" required />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Categoria</mat-label>
+                  <mat-select name="editCategory" [(ngModel)]="editDraft.category" required>
+                    @for (category of categoryOptions; track category) {
+                      <mat-option [value]="category">{{ categoryLabel(category) }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Nivel de riesgo</mat-label>
+                  <mat-select name="editRiskLevel" [(ngModel)]="editDraft.riskLevel" required>
+                    @for (risk of [1, 2, 3, 4, 5]; track risk) {
+                      <mat-option [value]="risk">{{ risk }}/5</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="wide">
+                  <mat-label>Descripcion</mat-label>
+                  <textarea matInput name="editDescription" [(ngModel)]="editDraft.description" rows="4" required></textarea>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Provincia</mat-label>
+                  <input matInput name="editProvince" [(ngModel)]="editDraft.province" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Municipio</mat-label>
+                  <input matInput name="editMunicipality" [(ngModel)]="editDraft.municipality" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="wide">
+                  <mat-label>Direccion</mat-label>
+                  <input matInput name="editAddress" [(ngModel)]="editDraft.address" />
+                </mat-form-field>
+
+                <details class="edit-location-picker wide" (toggle)="onEditMapToggle($event)">
+                  <summary class="edit-location-heading">
+                    <div>
+                      <strong>Seleccionar ubicacion en el mapa</strong>
+                      <span>{{ editMapExpanded() ? 'Haz clic o arrastra el marcador.' : 'Expandir selector de ubicacion.' }}</span>
+                    </div>
+                    <mat-icon>{{ editMapExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </summary>
+                  <div #editMapContainer class="edit-location-map" aria-label="Mapa para editar la ubicacion del reporte"></div>
+                </details>
+
+              </div>
+
+              <footer>
+                <button mat-stroked-button type="button" (click)="closeEdit()" [disabled]="savingEdit()">Cancelar</button>
+                <button mat-flat-button color="primary" type="submit" [disabled]="editForm.invalid || savingEdit()">
+                  <mat-icon>save</mat-icon>
+                  {{ savingEdit() ? 'Guardando...' : 'Guardar cambios' }}
+                </button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      }
     </section>
   `,
   styleUrls: ['./report-list.component.css'],
 })
 export class ReportListComponent implements OnInit, OnDestroy {
   @ViewChild('reportMapContainer') private readonly reportMapContainer?: ElementRef<HTMLElement>;
+  @ViewChild('editMapContainer') private readonly editMapContainer?: ElementRef<HTMLElement>;
 
   reports = signal<ReportItem[]>([]);
   metrics = signal<ReportAdminMetrics | null>(null);
   selectedReport = signal<ReportItem | null>(null);
+  editingReport = signal<ReportItem | null>(null);
+  editMapExpanded = signal(false);
+  savingEdit = signal(false);
+  editDraft: ReportEditDraft = this.emptyEditDraft();
   reportMapHybridMode = signal(false);
   totalReportCount = signal(0);
   pageIndex = signal(0);
@@ -335,8 +443,16 @@ export class ReportListComponent implements OnInit, OnDestroy {
   private reportMap?: MapTilerMap;
   private reportMapMarker?: Marker;
   private reportMapResizeObserver?: ResizeObserver;
+  private editMap?: MapTilerMap;
+  private editMapMarker?: Marker;
+  private editMapResizeObserver?: ResizeObserver;
+  private editLocationRequestId = 0;
 
-  constructor(private readonly reportsService: ReportsService) {}
+  constructor(
+    private readonly reportsService: ReportsService,
+    private readonly auth: AuthService,
+    private readonly toastr: ToastrService,
+  ) {}
 
   categoryLabel(category: string): string {
     return reportCategoryLabel(category);
@@ -358,12 +474,77 @@ export class ReportListComponent implements OnInit, OnDestroy {
     return report.confirmers?.map((user) => user.fullName).filter(Boolean).join(', ') || 'Sin confirmar';
   }
 
+  canEdit(report: ReportItem): boolean {
+    const user = this.auth.user();
+    return Boolean(user && (user.role === 'SUPER_ADMIN' || report.createdBy?.id === user.id));
+  }
+
+  openEdit(report: ReportItem): void {
+    if (!this.canEdit(report)) return;
+    this.editDraft = {
+      title: report.title,
+      category: report.category,
+      description: report.description,
+      latitude: Number(report.latitude),
+      longitude: Number(report.longitude),
+      province: report.province ?? '',
+      municipality: report.municipality ?? '',
+      address: report.address ?? '',
+      riskLevel: Number(report.riskLevel),
+    };
+    this.editingReport.set(report);
+  }
+
+  closeEdit(): void {
+    if (this.savingEdit()) return;
+    this.editingReport.set(null);
+    this.editMapExpanded.set(false);
+    this.destroyEditMap();
+  }
+
+  onEditMapToggle(event: Event): void {
+    const expanded = (event.currentTarget as HTMLDetailsElement).open;
+    this.editMapExpanded.set(expanded);
+    if (expanded) {
+      window.setTimeout(() => {
+        this.initEditMap();
+        if (this.editMap && this.editMapContainer?.nativeElement) {
+          scheduleMapResize(this.editMap, this.editMapContainer.nativeElement);
+        }
+      }, 0);
+      return;
+    }
+    this.destroyEditMap();
+  }
+
+  saveEdit(): void {
+    const report = this.editingReport();
+    if (!report || !this.canEdit(report)) return;
+
+    this.savingEdit.set(true);
+    this.reportsService.update(report.id, { ...this.editDraft }).subscribe({
+      next: (updated) => {
+        this.reports.update((items) => items.map((item) => item.id === updated.id ? updated : item));
+        this.editingReport.set(null);
+        this.editMapExpanded.set(false);
+        this.destroyEditMap();
+        this.savingEdit.set(false);
+        this.toastr.success('El reporte fue actualizado.', 'Reporte editado');
+      },
+      error: (error) => {
+        this.savingEdit.set(false);
+        this.toastr.error(error?.error?.message || 'No fue posible actualizar el reporte.', 'Edicion rechazada');
+      },
+    });
+  }
+
   ngOnInit(): void {
     this.loadPage();
   }
 
   ngOnDestroy(): void {
     this.destroyReportMap();
+    this.destroyEditMap();
   }
 
   onPage(event: PageEvent) {
@@ -506,6 +687,89 @@ export class ReportListComponent implements OnInit, OnDestroy {
     this.reportMapHybridMode.set(false);
   }
 
+  private initEditMap(): void {
+    const container = this.editMapContainer?.nativeElement;
+    if (!container || this.editMap) return;
+
+    const center = {
+      latitude: Number(this.editDraft.latitude),
+      longitude: Number(this.editDraft.longitude),
+    };
+    this.editMap = createKorviMap(container, {
+      center,
+      zoom: 16,
+      navigationControl: true,
+      scrollZoom: true,
+    });
+    this.editMap.on('click', (event: MapMouseEvent) => {
+      this.updateEditLocation(
+        Number(event.lngLat.lat.toFixed(7)),
+        Number(event.lngLat.lng.toFixed(7)),
+        false,
+      );
+    });
+    this.updateEditMarker(center.latitude, center.longitude);
+    this.editMapResizeObserver = observeMapResize(this.editMap, container);
+    scheduleMapResize(this.editMap, container);
+  }
+
+  private updateEditLocation(latitude: number, longitude: number, moveMap: boolean): void {
+    this.editDraft.latitude = latitude;
+    this.editDraft.longitude = longitude;
+    this.updateEditMarker(latitude, longitude);
+    if (moveMap) {
+      this.editMap?.flyTo({ center: [longitude, latitude], zoom: 16, essential: true });
+    }
+    void this.resolveEditLocation(latitude, longitude);
+  }
+
+  private updateEditMarker(latitude: number, longitude: number): void {
+    if (!this.editMap) return;
+    if (!this.editMapMarker) {
+      this.editMapMarker = new Marker({
+        element: this.createLocationPin(),
+        draggable: true,
+        anchor: 'bottom',
+      })
+        .setLngLat([longitude, latitude])
+        .addTo(this.editMap);
+      this.editMapMarker.on('dragend', () => {
+        const position = this.editMapMarker?.getLngLat();
+        if (!position) return;
+        this.updateEditLocation(
+          Number(position.lat.toFixed(7)),
+          Number(position.lng.toFixed(7)),
+          false,
+        );
+      });
+      return;
+    }
+    this.editMapMarker.setLngLat([longitude, latitude]);
+  }
+
+  private async resolveEditLocation(latitude: number, longitude: number): Promise<void> {
+    const requestId = ++this.editLocationRequestId;
+    try {
+      const location = await reverseGeocodeKorviLocation(latitude, longitude);
+      if (requestId !== this.editLocationRequestId || !this.editingReport()) return;
+      this.editDraft.province = location.province ?? this.editDraft.province;
+      this.editDraft.municipality = location.municipality ?? this.editDraft.municipality;
+      this.editDraft.address = location.address ?? this.editDraft.address;
+    } catch {
+      // El backend vuelve a resolver la ubicacion al guardar.
+    }
+  }
+
+  private destroyEditMap(): void {
+    this.editMapResizeObserver?.disconnect();
+    this.editMapResizeObserver = undefined;
+    this.editMapMarker?.remove();
+    this.editMapMarker = undefined;
+    this.editMap?.remove();
+    this.editMap = undefined;
+    this.editLocationRequestId += 1;
+  }
+
   private createReportMapPin(report: ReportItem): HTMLElement {
     const marker = document.createElement('span');
     marker.className = 'korvi-map-pin report';
@@ -517,6 +781,27 @@ export class ReportListComponent implements OnInit, OnDestroy {
 
     marker.appendChild(icon);
     return marker;
+  }
+
+  private createLocationPin(): HTMLElement {
+    const marker = document.createElement('span');
+    marker.className = 'korvi-map-pin location';
+    marker.innerHTML = '<span class="material-icons" aria-hidden="true">location_on</span>';
+    return marker;
+  }
+
+  private emptyEditDraft(): ReportEditDraft {
+    return {
+      title: '',
+      category: 'OTHER',
+      description: '',
+      latitude: 0,
+      longitude: 0,
+      province: '',
+      municipality: '',
+      address: '',
+      riskLevel: 3,
+    };
   }
 }
 

@@ -918,6 +918,9 @@ IconData _badgeIcon(String icon) {
     'person' => Icons.person,
     'military_tech' => Icons.military_tech,
     'workspace_premium' => Icons.workspace_premium,
+    'stars' => Icons.stars,
+    'diamond' => Icons.diamond,
+    'local_fire_department' => Icons.local_fire_department,
     _ => Icons.emoji_events,
   };
 }

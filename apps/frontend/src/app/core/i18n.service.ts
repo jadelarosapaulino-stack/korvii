@@ -144,7 +144,6 @@ const EN_DICTIONARY: Record<string, string> = {
   'En proceso': 'In progress',
   'Descartados': 'Discarded',
   'Sin reportes': 'No reports',
-  'reportes': 'reports',
   'Exposición territorial': 'Territorial Exposure',
   'Inventario operacional': 'Operational inventory',
   'Nuevo reporte': 'New report',
@@ -180,11 +179,8 @@ const EN_DICTIONARY: Record<string, string> = {
   'Filtrar': 'Filter',
   'Limpiar': 'Clear',
   'Incidente': 'Incident',
-  'INCIDENTE': 'INCIDENT',
   'Ubicacion': 'Location',
   'Ubicación': 'Location',
-  'UBICACION': 'LOCATION',
-  'ESTADO': 'STATUS',
   'RIESGO': 'RISK',
   'Validado': 'Validated',
   'Duplicado': 'Duplicate',
@@ -625,7 +621,6 @@ const EN_DICTIONARY: Record<string, string> = {
   'No se pudo obtener la ubicacion. Verifica el permiso de GPS.': 'Could not get the location. Check GPS permission.',
   'Pronostico, clima actual y alertas por ubicacion.': 'Forecast, current weather and location-based alerts.',
   'Autoridad local': 'Local authority',
-  'autoridad local': 'local authority',
   'Registro e inicio de sesion con cuenta Google.': 'Registration and sign-in with a Google account.',
   'Configuracion de categoria actualizada.': 'Category configuration updated.',
   'Imagen por defecto actualizada.': 'Default image updated.',
@@ -649,7 +644,6 @@ const EN_DICTIONARY: Record<string, string> = {
   'Reporte creado': 'Report created',
   'Reporte validado': 'Report validated',
   'Reporte resuelto': 'Report resolved',
-  'semaforo': 'traffic light',
   'Activa el permiso de ubicación del navegador para poder enviar el reporte.': 'Enable browser location permission to submit the report.',
   'Ya existia un reporte cercano. Se agrego tu confirmacion al riesgo.': 'A nearby report already existed. Your confirmation was added to the risk.',
   'Ya habias confirmado este riesgo anteriormente.': 'You had already confirmed this risk.',
@@ -760,6 +754,16 @@ function translateInlineTerms(value: string): string {
   return EN_INLINE_TERMS.reduce((next, [pattern, replacement]) => next.replace(pattern, replacement), value);
 }
 
+const EN_DICTIONARY_CASE_INSENSITIVE = new Map(
+  Object.entries(EN_DICTIONARY).map(([key, translation]) => [key.toLocaleLowerCase('es'), translation]),
+);
+
+function preserveCase(source: string, translation: string): string {
+  if (source === source.toUpperCase()) return translation.toUpperCase();
+  if (source === source.toLowerCase()) return translation.toLowerCase();
+  return translation;
+}
+
 @Injectable({ providedIn: 'root' })
 export class I18nService {
   readonly language = signal<AppLanguage>(this.readInitialLanguage());
@@ -785,8 +789,9 @@ export class I18nService {
     const trimmed = value.trim();
     const leading = value.match(/^\s*/)?.[0] ?? '';
     const trailing = value.match(/\s*$/)?.[0] ?? '';
-    const exact = EN_DICTIONARY[trimmed];
-    if (exact) return `${leading}${translateInlineTerms(exact)}${trailing}`;
+    const exact = EN_DICTIONARY[trimmed]
+      ?? EN_DICTIONARY_CASE_INSENSITIVE.get(trimmed.toLocaleLowerCase('es'));
+    if (exact) return `${leading}${translateInlineTerms(preserveCase(trimmed, exact))}${trailing}`;
 
     for (const [pattern, replacement] of EN_REPLACEMENTS) {
       if (pattern.test(trimmed)) return `${leading}${translateInlineTerms(trimmed.replace(pattern, replacement))}${trailing}`;

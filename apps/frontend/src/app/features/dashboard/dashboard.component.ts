@@ -30,7 +30,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
 
       <section class="kpi-row">
         <mat-card class="metric-card">
-          <mat-icon>insights</mat-icon>
+          <span class="metric-icon"><mat-icon>insights</mat-icon></span>
           <div>
             <span>Total reportes</span>
             <strong>{{ summary()?.total ?? reports().length }}</strong>
@@ -39,7 +39,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
         </mat-card>
 
         <mat-card class="metric-card accent-warning">
-          <mat-icon>pending_actions</mat-icon>
+          <span class="metric-icon"><mat-icon>pending_actions</mat-icon></span>
           <div>
             <span>Pendientes</span>
             <strong>{{ summary()?.pending ?? countByStatus('PENDING') }}</strong>
@@ -48,7 +48,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
         </mat-card>
 
         <mat-card class="metric-card accent-primary">
-          <mat-icon>route</mat-icon>
+          <span class="metric-icon"><mat-icon>route</mat-icon></span>
           <div>
             <span>En intervención</span>
             <strong>{{ summary()?.inProgress ?? countByStatus('IN_PROGRESS') }}</strong>
@@ -57,7 +57,7 @@ import { ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/
         </mat-card>
 
         <mat-card class="metric-card accent-danger">
-          <mat-icon>monitoring</mat-icon>
+          <span class="metric-icon"><mat-icon>monitoring</mat-icon></span>
           <div>
             <span>Riesgo promedio</span>
             <strong>{{ averageRisk() }}/5</strong>

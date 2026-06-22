@@ -18,6 +18,7 @@ import { UserRole } from "../../common/enums/user-role.enum";
 import { AiService } from "../ai/ai.service";
 import { RealtimeEventPublisherService } from "../realtime-events/realtime-event-publisher.service";
 import { ExternalApiLoggerService } from "../system-config/external-api-logger.service";
+import { LocationResolverService } from "../system-config/location-resolver.service";
 import { SystemConfigService } from "../system-config/system-config.service";
 import { User } from "../users/user.entity";
 import { Institution } from "../institutions/institution.entity";
@@ -33,6 +34,7 @@ import {
 } from "./dto/optimize-risk-route.dto";
 import { QueryReportsDto } from "./dto/query-reports.dto";
 import { RoadTelemetryDto } from "./dto/road-telemetry.dto";
+import { UpdateReportDto } from "./dto/update-report.dto";
 import { UpdateReportStatusDto } from "./dto/update-report-status.dto";
 import { WeatherStatusDto } from "./dto/weather-status.dto";
 import { EmergencyCallLog } from "./entities/emergency-call-log.entity";
@@ -185,6 +187,7 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly aiService: AiService,
     private readonly realtimeEvents: RealtimeEventPublisherService,
     private readonly externalApiLogger: ExternalApiLoggerService,
+    private readonly locationResolver: LocationResolverService,
   ) {}
 
   onApplicationBootstrap() {
@@ -197,6 +200,11 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
 
   async create(dto: CreateReportDto, userId: string) {
     const user = await this.usersRepo.findOneByOrFail({ id: userId });
+    const location = await this.locationResolver.reverseGeocode(
+      dto.latitude,
+      dto.longitude,
+      dto,
+    );
     const roadDamageAnalysis = this.detectRoadDamage(dto);
     const reportDto = roadDamageAnalysis.detected
       ? {
@@ -243,9 +251,9 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
       description: reportDto.description,
       latitude: reportDto.latitude,
       longitude: reportDto.longitude,
-      province: reportDto.province,
-      municipality: reportDto.municipality,
-      address: reportDto.address,
+      province: location.province,
+      municipality: location.municipality,
+      address: location.address,
       riskLevel: reportDto.riskLevel ?? 3,
       confirmationCount: 1,
       source: reportDto.source ?? "web",
@@ -439,17 +447,26 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
 
     const systemUser = await this.findWeatherSystemUser();
     const locationName = dto.locationName || weather.locationName;
+    const location = await this.locationResolver.reverseGeocode(
+      dto.latitude,
+      dto.longitude,
+      {
+        province: dto.province ?? weather.province,
+        municipality: dto.municipality ?? locationName,
+        address: locationName
+          ? `Referencia meteorologica: ${locationName}`
+          : "Referencia meteorologica automatica",
+      },
+    );
     const report = this.reportsRepo.create({
       title: `Zona de posible inundacion${locationName ? ` - ${locationName}` : ""}`,
       category: ReportCategory.FLOOD_ZONE,
       description: `Activacion automatica por estado del tiempo. ${weather.reason}`,
       latitude: dto.latitude,
       longitude: dto.longitude,
-      province: dto.province ?? weather.province,
-      municipality: dto.municipality ?? locationName,
-      address: locationName
-        ? `Referencia meteorologica: ${locationName}`
-        : "Referencia meteorologica automatica",
+      province: location.province,
+      municipality: location.municipality,
+      address: location.address,
       riskLevel: weather.riskLevel,
       source: "system",
       createdBy: systemUser,
@@ -661,12 +678,19 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
       );
     }
 
+    const location = await this.locationResolver.reverseGeocode(
+      reportDto.latitude,
+      reportDto.longitude,
+    );
     const report = this.reportsRepo.create({
       title: reportDto.title,
       category: reportDto.category,
       description: reportDto.description,
       latitude: reportDto.latitude,
       longitude: reportDto.longitude,
+      province: location.province,
+      municipality: location.municipality,
+      address: location.address,
       riskLevel: reportDto.riskLevel,
       confirmationCount: 1,
       source: "mobile",
@@ -1644,11 +1668,94 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
   async findOne(id: string) {
     const report = await this.reportsRepo.findOne({
       where: { id },
-      relations: { history: true, assignedTo: true, assignedInstitution: true },
+      relations: {
+        history: true,
+        assignedTo: true,
+        assignedInstitution: true,
+        confirmations: true,
+      },
       order: { history: { createdAt: "DESC" } },
     });
     if (!report) throw new NotFoundException("Reporte no encontrado");
     return report;
+  }
+
+  async update(
+    id: string,
+    dto: UpdateReportDto,
+    actor: { id: string; role: UserRole },
+  ) {
+    const report = await this.findOne(id);
+    const isCreator = report.createdBy?.id === actor.id;
+    const isAdmin = actor.role === UserRole.SUPER_ADMIN;
+
+    if (!isCreator && !isAdmin) {
+      throw new ForbiddenException(
+        "Solo el creador del reporte o un administrador puede editarlo",
+      );
+    }
+
+    if (!Object.keys(dto).length) {
+      throw new BadRequestException("No se enviaron cambios para el reporte");
+    }
+
+    const changedBy = await this.usersRepo.findOneByOrFail({ id: actor.id });
+    if (dto.title !== undefined) {
+      report.title = dto.title.trim();
+      if (!report.title) {
+        throw new BadRequestException("El titulo no puede estar vacio");
+      }
+    }
+    if (dto.description !== undefined) {
+      report.description = dto.description.trim();
+      if (!report.description) {
+        throw new BadRequestException("La descripcion no puede estar vacia");
+      }
+    }
+    if (dto.province !== undefined) report.province = dto.province.trim() || undefined;
+    if (dto.municipality !== undefined) {
+      report.municipality = dto.municipality.trim() || undefined;
+    }
+    if (dto.address !== undefined) report.address = dto.address.trim() || undefined;
+
+    if (dto.category !== undefined) report.category = dto.category;
+    if (dto.latitude !== undefined) report.latitude = dto.latitude;
+    if (dto.longitude !== undefined) report.longitude = dto.longitude;
+    if (dto.riskLevel !== undefined) report.riskLevel = dto.riskLevel;
+
+    if (dto.latitude !== undefined || dto.longitude !== undefined) {
+      const location = await this.locationResolver.reverseGeocode(
+        Number(report.latitude),
+        Number(report.longitude),
+        {
+          province: report.province,
+          municipality: report.municipality,
+          address: report.address,
+        },
+      );
+      report.province = location.province;
+      report.municipality = location.municipality;
+      report.address = location.address;
+    }
+
+    const history = this.historyRepo.create({
+      report,
+      fromStatus: report.status,
+      toStatus: report.status,
+      comment: isAdmin
+        ? "Contenido del reporte editado por un administrador."
+        : "Contenido del reporte editado por su creador.",
+      changedBy,
+    });
+
+    await this.reportsRepo.save(report);
+    await this.historyRepo.save(history);
+    void this.publishReportRealtimeEvent("report.updated", report);
+
+    return this.serializeReport({
+      ...report,
+      history: [history, ...(report.history ?? [])],
+    } as Report);
   }
 
   private async findRecentFloodZone(latitude: number, longitude: number) {
@@ -2090,6 +2197,12 @@ export class ReportsService implements OnApplicationBootstrap, OnModuleDestroy {
         confirmers.length || 1,
       ),
       confirmers,
+      createdBy: report.createdBy
+        ? {
+            id: report.createdBy.id,
+            fullName: report.createdBy.fullName,
+          }
+        : null,
       assignedTo: report.assignedTo
         ? {
             id: report.assignedTo.id,

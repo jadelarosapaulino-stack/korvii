@@ -40,6 +40,7 @@ import {
 } from "./dto/optimize-risk-route.dto";
 import { QueryReportsDto } from "./dto/query-reports.dto";
 import { RoadTelemetryDto } from "./dto/road-telemetry.dto";
+import { UpdateReportDto } from "./dto/update-report.dto";
 import { UpdateReportStatusDto } from "./dto/update-report-status.dto";
 import { WeatherStatusDto } from "./dto/weather-status.dto";
 import { ReportsService } from "./reports.service";
@@ -224,6 +225,15 @@ export class ReportsController {
   @Get(":id")
   findOne(@Param("id") id: string) {
     return this.reportsService.findOne(id);
+  }
+
+  @Patch(":id")
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateReportDto,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.reportsService.update(id, dto, user);
   }
 
   @Patch(":id/status")

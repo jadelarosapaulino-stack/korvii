@@ -68,6 +68,18 @@ const DEFAULT_SETTINGS: Record<string, number> = {
   pointsGoldThreshold: 700,
 };
 
+const DEFAULT_BADGE_ICONS: Record<string, string> = {
+  firstReportThreshold: "flag",
+  activeReporterThreshold: "campaign",
+  trustedReporterThreshold: "verified",
+  highRiskWatcherThreshold: "shield",
+  roadScholarThreshold: "school",
+  profileCompleteThreshold: "person",
+  pointsBronzeThreshold: "emoji_events",
+  pointsSilverThreshold: "military_tech",
+  pointsGoldThreshold: "workspace_premium",
+};
+
 @Injectable()
 export class GamificationService {
   constructor(
@@ -75,32 +87,67 @@ export class GamificationService {
     private readonly settingsRepo: Repository<GamificationSetting>,
   ) {}
 
-  async getSettings(): Promise<Record<string, number>> {
+  async getSettings(): Promise<Record<string, any>> {
     const stored = await this.settingsRepo.find();
-    return stored.reduce<Record<string, number>>(
+    return stored.reduce<Record<string, any>>(
       (settings, item) => {
         settings[item.key] = item.value;
+        if (DEFAULT_BADGE_ICONS[item.key]) {
+          settings[`${item.key}Icon`] =
+            item.icon || DEFAULT_BADGE_ICONS[item.key];
+        }
         return settings;
       },
-      { ...DEFAULT_SETTINGS },
+      {
+        ...DEFAULT_SETTINGS,
+        ...Object.fromEntries(
+          Object.entries(DEFAULT_BADGE_ICONS).map(([key, icon]) => [
+            `${key}Icon`,
+            icon,
+          ]),
+        ),
+      },
     );
   }
 
-  async updateSettings(patch: Record<string, number>) {
+  async updateSettings(patch: Record<string, unknown>) {
     const allowedKeys = new Set(Object.keys(DEFAULT_SETTINGS));
-    const entries = Object.entries(patch)
+    const numericEntries = Object.entries(patch)
       .filter(
         ([key, value]) =>
           allowedKeys.has(key) && Number.isFinite(Number(value)),
       )
-      .map(([key, value]) =>
+      .map(([key, value]) => ({
+        key,
+        value: Math.max(0, Math.round(Number(value))),
+      }));
+
+    for (const entry of numericEntries) {
+      const current = await this.settingsRepo.findOneBy({ key: entry.key });
+      await this.settingsRepo.save(
         this.settingsRepo.create({
-          key,
-          value: Math.max(0, Math.round(Number(value))),
+          ...current,
+          ...entry,
         }),
       );
+    }
 
-    if (entries.length) await this.settingsRepo.save(entries);
+    for (const [settingKey, defaultIcon] of Object.entries(
+      DEFAULT_BADGE_ICONS,
+    )) {
+      const requestedIcon = patch[`${settingKey}Icon`];
+      if (typeof requestedIcon !== "string") continue;
+      const icon = requestedIcon.trim().slice(0, 60) || defaultIcon;
+      const current = await this.settingsRepo.findOneBy({ key: settingKey });
+      await this.settingsRepo.save(
+        this.settingsRepo.create({
+          ...current,
+          key: settingKey,
+          value: current?.value ?? DEFAULT_SETTINGS[settingKey],
+          icon,
+        }),
+      );
+    }
     return this.getSettings();
   }
 
@@ -161,13 +208,13 @@ export class GamificationService {
     };
   }
 
-  private badgeDefinitions(settings: Record<string, number>) {
+  private badgeDefinitions(settings: Record<string, any>) {
     return [
       {
         id: "first-report",
         title: "Primer aviso",
         description: "Creo su primer reporte ciudadano.",
-        icon: "flag",
+        icon: String(settings.firstReportThresholdIcon || "flag"),
         color: "#00A99D",
         target: settings.firstReportThreshold,
       },
@@ -175,7 +222,7 @@ export class GamificationService {
         id: "active-reporter",
         title: "Reportero activo",
         description: "Acumula reportes ciudadanos enviados.",
-        icon: "campaign",
+        icon: String(settings.activeReporterThresholdIcon || "campaign"),
         color: "#2F80ED",
         target: settings.activeReporterThreshold,
       },
@@ -183,7 +230,7 @@ export class GamificationService {
         id: "trusted-reporter",
         title: "Fuente confiable",
         description: "Tiene reportes validados por el equipo.",
-        icon: "verified",
+        icon: String(settings.trustedReporterThresholdIcon || "verified"),
         color: "#7C3AED",
         target: settings.trustedReporterThreshold,
       },
@@ -191,7 +238,7 @@ export class GamificationService {
         id: "high-risk-watcher",
         title: "Guardián vial",
         description: "Detecta riesgos altos en la vía.",
-        icon: "shield",
+        icon: String(settings.highRiskWatcherThresholdIcon || "shield"),
         color: "#E23D3D",
         target: settings.highRiskWatcherThreshold,
       },
@@ -199,7 +246,7 @@ export class GamificationService {
         id: "road-scholar",
         title: "Aprendiz vial",
         description: "Completa lecciones educativas.",
-        icon: "school",
+        icon: String(settings.roadScholarThresholdIcon || "school"),
         color: "#FFB020",
         target: settings.roadScholarThreshold,
       },
@@ -207,7 +254,7 @@ export class GamificationService {
         id: "profile-ready",
         title: "Perfil completo",
         description: "Mantiene datos útiles para la atención.",
-        icon: "person",
+        icon: String(settings.profileCompleteThresholdIcon || "person"),
         color: "#00A99D",
         target: settings.profileCompleteThreshold,
       },
@@ -215,7 +262,7 @@ export class GamificationService {
         id: "points-bronze",
         title: "Bronce vial",
         description: "Alcanza el primer hito de puntos.",
-        icon: "emoji_events",
+        icon: String(settings.pointsBronzeThresholdIcon || "emoji_events"),
         color: "#B7791F",
         target: settings.pointsBronzeThreshold,
       },
@@ -223,7 +270,7 @@ export class GamificationService {
         id: "points-silver",
         title: "Plata vial",
         description: "Mantiene participación destacada.",
-        icon: "military_tech",
+        icon: String(settings.pointsSilverThresholdIcon || "military_tech"),
         color: "#6B7280",
         target: settings.pointsSilverThreshold,
       },
@@ -231,7 +278,9 @@ export class GamificationService {
         id: "points-gold",
         title: "Oro vial",
         description: "Contribución ciudadana sobresaliente.",
-        icon: "workspace_premium",
+        icon: String(
+          settings.pointsGoldThresholdIcon || "workspace_premium",
+        ),
         color: "#F59E0B",
         target: settings.pointsGoldThreshold,
       },
