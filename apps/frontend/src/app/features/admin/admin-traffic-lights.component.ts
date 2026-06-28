@@ -16,6 +16,7 @@ import { Map as MapTilerMap, Marker } from '@maptiler/sdk';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom } from 'rxjs';
 import { ReverseGeocodeDetails, createKorviMap, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
+import { KORVI_MARKER_OFFSET, createKorviMapMarkerElement } from '../../core/map-marker-icons';
 import { RefreshLocationDetailsJob, TrafficLightItem, TrafficLightsService, TrafficLightsSettings, TrafficLightStatus } from '../../core/traffic-lights.service';
 
 interface TrafficLightLocationDetails {
@@ -1025,7 +1026,7 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
       scrollZoom: true,
     });
 
-    this.trafficLightMapMarker = new Marker({ element: this.createTrafficLightMapPin(), anchor: 'bottom' })
+    this.trafficLightMapMarker = new Marker({ element: this.createTrafficLightMapPin(), anchor: 'bottom', offset: KORVI_MARKER_OFFSET })
       .setLngLat(toLngLat(center))
       .addTo(this.trafficLightMap);
 
@@ -1062,16 +1063,7 @@ export class AdminTrafficLightsComponent implements OnInit, OnDestroy {
   }
 
   private createTrafficLightMapPin(): HTMLElement {
-    const marker = document.createElement('span');
-    marker.className = 'korvi-map-pin traffic-light';
-
-    const icon = document.createElement('span');
-    icon.className = 'material-icons';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = 'traffic';
-
-    marker.appendChild(icon);
-    return marker;
+    return createKorviMapMarkerElement({ kind: 'traffic-light', icon: 'traffic', title: 'Semáforo' });
   }
 
   private normalizeProvinceSelection(provinces: string[]): string[] {

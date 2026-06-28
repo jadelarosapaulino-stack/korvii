@@ -14,6 +14,7 @@ import { Map as MapTilerMap, Marker, Popup, type MapMouseEvent } from '@maptiler
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
 import { LatLngPoint, ReverseGeocodeDetails, applyKorviMapTheme, circlePolygon, createKorviMap, mapReady, metersBetween, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
+import { KORVI_MARKER_OFFSET, createKorviMapMarkerElement } from '../../core/map-marker-icons';
 import { InstitutionOption, ReportCategory, ReportImageSuggestion, ReportMapPoint, ReportsService, reportCategoryIcon, reportCategoryLabel } from '../../core/reports.service';
 import { ReportCategoryConfig, SystemConfigService } from '../../core/system-config.service';
 import { I18nService } from '../../core/i18n.service';
@@ -1379,7 +1380,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     const position: LatLngPoint = { latitude, longitude };
 
     if (!this.previewMarker) {
-      this.previewMarker = new Marker({ element: this.locationPinMarkerElement(), draggable: true, anchor: 'bottom' })
+      this.previewMarker = new Marker({ element: this.locationPinMarkerElement(), draggable: true, anchor: 'bottom', offset: KORVI_MARKER_OFFSET })
         .setLngLat(toLngLat(position))
         .addTo(this.previewMap);
       this.previewMarker.on('dragend', () => {
@@ -1428,7 +1429,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
     const position: LatLngPoint = { latitude, longitude };
 
     if (!this.modalMarker) {
-      this.modalMarker = new Marker({ element: this.locationPinMarkerElement(), draggable: true, anchor: 'bottom' })
+      this.modalMarker = new Marker({ element: this.locationPinMarkerElement(), draggable: true, anchor: 'bottom', offset: KORVI_MARKER_OFFSET })
         .setLngLat(toLngLat(position))
         .addTo(this.modalMap);
       this.modalMarker.on('dragend', () => {
@@ -1445,9 +1446,7 @@ export class ReportCreateComponent implements OnInit, OnDestroy {
   }
 
   private locationPinMarkerElement(): HTMLElement {
-    const wrapper = document.createElement('span');
-    wrapper.innerHTML = '<span class="korvi-map-pin location" draggable="true"><span class="material-icons">location_on</span></span>';
-    return wrapper.firstElementChild as HTMLElement;
+    return createKorviMapMarkerElement({ kind: 'location', icon: 'location_on', title: 'Ubicación seleccionada', draggable: true });
   }
 
   private resizeMap(map?: MapTilerMap) {

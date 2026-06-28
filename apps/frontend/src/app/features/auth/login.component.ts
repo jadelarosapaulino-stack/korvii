@@ -117,7 +117,13 @@ declare global {
   styleUrls: ['./auth-flow.component.css', './login.component.css'],
 })
 export class LoginComponent implements OnInit, AfterViewInit {
-  @ViewChild('googleButtonContainer') private googleButtonContainer?: ElementRef<HTMLElement>;
+  private googleButtonContainer?: ElementRef<HTMLElement>;
+  @ViewChild('googleButtonContainer')
+  private set googleButtonContainerRef(container: ElementRef<HTMLElement> | undefined) {
+    this.googleButtonContainer = container;
+    if (container) this.scheduleSocialProviderInitialization();
+  }
+
   loading = signal(false);
   socialLoading = signal<'google' | 'facebook' | null>(null);
   passwordVisible = signal(false);
@@ -140,7 +146,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
       this.i18n.language();
       this.googleButtonReady.set(false);
       this.googleButtonContainer?.nativeElement.replaceChildren();
-      queueMicrotask(() => this.initializeSocialProviders());
+      this.scheduleSocialProviderInitialization();
     });
   }
 
@@ -148,14 +154,14 @@ export class LoginComponent implements OnInit, AfterViewInit {
     this.auth.socialAuthConfig().subscribe({
       next: (config) => {
         this.socialConfig.set(config);
-        this.initializeSocialProviders();
+        this.scheduleSocialProviderInitialization();
       },
       error: () => this.socialConfig.set({ google: false, facebook: false }),
     });
   }
 
   ngAfterViewInit(): void {
-    this.initializeSocialProviders();
+    this.scheduleSocialProviderInitialization();
   }
 
   submit() {
@@ -212,6 +218,10 @@ export class LoginComponent implements OnInit, AfterViewInit {
     if (!config) return;
     if (config.google && config.googleClientId) this.initializeGoogle(config.googleClientId);
     if (config.facebook && config.facebookAppId) this.initializeFacebook(config.facebookAppId);
+  }
+
+  private scheduleSocialProviderInitialization() {
+    window.setTimeout(() => this.initializeSocialProviders());
   }
 
   private initializeGoogle(clientId: string) {

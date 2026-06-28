@@ -17,6 +17,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../core/auth.service';
 import { createKorviMap, observeMapResize, reverseGeocodeKorviLocation, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
+import { KORVI_MARKER_OFFSET, createKorviMapMarkerElement } from '../../core/map-marker-icons';
 import { ReportAdminMetrics, ReportCategory, ReportItem, ReportStatus, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
 import { reportStatusStyle } from '../../shared/utils/report-status-style';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
@@ -651,7 +652,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
       scrollZoom: true,
     });
 
-    this.reportMapMarker = new Marker({ element: this.createReportMapPin(report), anchor: 'bottom' })
+    this.reportMapMarker = new Marker({ element: this.createReportMapPin(report), anchor: 'bottom', offset: KORVI_MARKER_OFFSET })
       .setLngLat(toLngLat(center))
       .addTo(this.reportMap);
 
@@ -730,6 +731,7 @@ export class ReportListComponent implements OnInit, OnDestroy {
         element: this.createLocationPin(),
         draggable: true,
         anchor: 'bottom',
+        offset: KORVI_MARKER_OFFSET,
       })
         .setLngLat([longitude, latitude])
         .addTo(this.editMap);
@@ -771,23 +773,15 @@ export class ReportListComponent implements OnInit, OnDestroy {
   }
 
   private createReportMapPin(report: ReportItem): HTMLElement {
-    const marker = document.createElement('span');
-    marker.className = 'korvi-map-pin report';
-
-    const icon = document.createElement('span');
-    icon.className = 'material-icons';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = this.categoryIcon(report.category);
-
-    marker.appendChild(icon);
-    return marker;
+    return createKorviMapMarkerElement({
+      kind: 'report',
+      icon: this.categoryIcon(report.category),
+      title: reportCategoryLabel(report.category),
+    });
   }
 
   private createLocationPin(): HTMLElement {
-    const marker = document.createElement('span');
-    marker.className = 'korvi-map-pin location';
-    marker.innerHTML = '<span class="material-icons" aria-hidden="true">location_on</span>';
-    return marker;
+    return createKorviMapMarkerElement({ kind: 'location', icon: 'location_on', title: 'Ubicación seleccionada', draggable: true });
   }
 
   private emptyEditDraft(): ReportEditDraft {

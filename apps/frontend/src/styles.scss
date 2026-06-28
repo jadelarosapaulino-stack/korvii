@@ -770,6 +770,165 @@ body.rs-dark-theme .mat-mdc-paginator {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--pin-color) 28%, transparent) !important;
 }
 
+.korvi-map-pin.has-geoapify-icon {
+  width: 42px;
+  height: 54px;
+  filter: drop-shadow(0 6px 10px rgba(15, 47, 69, 0.2));
+}
+
+.korvi-map-pin.has-geoapify-icon::before,
+.korvi-map-pin.has-geoapify-icon::after {
+  display: none;
+}
+
+.korvi-map-pin.has-geoapify-icon.icon-failed {
+  --pin-icon-size: 22px;
+  width: 44px;
+  height: 58px;
+  color: #0F2F45;
+  filter: drop-shadow(0 8px 14px rgba(15, 47, 69, 0.24));
+}
+
+.korvi-map-pin.has-geoapify-icon.icon-failed::before,
+.korvi-map-pin.has-geoapify-icon.icon-failed::after {
+  display: block;
+}
+
+.korvi-map-pin.has-geoapify-icon.icon-failed::before {
+  top: 1px;
+  width: 39px;
+  height: 39px;
+  border: 3px solid #fff;
+  background:
+    radial-gradient(circle at center, #fff 0 46%, color-mix(in srgb, var(--pin-color) 18%, #fff) 47% 59%, var(--pin-color) 60%);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--pin-color) 76%, #fff),
+    0 0 0 3px color-mix(in srgb, var(--pin-color) 14%, transparent);
+}
+
+.korvi-map-pin.has-geoapify-icon.icon-failed::after {
+  top: 32px;
+  width: 16px;
+  height: 16px;
+  border-right: 3px solid #fff;
+  border-bottom: 3px solid #fff;
+  background: var(--pin-color);
+}
+
+.korvi-map-pin-image {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 42px;
+  height: 54px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.korvi-map-pin.has-geoapify-icon .material-icons,
+.korvi-map-pin.has-geoapify-icon .mat-icon {
+  visibility: hidden;
+}
+
+.korvi-map-pin.has-geoapify-icon.icon-failed .korvi-map-pin-image {
+  display: none;
+}
+
+.korvi-map-pin.has-geoapify-icon.icon-failed .material-icons,
+.korvi-map-pin.has-geoapify-icon.icon-failed .mat-icon {
+  top: 10px;
+  visibility: visible;
+  color: #0F2F45;
+  font-weight: 700;
+  z-index: 4;
+}
+
+.korvi-map-pin.has-geoapify-icon.is-small {
+  width: 36px;
+  height: 46px;
+}
+
+.korvi-map-pin.has-geoapify-icon.is-small .korvi-map-pin-image {
+  width: 36px;
+  height: 46px;
+}
+
+.korvi-map-pin.has-geoapify-icon.is-small.icon-failed {
+  --pin-icon-size: 18px;
+}
+
+.korvi-map-pin.has-geoapify-icon.is-small.icon-failed::before {
+  width: 31px;
+  height: 31px;
+}
+
+.korvi-map-pin.has-geoapify-icon.is-small.icon-failed::after {
+  top: 25px;
+  width: 13px;
+  height: 13px;
+}
+
+.korvi-map-pin.has-geoapify-icon.is-small.icon-failed .material-icons,
+.korvi-map-pin.has-geoapify-icon.is-small.icon-failed .mat-icon {
+  top: 8px;
+}
+
+.korvi-map-pin.has-geoapify-icon.low,
+.korvi-map-pin.has-geoapify-icon.medium,
+.korvi-map-pin.has-geoapify-icon.high,
+.korvi-map-pin.has-geoapify-icon.report {
+  width: 52px;
+  height: 66px;
+}
+
+.korvi-map-pin.has-geoapify-icon.low .korvi-map-pin-image,
+.korvi-map-pin.has-geoapify-icon.medium .korvi-map-pin-image,
+.korvi-map-pin.has-geoapify-icon.high .korvi-map-pin-image,
+.korvi-map-pin.has-geoapify-icon.report .korvi-map-pin-image {
+  width: 52px;
+  height: 66px;
+}
+
+.korvi-map-pin.has-geoapify-icon.low.icon-failed,
+.korvi-map-pin.has-geoapify-icon.medium.icon-failed,
+.korvi-map-pin.has-geoapify-icon.high.icon-failed,
+.korvi-map-pin.has-geoapify-icon.report.icon-failed {
+  --pin-icon-size: 25px;
+  width: 52px;
+  height: 68px;
+}
+
+.korvi-map-pin.has-geoapify-icon.low.icon-failed::before,
+.korvi-map-pin.has-geoapify-icon.medium.icon-failed::before,
+.korvi-map-pin.has-geoapify-icon.high.icon-failed::before,
+.korvi-map-pin.has-geoapify-icon.report.icon-failed::before {
+  width: 47px;
+  height: 47px;
+}
+
+.korvi-map-pin.has-geoapify-icon.low.icon-failed::after,
+.korvi-map-pin.has-geoapify-icon.medium.icon-failed::after,
+.korvi-map-pin.has-geoapify-icon.high.icon-failed::after,
+.korvi-map-pin.has-geoapify-icon.report.icon-failed::after {
+  top: 39px;
+  width: 18px;
+  height: 18px;
+}
+
+.korvi-map-pin.has-geoapify-icon.low.icon-failed .material-icons,
+.korvi-map-pin.has-geoapify-icon.low.icon-failed .mat-icon,
+.korvi-map-pin.has-geoapify-icon.medium.icon-failed .material-icons,
+.korvi-map-pin.has-geoapify-icon.medium.icon-failed .mat-icon,
+.korvi-map-pin.has-geoapify-icon.high.icon-failed .material-icons,
+.korvi-map-pin.has-geoapify-icon.high.icon-failed .mat-icon,
+.korvi-map-pin.has-geoapify-icon.report.icon-failed .material-icons,
+.korvi-map-pin.has-geoapify-icon.report.icon-failed .mat-icon {
+  top: 12px;
+}
+
 .korvi-map-pin.is-dragging,
 .korvi-map-pin[draggable='true'] {
   cursor: grab;

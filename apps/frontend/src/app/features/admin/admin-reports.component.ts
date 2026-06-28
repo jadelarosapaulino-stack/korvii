@@ -18,6 +18,7 @@ import { ToastrService } from 'ngx-toastr';
 import { auditTime, merge, Subscription } from 'rxjs';
 import { createKorviMap, observeMapResize, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
 import { I18nService } from '../../core/i18n.service';
+import { KORVI_MARKER_OFFSET, createKorviMapMarkerElement } from '../../core/map-marker-icons';
 import { RealtimeService } from '../../core/realtime.service';
 import { ReportAdminMetrics, ReportCategory, ReportItem, ReportStatus, ReportsService, reportCategoryIcon, reportCategoryLabel, reportSourceLabel } from '../../core/reports.service';
 import { RiskChipComponent } from '../../shared/ui/risk-chip/risk-chip.component';
@@ -633,7 +634,7 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
       scrollZoom: true,
     });
 
-    this.reportMapMarker = new Marker({ element: this.createReportMapPin(report), anchor: 'bottom' })
+    this.reportMapMarker = new Marker({ element: this.createReportMapPin(report), anchor: 'bottom', offset: KORVI_MARKER_OFFSET })
       .setLngLat(toLngLat(center))
       .addTo(this.reportMap);
 
@@ -670,16 +671,11 @@ export class AdminReportsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private createReportMapPin(report: ReportItem): HTMLElement {
-    const marker = document.createElement('span');
-    marker.className = 'korvi-map-pin report';
-
-    const icon = document.createElement('span');
-    icon.className = 'material-icons';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = this.categoryIcon(report.category);
-
-    marker.appendChild(icon);
-    return marker;
+    return createKorviMapMarkerElement({
+      kind: 'report',
+      icon: this.categoryIcon(report.category),
+      title: reportCategoryLabel(report.category),
+    });
   }
 
   private renderStatusChart() {

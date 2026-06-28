@@ -1610,14 +1610,14 @@ export class SystemAdminComponent implements OnInit {
     const themes = {
       korvi: {
         light: {
-          background: '#EEF7F6', land: '#F7FBF9', park: '#DDF3E6', water: '#B9E7EF', building: '#E2EBF0', buildingOutline: '#CFDDE4',
-          road: '#FFFFFF', roadPrimary: '#A7DCD7', roadSecondary: '#D5E7EF', roadCasing: '#8FBFCA', label: '#163548', labelMuted: '#657A86',
-          poi: '#4F8F8B', boundary: '#9ABFC3', googleBrightnessMin: 0.06, googleBrightnessMax: 0.98, googleContrast: 0.1, googleSaturation: -0.28, googleHueRotate: 22,
+          background: '#F3F6F8', land: '#FAFBFC', park: '#DDF4E8', water: '#BDEAF2', building: '#E9EEF2', buildingOutline: '#D8E2EA',
+          road: '#FFFFFF', roadPrimary: '#00C2A8', roadSecondary: '#E5EEF4', roadCasing: '#B7C7D2', label: '#132E3E', labelMuted: '#607382',
+          poi: '#2F7D73', boundary: '#B0C3CC', googleBrightnessMin: 0.08, googleBrightnessMax: 1, googleContrast: 0.08, googleSaturation: -0.18, googleHueRotate: 10,
         },
         dark: {
-          background: '#0D1B24', land: '#12242A', park: '#153B32', water: '#123F51', building: '#1B3039', buildingOutline: '#284652',
-          road: '#38525D', roadPrimary: '#4FA3A0', roadSecondary: '#53778A', roadCasing: '#0A1821', label: '#E5F3F1', labelMuted: '#A8BDC2',
-          poi: '#98D6CF', boundary: '#4F737A', googleBrightnessMin: 0.04, googleBrightnessMax: 0.74, googleContrast: 0.14, googleSaturation: -0.32, googleHueRotate: 16,
+          background: '#101923', land: '#14212C', park: '#183C31', water: '#123D53', building: '#1E2D38', buildingOutline: '#304653',
+          road: '#F8FBFF', roadPrimary: '#00C2A8', roadSecondary: '#D7E8F0', roadCasing: '#07111B', label: '#F4FAFC', labelMuted: '#B5C5CD',
+          poi: '#76E0D0', boundary: '#506D7A', googleBrightnessMin: 0.05, googleBrightnessMax: 0.78, googleContrast: 0.18, googleSaturation: -0.18, googleHueRotate: 14,
         },
       },
       cool: {

@@ -8,6 +8,7 @@ import { Map as MapTilerMap, Marker, Popup, type MapMouseEvent } from '@maptiler
 import { auditTime, merge, Subscription } from 'rxjs';
 import { API_URL } from '../../core/api.config';
 import { LatLngPoint, applyKorviMapTheme, circlePolygon, createKorviMap, mapReady, metersBetween, observeMapResize, scheduleMapResize, toLngLat, toggleKorviMapMode } from '../../core/map.config';
+import { KORVI_MARKER_COLORS, KORVI_MARKER_OFFSET, createKorviMapMarkerElement, reportCategoryIcon, reportRiskMarkerKind } from '../../core/map-marker-icons';
 import { RealtimeService } from '../../core/realtime.service';
 import { HighFlowTraffic, OptimizedRiskRoute, ReportCategory, ReportMapPoint, ReportsService, reportCategoryLabel } from '../../core/reports.service';
 import { SystemConfigService } from '../../core/system-config.service';
@@ -1011,7 +1012,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
         this.select(report);
       });
 
-      const marker = new Marker({ element, anchor: 'bottom' })
+      const marker = new Marker({ element, anchor: 'bottom', offset: KORVI_MARKER_OFFSET })
         .setLngLat([Number(report.longitude), Number(report.latitude)])
         .addTo(this.map as MapTilerMap);
 
@@ -1128,7 +1129,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
         source: this.dbReportsSourceId,
         layout: {
           'icon-image': ['get', 'icon'],
-          'icon-size': ['case', ['get', 'selected'], 0.78, 0.68],
+          'icon-size': ['case', ['get', 'selected'], 1.02, 0.88],
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
           'icon-anchor': 'bottom',
@@ -1165,7 +1166,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
           id: report.id,
           title: report.title,
           category: report.category,
-          icon: this.categoryIconImageId(report.category, this.selected()?.id === report.id),
+          icon: this.categoryIconImageId(report.category, report.riskLevel, this.selected()?.id === report.id),
           riskLevel: Number(report.riskLevel),
           status: report.status,
           selected: this.selected()?.id === report.id,
@@ -1201,81 +1202,91 @@ export class ReportMapComponent implements OnInit, OnDestroy {
       'OTHER',
     ] as const;
 
-    categories.forEach((category) => {
-      const imageId = this.categoryIconImageId(category);
-      if (!this.map?.hasImage(imageId)) {
-        this.map?.addImage(imageId, this.createCategoryIconImage(category), { pixelRatio: 2 });
-      }
+    const riskLevels = [1, 3, 4] as const;
 
-      const selectedImageId = this.categoryIconImageId(category, true);
-      if (!this.map?.hasImage(selectedImageId)) {
-        this.map?.addImage(selectedImageId, this.createCategoryIconImage(category, true), { pixelRatio: 2 });
-      }
+    categories.forEach((category) => {
+      riskLevels.forEach((riskLevel) => {
+        const imageId = this.categoryIconImageId(category, riskLevel);
+        if (!this.map?.hasImage(imageId)) {
+          this.map?.addImage(imageId, this.createCategoryIconImage(category, riskLevel), { pixelRatio: 2 });
+        }
+
+        const selectedImageId = this.categoryIconImageId(category, riskLevel, true);
+        if (!this.map?.hasImage(selectedImageId)) {
+          this.map?.addImage(selectedImageId, this.createCategoryIconImage(category, riskLevel, true), { pixelRatio: 2 });
+        }
+      });
     });
   }
 
-  private categoryIconImageId(category: ReportMapPoint['category'], selected = false): string {
+  private categoryIconImageId(category: ReportMapPoint['category'], riskLevel: number, selected = false): string {
     const suffix = selected ? '-selected' : '';
-    return `${this.dbReportIconPrefix}-${category.toLowerCase().replaceAll('_', '-')}${suffix}`;
+    return `${this.dbReportIconPrefix}-${category.toLowerCase().replaceAll('_', '-')}-${reportRiskMarkerKind(riskLevel)}${suffix}`;
   }
 
-  private createCategoryIconImage(category: ReportMapPoint['category'], selected = false): ImageData {
+  private createCategoryIconImage(category: ReportMapPoint['category'], riskLevel: number, selected = false): ImageData {
     const canvas = document.createElement('canvas');
     canvas.width = 96;
-    canvas.height = 96;
+    canvas.height = 108;
     const context = canvas.getContext('2d');
-    if (!context) return new ImageData(96, 96);
+    if (!context) return new ImageData(96, 108);
 
-    const color = selected ? '#0F2F45' : this.categoryColor(category);
-    context.clearRect(0, 0, 96, 96);
+    const riskKind = reportRiskMarkerKind(riskLevel);
+    const color = selected ? '#0F2F45' : KORVI_MARKER_COLORS[riskKind];
+    context.clearRect(0, 0, 96, 108);
 
     context.beginPath();
-    context.ellipse(48, 88, 15, 4, 0, 0, Math.PI * 2);
-    context.fillStyle = 'rgba(15, 47, 69, 0.2)';
+    context.ellipse(48, 98, selected ? 18 : 15, selected ? 5 : 4, 0, 0, Math.PI * 2);
+    context.fillStyle = selected ? 'rgba(15, 47, 69, 0.28)' : 'rgba(15, 47, 69, 0.18)';
     context.fill();
 
     context.save();
-    context.shadowColor = selected ? 'rgba(15, 47, 69, 0.35)' : 'rgba(15, 47, 69, 0.2)';
-    context.shadowBlur = selected ? 12 : 8;
-    context.shadowOffsetY = selected ? 5 : 4;
-    this.drawPinShape(context, 48, 9, 54, color);
+    context.shadowColor = selected ? 'rgba(15, 47, 69, 0.38)' : 'rgba(15, 47, 69, 0.22)';
+    context.shadowBlur = selected ? 13 : 9;
+    context.shadowOffsetY = selected ? 6 : 5;
+    this.drawGeoapifyLikePinShape(context, 48, 10, selected ? 62 : 58, color);
     context.restore();
 
     context.lineWidth = selected ? 7 : 5;
-    context.strokeStyle = selected ? '#F5B84B' : '#FFFFFF';
-    this.drawPinShape(context, 48, 9, 54);
+    context.strokeStyle = '#FFFFFF';
+    this.drawGeoapifyLikePinShape(context, 48, 10, selected ? 62 : 58);
     context.stroke();
 
-    context.beginPath();
-    context.arc(48, 36, 23, 0, Math.PI * 2);
-    context.fillStyle = 'rgba(255, 255, 255, 0.16)';
-    context.fill();
+    if (selected) {
+      context.beginPath();
+      context.arc(48, 39, 33, 0, Math.PI * 2);
+      context.strokeStyle = '#F5B84B';
+      context.lineWidth = 5;
+      context.stroke();
+    }
 
     context.beginPath();
-    context.arc(48, 36, 18, 0, Math.PI * 2);
-    context.fillStyle = 'rgba(15, 47, 69, 0.1)';
+    context.arc(48, 39, 22, 0, Math.PI * 2);
+    context.fillStyle = '#FFFFFF';
     context.fill();
+    context.lineWidth = 3;
+    context.strokeStyle = selected ? '#F5B84B' : 'rgba(15, 47, 69, 0.18)';
+    context.stroke();
 
-    context.lineWidth = 5;
+    context.lineWidth = 4.5;
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    context.strokeStyle = '#FFFFFF';
-    context.fillStyle = '#FFFFFF';
+    context.strokeStyle = '#0F2F45';
+    context.fillStyle = '#0F2F45';
     this.drawCategoryGlyph(context, category);
 
     return context.getImageData(0, 0, canvas.width, canvas.height);
   }
 
-  private drawPinShape(context: CanvasRenderingContext2D, centerX: number, topY: number, size: number, fill?: string) {
+  private drawGeoapifyLikePinShape(context: CanvasRenderingContext2D, centerX: number, topY: number, size: number, fill?: string) {
     const radius = size / 2;
     const centerY = topY + radius;
-    const tipY = topY + size + 14;
+    const tipY = topY + size + 19;
 
     context.beginPath();
-    // Arc of the circle from 0.65 * PI to 0.35 * PI clockwise
-    context.arc(centerX, centerY, radius, 0.65 * Math.PI, 0.35 * Math.PI, false);
-    // Draw line to the tip
-    context.lineTo(centerX, tipY);
+    context.arc(centerX, centerY, radius, 0.72 * Math.PI, 0.28 * Math.PI, false);
+    context.bezierCurveTo(centerX + 22, centerY + 36, centerX + 8, tipY - 2, centerX, tipY);
+    context.bezierCurveTo(centerX - 8, tipY - 2, centerX - 22, centerY + 36, centerX - radius * 0.76, centerY + radius * 0.65);
     context.closePath();
 
     if (fill) {
@@ -1356,22 +1367,17 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawTrafficLightIcon(context: CanvasRenderingContext2D) {
-    this.roundedRect(context, 35, 21, 22, 42, 8, '#FFFFFF');
-    context.fillStyle = '#0F2F45';
-    [31, 42, 53].forEach((y) => {
+    this.roundedRect(context, 35, 21, 22, 42, 8, '#0F2F45');
+    ['#E45757', '#F5B84B', '#39A66A'].forEach((color, index) => {
+      context.fillStyle = color;
       context.beginPath();
-      context.arc(46, y, 5, 0, Math.PI * 2);
+      context.arc(46, 31 + index * 11, 4.5, 0, Math.PI * 2);
       context.fill();
     });
-    context.strokeStyle = '#FFFFFF';
-    context.beginPath();
-    context.moveTo(30, 42);
-    context.lineTo(62, 42);
-    context.stroke();
+    context.strokeStyle = '#0F2F45';
   }
 
   private drawRoadDamageIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
     context.beginPath();
     context.moveTo(34, 22);
     context.lineTo(58, 22);
@@ -1388,7 +1394,6 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawLightIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
     context.beginPath();
     context.arc(46, 36, 14, Math.PI * 0.15, Math.PI * 0.85, true);
     context.stroke();
@@ -1410,7 +1415,6 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawSignIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
     context.strokeRect(30, 23, 32, 22);
     context.beginPath();
     context.moveTo(46, 45);
@@ -1423,7 +1427,6 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawSpeedIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
     context.beginPath();
     context.arc(46, 48, 22, Math.PI, Math.PI * 2);
     context.stroke();
@@ -1431,14 +1434,12 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     context.moveTo(46, 48);
     context.lineTo(61, 35);
     context.stroke();
-    context.fillStyle = '#FFFFFF';
     context.beginPath();
     context.arc(46, 48, 4, 0, Math.PI * 2);
     context.fill();
   }
 
   private drawPedestrianIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
     context.beginPath();
     context.arc(46, 25, 6, 0, Math.PI * 2);
     context.stroke();
@@ -1456,7 +1457,6 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawCarCrashIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
     context.strokeRect(25, 39, 24, 14);
     context.strokeRect(52, 31, 18, 14);
     context.beginPath();
@@ -1472,8 +1472,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawFloodIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
-    context.lineWidth = 5;
+    context.lineWidth = 4.5;
     context.beginPath();
     context.moveTo(28, 49);
     context.quadraticCurveTo(36, 42, 44, 49);
@@ -1492,9 +1491,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawPoliceIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
-    context.fillStyle = '#FFFFFF';
-    context.lineWidth = 5;
+    context.lineWidth = 4.5;
     context.beginPath();
     context.moveTo(46, 20);
     context.lineTo(64, 27);
@@ -1505,7 +1502,7 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     context.closePath();
     context.stroke();
     context.beginPath();
-    context.arc(46, 39, 6, 0, Math.PI * 2);
+    context.arc(46, 39, 5, 0, Math.PI * 2);
     context.fill();
     context.beginPath();
     context.moveTo(36, 52);
@@ -1514,7 +1511,6 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private drawWarningIcon(context: CanvasRenderingContext2D) {
-    context.strokeStyle = '#FFFFFF';
     context.beginPath();
     context.moveTo(46, 21);
     context.lineTo(66, 60);
@@ -1624,8 +1620,9 @@ export class ReportMapComponent implements OnInit, OnDestroy {
 
     this.userLocationMarker?.remove();
     this.userLocationMarker = new Marker({
-      element: this.htmlElement('<span class="korvi-map-pin user-location"><span class="material-icons">my_location</span></span>'),
+      element: createKorviMapMarkerElement({ kind: 'user-location', icon: 'my_location', title: 'Mi ubicación' }),
       anchor: 'bottom',
+      offset: KORVI_MARKER_OFFSET,
     })
       .setLngLat(toLngLat(position))
       .setPopup(new Popup({ offset: 20 }).setText('Mi ubicación'))
@@ -1713,26 +1710,16 @@ export class ReportMapComponent implements OnInit, OnDestroy {
   }
 
   private markerElement(report: ReportMapPoint, selected = false): HTMLElement {
-    const levelClass = report.riskLevel >= 4 ? 'high' : report.riskLevel === 3 ? 'medium' : 'low';
-    const icon = this.categoryIcon(report.category);
-    return this.htmlElement(`<span class="korvi-map-pin ${levelClass}${selected ? ' is-selected' : ''}" title="${this.escapeHtml(reportCategoryLabel(report.category))}"><span class="material-icons">${icon}</span></span>`);
+    return createKorviMapMarkerElement({
+      kind: reportRiskMarkerKind(report.riskLevel),
+      icon: this.categoryIcon(report.category),
+      title: reportCategoryLabel(report.category),
+      selected,
+    });
   }
 
   categoryIcon(category: ReportMapPoint['category']): string {
-    const icons: Record<ReportMapPoint['category'], string> = {
-      ACCIDENT: 'directions_car',
-      TRAFFIC_LIGHT_DAMAGED: 'traffic',
-      ROAD_DAMAGE: 'construction',
-      ROAD_OBSTRUCTION: 'block',
-      POOR_LIGHTING: 'wb_incandescent',
-      MISSING_SIGNAGE: 'report_problem',
-      RECKLESS_DRIVING: 'speed',
-      DANGEROUS_CROSSING: 'directions_walk',
-      FLOOD_ZONE: 'waves',
-      POLICE_ON_ROAD: 'local_police',
-      OTHER: 'warning',
-    };
-    return icons[category] ?? 'warning';
+    return reportCategoryIcon(category);
   }
 
   private popupHtml(report: ReportMapPoint): string {
@@ -1753,8 +1740,9 @@ export class ReportMapComponent implements OnInit, OnDestroy {
     const kind = color === '#A84D4F' ? 'route-destination' : 'route-origin';
     const icon = kind === 'route-destination' ? 'flag' : 'trip_origin';
     return new Marker({
-      element: this.htmlElement(`<span class="korvi-map-pin ${kind}"><span class="material-icons">${icon}</span></span>`),
+      element: createKorviMapMarkerElement({ kind, icon, title: label }),
       anchor: 'bottom',
+      offset: KORVI_MARKER_OFFSET,
     })
       .setLngLat(toLngLat(position))
       .setPopup(new Popup({ offset: 18 }).setText(label))

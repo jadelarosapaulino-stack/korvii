@@ -240,8 +240,17 @@ export function applyKorviBaseMapDesign(map?: Map): void {
           const isMajorRoad = id.includes('motorway') || id.includes('trunk') || id.includes('primary');
           const isSecondaryRoad = id.includes('secondary') || id.includes('tertiary');
           setPaint(map, layer.id, 'line-color', isMajorRoad ? palette.roadPrimary : isSecondaryRoad ? palette.roadSecondary : palette.road);
-          if (isMajorRoad) setPaint(map, layer.id, 'line-opacity', isKorviDarkTheme() ? 0.92 : 0.96);
-          if (isSecondaryRoad) setPaint(map, layer.id, 'line-opacity', isKorviDarkTheme() ? 0.74 : 0.86);
+          setPaint(map, layer.id, 'line-opacity', isMajorRoad ? 0.96 : isSecondaryRoad ? 0.92 : 0.9);
+          setPaint(
+            map,
+            layer.id,
+            'line-width',
+            isMajorRoad
+              ? ['interpolate', ['linear'], ['zoom'], 9, 1.8, 12, 3.2, 15, 6.8, 18, 13]
+              : isSecondaryRoad
+                ? ['interpolate', ['linear'], ['zoom'], 9, 1.1, 12, 2.4, 15, 4.8, 18, 9]
+                : ['interpolate', ['linear'], ['zoom'], 10, 0.7, 13, 1.8, 16, 4.2, 18, 7],
+          );
         }
         if (id.includes('case') || id.includes('casing')) setPaint(map, layer.id, 'line-color', palette.roadCasing);
         if (id.includes('boundary') || id.includes('admin')) {
@@ -269,53 +278,62 @@ function currentKorviMapTheme(): KorviStoredMapTheme {
   const defaults = defaultKorviMapTheme(isKorviDarkTheme());
   const stored = readStoredSystemConfig()?.libraries;
   const override = isKorviDarkTheme() ? stored?.mapThemeDark : stored?.mapThemeLight;
+  if (isLegacyKorviMapTheme(override, isKorviDarkTheme())) return defaults;
   return { ...defaults, ...override };
 }
 
 function defaultKorviMapTheme(dark: boolean): KorviStoredMapTheme {
   return dark
     ? {
-          background: '#0D1B24',
-          land: '#12242A',
-          park: '#153B32',
-          water: '#123F51',
-          building: '#1B3039',
-          buildingOutline: '#284652',
-          road: '#38525D',
-          roadPrimary: '#4FA3A0',
-          roadSecondary: '#53778A',
-          roadCasing: '#0A1821',
-          label: '#E5F3F1',
-          labelMuted: '#A8BDC2',
-          poi: '#98D6CF',
-          boundary: '#4F737A',
-          googleBrightnessMin: 0.04,
-          googleBrightnessMax: 0.74,
-          googleContrast: 0.14,
-          googleSaturation: -0.32,
-          googleHueRotate: 16,
+          background: '#101923',
+          land: '#14212C',
+          park: '#183C31',
+          water: '#123D53',
+          building: '#1E2D38',
+          buildingOutline: '#304653',
+          road: '#F8FBFF',
+          roadPrimary: '#00C2A8',
+          roadSecondary: '#D7E8F0',
+          roadCasing: '#07111B',
+          label: '#F4FAFC',
+          labelMuted: '#B5C5CD',
+          poi: '#76E0D0',
+          boundary: '#506D7A',
+          googleBrightnessMin: 0.05,
+          googleBrightnessMax: 0.78,
+          googleContrast: 0.18,
+          googleSaturation: -0.18,
+          googleHueRotate: 14,
         }
     : {
-          background: '#EEF7F6',
-          land: '#F7FBF9',
-          park: '#DDF3E6',
-          water: '#B9E7EF',
-          building: '#E2EBF0',
-          buildingOutline: '#CFDDE4',
+          background: '#F3F6F8',
+          land: '#FAFBFC',
+          park: '#DDF4E8',
+          water: '#BDEAF2',
+          building: '#E9EEF2',
+          buildingOutline: '#D8E2EA',
           road: '#FFFFFF',
-          roadPrimary: '#A7DCD7',
-          roadSecondary: '#D5E7EF',
-          roadCasing: '#8FBFCA',
-          label: '#163548',
-          labelMuted: '#657A86',
-          poi: '#4F8F8B',
-          boundary: '#9ABFC3',
-          googleBrightnessMin: 0.06,
-          googleBrightnessMax: 0.98,
-          googleContrast: 0.1,
-          googleSaturation: -0.28,
-          googleHueRotate: 22,
+          roadPrimary: '#00C2A8',
+          roadSecondary: '#E5EEF4',
+          roadCasing: '#B7C7D2',
+          label: '#132E3E',
+          labelMuted: '#607382',
+          poi: '#2F7D73',
+          boundary: '#B0C3CC',
+          googleBrightnessMin: 0.08,
+          googleBrightnessMax: 1,
+          googleContrast: 0.08,
+          googleSaturation: -0.18,
+          googleHueRotate: 10,
         };
+}
+
+function isLegacyKorviMapTheme(theme: Partial<KorviStoredMapTheme> | undefined, dark: boolean): boolean {
+  if (!theme) return false;
+  const legacy = dark
+    ? { background: '#0D1B24', roadPrimary: '#4FA3A0', roadSecondary: '#53778A', water: '#123F51' }
+    : { background: '#EEF7F6', roadPrimary: '#A7DCD7', roadSecondary: '#D5E7EF', water: '#B9E7EF' };
+  return Object.entries(legacy).every(([key, value]) => theme[key as keyof KorviStoredMapTheme] === value);
 }
 
 function setPaint(map: Map, layerId: string, property: string, value: unknown): void {

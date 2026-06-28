@@ -45,6 +45,7 @@ const buildEnv = {
   apiUrl: envValue('NG_APP_API_URL', 'http://localhost:3000/api'),
   realtimeUrl: envValue('NG_APP_REALTIME_URL', 'http://localhost:3001'),
   maptilerKey: envValue('NG_APP_MAPTILER_KEY'),
+  geoapifyKey: envValue('NG_APP_GEOAPIFY_KEY'),
 };
 
 const content = `export const buildEnv = ${JSON.stringify(buildEnv, null, 2)} as const;\n`;
